@@ -14,6 +14,7 @@ azure-cost --help
 
 ## To do
 
+- [ ] Show time range the report is based on
 - [ ] Open source it on GitHub!
 - [ ] Show the forecasted cost
 - [ ] Set thresholds, so it can return an error code
