@@ -1,1 +1,1 @@
-public record CostServiceItem(string ItemName, double Cost, double CostUsd, string Currency);
+public record CostNamedItem(string ItemName, double Cost, double CostUsd, string Currency);

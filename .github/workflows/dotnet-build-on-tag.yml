@@ -37,6 +37,10 @@ jobs:
         name: packages
         path: nupkgs/*.nupkg
 
+    - name: Push NuGet Package
+      run: |
+        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
     - name: Create GitHub Release
       id: create_release
       uses: softprops/action-gh-release@v1

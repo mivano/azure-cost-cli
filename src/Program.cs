@@ -14,8 +14,9 @@ app.Configure(config =>
     config.PropagateExceptions();
     #endif
     
-    config.AddCommand<ShowCommand>("show").WithDescription("Show the cost details for a subscription.");
+    config.AddCommand<ShowCommand>("show")
+        .WithDescription("Show the cost details for a subscription.");
     config.ValidateExamples();
 });
 
-return app.Run(args);
+return await app.RunAsync(args);

@@ -18,8 +18,24 @@
     
     <ItemGroup>
       <PackageReference Include="Azure.Identity" Version="1.8.2" />
+      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
       <PackageReference Include="Spectre.Console" Version="0.46.0" />
       <PackageReference Include="Spectre.Console.Cli" Version="0.46.0" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <Compile Remove="nupkg\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <EmbeddedResource Remove="nupkg\**" />
+    </ItemGroup>
+    
+    <ItemGroup>
+      <None Remove="nupkg\**" />
     </ItemGroup>
 
 </Project>
