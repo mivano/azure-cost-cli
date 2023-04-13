@@ -50,12 +50,20 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const fs = require('fs');
-          const release_notes = fs.readFileSync('RELEASE_NOTES.md', 'utf8');
+          const { execSync } = require('child_process');
+          const previousTag = execSync('git describe --abbrev=0 --tags HEAD^', { encoding: 'utf8' }).trim();
+          const commitRange = `${previousTag}..${process.env.TAG_NAME}`;
+          const commitLog = execSync(`git log --oneline --no-merges ${commitRange}`, { encoding: 'utf8' });
+
+          const releaseNotes = `Commits since ${previousTag}:\n\n${commitLog}`;
           const release_id = ${{ steps.create_release.outputs.id }};
           await github.rest.repos.updateRelease({
             owner: context.repo.owner,
             repo: context.repo.repo,
+            release_id: release_id,
+            body: releaseNotes
+          });
+
             release_id: release_id,
             body: release_notes
           });
