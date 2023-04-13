@@ -5,3 +5,4 @@ riderModule.iml
 /_ReSharper.Caches/
 nupkg
 .idea
+.DS_Store

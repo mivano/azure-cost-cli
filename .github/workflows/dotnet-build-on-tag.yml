@@ -64,6 +64,3 @@ jobs:
             body: releaseNotes
           });
 
-            release_id: release_id,
-            body: release_notes
-          });
