@@ -11,17 +11,23 @@
     <PropertyGroup>
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>azure-cost</ToolCommandName>
+        <Title>Azure Cost CLI</Title>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageId>azure-cost-cli</PackageId>
         <PackageOutputPath>./nupkg</PackageOutputPath>
         <Version>0.4.0</Version>
         <Authors>Michiel van Oudheusden</Authors>
+        <Description>Command line tool to get Azure cost information</Description>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/mivano/azure-cost-cli/</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/mivano/azure-cost-cli/</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>azure;cost;cli</PackageTags>
     </PropertyGroup>
     
     <ItemGroup>
       <PackageReference Include="Azure.Identity" Version="1.8.2" />
-      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+      <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
       <PackageReference Include="Spectre.Console" Version="0.46.0" />
       <PackageReference Include="Spectre.Console.Cli" Version="0.46.0" />
     </ItemGroup>
