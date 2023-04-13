@@ -13,12 +13,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+    - uses: actions/setup-dotnet@v3
       with:
         dotnet-version: |
-          '6.0.x'
-          '7.0.x'
+          6.0.x
+          7.0.x
           
     - name: Get the tag version
       id: get_version
