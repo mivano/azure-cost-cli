@@ -1,0 +1,1 @@
+public record CostServiceItem(string ItemName, double Cost, double CostUsd, string Currency);
