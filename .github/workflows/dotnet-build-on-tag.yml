@@ -1,0 +1,38 @@
+name: Build and Pack on Tag
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-pack:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: |
+          '6.0.x'
+          '7.0.x'
+          
+    - name: Get the tag version
+      id: get_version
+      run: |
+        TAG_NAME=${GITHUB_REF#refs/tags/}
+        echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+
+    - name: Build and Pack
+      run: |
+        dotnet build --configuration Release
+        dotnet pack --configuration Release /p:PackageVersion=$TAG_NAME --output nupkgs
+
+    #- name: Upload artifacts
+    #  uses: actions/upload-artifact@v2
+    #  with:
+    #    name: packages
+    #    path: nupkgs/*.nupkg
