@@ -8,7 +8,9 @@ on:
 jobs:
   build-pack-release:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: ./src
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
