@@ -1,4 +1,4 @@
-name: Build and Pack on Tag
+name: Build, Pack and Release on Tag
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - '*'
 
 jobs:
-  build-and-pack:
+  build-pack-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -31,8 +31,31 @@ jobs:
         dotnet build --configuration Release
         dotnet pack --configuration Release /p:PackageVersion=$TAG_NAME --output nupkgs
 
-    #- name: Upload artifacts
-    #  uses: actions/upload-artifact@v2
-    #  with:
-    #    name: packages
-    #    path: nupkgs/*.nupkg
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: packages
+        path: nupkgs/*.nupkg
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: nupkgs/*.nupkg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update Release Notes
+      uses: actions/github-script@v5
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const release_notes = fs.readFileSync('RELEASE_NOTES.md', 'utf8');
+          const release_id = ${{ steps.create_release.outputs.id }};
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: release_id,
+            body: release_notes
+          });
