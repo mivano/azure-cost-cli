@@ -5,6 +5,10 @@ on:
     tags:
       - '*'
 
+permissions:
+  contents: write
+  discussions: write
+
 jobs:
   build-pack-release:
     runs-on: ubuntu-latest
@@ -36,7 +40,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: packages
-        path: nupkgs/*.nupkg
+        path: src/nupkgs/*.nupkg
 
     - name: Push NuGet Package
       run: |
@@ -46,9 +50,8 @@ jobs:
       id: create_release
       uses: softprops/action-gh-release@v1
       with:
-        files: nupkgs/*.nupkg
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        files: src/nupkgs/*.nupkg
+
 
     - name: Update Release Notes
       uses: actions/github-script@v5
