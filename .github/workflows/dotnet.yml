@@ -6,9 +6,15 @@ name: .NET
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "src/**"
+      - ".github/workflows/dotnet.yml" 
   pull_request:
     branches: [ "main" ]
-
+    paths:
+      - "src/**"
+      - ".github/workflows/dotnet.yml" 
+      
 jobs:
   build:
     defaults:
