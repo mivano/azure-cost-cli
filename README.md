@@ -34,11 +34,11 @@ Which will show:
 
 ```
 USAGE:
-    Azure Cost [OPTIONS]
+    azure-cost [OPTIONS]
 
 EXAMPLES:
-    Azure Cost show -s 00000000-0000-0000-0000-000000000000
-    Azure Cost show -s 00000000-0000-0000-0000-000000000000 -o json
+    azure-cost show -s 00000000-0000-0000-0000-000000000000
+    azure-cost show -s 00000000-0000-0000-0000-000000000000 -o json
 
 OPTIONS:
     -h, --help            Prints help information
