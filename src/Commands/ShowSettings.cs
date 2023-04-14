@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using System.Globalization;
 using Spectre.Console.Cli;
 
-public class ShowSettings : CommandSettings
+
+public class ShowSettings : LogCommandSettings
 {
     [CommandOption("-s|--subscription")]
     [Description("The subscription id to use.")]

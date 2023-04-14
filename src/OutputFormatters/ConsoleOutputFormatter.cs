@@ -20,7 +20,7 @@ public class ConsoleOutputFormatter : OutputFormatter
 
         // Header
         var headerInfo =
-            $"Azure Cost Overview for {settings.Subscription} from {costs.Min(a => a.Date)} to {costs.Max(a => a.Date)}";
+            $"Azure Cost Overview for [blue]{settings.Subscription}[/] from [green]{costs.Min(a => a.Date)}[/] to [green]{costs.Max(a => a.Date)}[/]";
 
         var rootTable = new Table();
         rootTable.Expand();

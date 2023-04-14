@@ -8,6 +8,7 @@ using Azure.Core;
 using Azure.Identity;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using Spectre.Console.Json;
 
 public class ShowCommand : AsyncCommand<ShowSettings>
 {
@@ -25,6 +26,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
+        _outputFormatters.Add(OutputFormat.Text, new TextOutputFormatter());
     }
 
     public override ValidationResult Validate(CommandContext context, ShowSettings settings)
@@ -53,7 +55,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, ShowSettings settings)
     {
-        await RetrieveToken();
+        await RetrieveToken(settings.Debug);
 
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
@@ -63,7 +65,14 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             // Get the subscription ID from the Azure CLI
             try
             {
+                if (settings.Debug)
+                    AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
+                
                 subscriptionId = Guid.Parse(GetDefaultAzureSubscriptionId());
+                
+                if (settings.Debug)
+                    AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
+                
                 settings.Subscription = subscriptionId;
             }
             catch (Exception e)
@@ -75,12 +84,12 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         }
 
         // Fetch the costs
-        var costs = await RetrieveCosts(settings.Output == OutputFormat.Console, subscriptionId, settings.Timeframe,
+        var costs = await RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
-        var forecastedCosts = await RetrieveForecastedCosts(settings.Output == OutputFormat.Console, subscriptionId);
-        var byServiceNameCosts = await RetrieveCostByServiceName(settings.Output == OutputFormat.Console,
+        var forecastedCosts = await RetrieveForecastedCosts(settings.Debug, subscriptionId);
+        var byServiceNameCosts = await RetrieveCostByServiceName(settings.Debug,
             subscriptionId, settings.Timeframe, settings.From, settings.To);
-        var byLocationCosts = await RetrieveCostByLocation(settings.Output == OutputFormat.Console, subscriptionId,
+        var byLocationCosts = await RetrieveCostByLocation(settings.Debug, subscriptionId,
             settings.Timeframe, settings.From, settings.To);
 
         // Write the output
@@ -90,21 +99,51 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         return 0;
     }
 
-    private async Task RetrieveToken()
+    private async Task RetrieveToken(bool includeDebugOutput)
     {
         // Get the token by using the DefaultAzureCredential
         var tokenCredential = new ChainedTokenCredential(
             new AzureCliCredential(),
             new DefaultAzureCredential());
+        
+        if (includeDebugOutput)
+            AnsiConsole.WriteLine($"Using token credential: {tokenCredential.GetType().Name} to fetch a token.");
+        
         var token = await tokenCredential.GetTokenAsync(new TokenRequestContext(new[]
             { $"https://management.azure.com/.default" }));
 
+        if (includeDebugOutput)
+            AnsiConsole.WriteLine($"Token retrieved and expires at: {token.ExpiresOn}");
+        
         // Set as the bearer token for the HTTP client
         _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
     }
 
+    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object payload, Uri uri)
+    {
+        if (includeDebugOutput)
+        { 
+            AnsiConsole.WriteLine($"Retrieving costs from {uri} using the following payload:");
+            AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
+            AnsiConsole.WriteLine();
+        }
 
-    private async Task<IEnumerable<CostItem>> RetrieveCosts(bool canWriteToConsole, Guid subscriptionId,
+        var response = await _client.PostAsJsonAsync(uri, payload);
+        
+        if (includeDebugOutput)
+        {
+            AnsiConsole.WriteLine($"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
+            if (!response.IsSuccessStatusCode)
+            {
+                AnsiConsole.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
+            }
+        }
+
+        response.EnsureSuccessStatusCode();
+        return response;
+    }
+    
+    private async Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -149,8 +188,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             }
         };
 
-        var response = await _client.PostAsJsonAsync(uri, payload);
-        response.EnsureSuccessStatusCode();
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
 
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
@@ -170,7 +208,9 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         return items;
     }
 
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool canWriteToConsole,
+  
+
+    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
         Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -231,8 +271,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                 }
             }
         };
-        var response = await _client.PostAsJsonAsync(uri, payload);
-        response.EnsureSuccessStatusCode();
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
 
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
@@ -252,7 +291,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         return items;
     }
 
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool canWriteToConsole, Guid subscriptionId,
+    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -313,8 +352,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                 }
             }
         };
-        var response = await _client.PostAsJsonAsync(uri, payload);
-        response.EnsureSuccessStatusCode();
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
 
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
@@ -334,7 +372,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         return items;
     }
 
-    private async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool canWriteToConsole, Guid subscriptionId)
+    private async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000",
@@ -374,8 +412,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                 }
             }
         };
-        var response = await _client.PostAsJsonAsync(uri, payload);
-        response.EnsureSuccessStatusCode();
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
 
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 

@@ -2,5 +2,6 @@ public enum OutputFormat
 {
     Console,
     Json,
-    Markdown
+    Markdown,
+    Text
 }
