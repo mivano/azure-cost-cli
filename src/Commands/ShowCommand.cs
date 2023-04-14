@@ -12,8 +12,8 @@ using Spectre.Console.Cli;
 public class ShowCommand : AsyncCommand<ShowSettings>
 {
     private readonly HttpClient _client;
-    private readonly Dictionary<OutputFormat, OutputFormatter> _outputFormatters = new ();
-   
+    private readonly Dictionary<OutputFormat, OutputFormatter> _outputFormatters = new();
+
     public ShowCommand()
     {
         // Setup the http client
@@ -21,7 +21,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
         _client = new HttpClient(handler);
         _client.BaseAddress = new Uri("https://management.azure.com/");
-           
+
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -29,10 +29,6 @@ public class ShowCommand : AsyncCommand<ShowSettings>
 
     public override ValidationResult Validate(CommandContext context, ShowSettings settings)
     {
-        // Validate the subscription ID 
-        if (settings.Subscription == Guid.Empty)
-           return ValidationResult.Error("A subscription ID must be specified.");
-
         // Validate if the timeframe is set to Custom, then the from and to dates must be specified and the from date must be before the to date
         if (settings.Timeframe == TimeframeType.Custom)
         {
@@ -40,35 +36,57 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             {
                 return ValidationResult.Error("The from date must be specified when the timeframe is set to Custom.");
             }
+
             if (settings.To == null)
             {
                 return ValidationResult.Error("The to date must be specified when the timeframe is set to Custom.");
             }
+
             if (settings.From > settings.To)
             {
                 return ValidationResult.Error("The from date must be before the to date.");
             }
         }
-        
+
         return ValidationResult.Success();
     }
-    
+
     public override async Task<int> ExecuteAsync(CommandContext context, ShowSettings settings)
     {
         await RetrieveToken();
 
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
-        
+
+        if (subscriptionId == Guid.Empty)
+        {
+            // Get the subscription ID from the Azure CLI
+            try
+            {
+                subscriptionId = Guid.Parse(GetDefaultAzureSubscriptionId());
+                settings.Subscription = subscriptionId;
+            }
+            catch (Exception e)
+            {
+                AnsiConsole.WriteException(new ArgumentException(
+                    "Missing subscription ID. Please specify a subscription ID or login to Azure CLI.", e));
+                return -1;
+            }
+        }
+
         // Fetch the costs
-        var costs = await RetrieveCosts(settings.Output == OutputFormat.Console, subscriptionId,  settings.Timeframe, settings.From, settings.To);
+        var costs = await RetrieveCosts(settings.Output == OutputFormat.Console, subscriptionId, settings.Timeframe,
+            settings.From, settings.To);
         var forecastedCosts = await RetrieveForecastedCosts(settings.Output == OutputFormat.Console, subscriptionId);
-        var byServiceNameCosts = await RetrieveCostByServiceName(settings.Output == OutputFormat.Console, subscriptionId, settings.Timeframe, settings.From, settings.To);
-        var byLocationCosts = await RetrieveCostByLocation(settings.Output == OutputFormat.Console, subscriptionId, settings.Timeframe, settings.From, settings.To);
-        
+        var byServiceNameCosts = await RetrieveCostByServiceName(settings.Output == OutputFormat.Console,
+            subscriptionId, settings.Timeframe, settings.From, settings.To);
+        var byLocationCosts = await RetrieveCostByLocation(settings.Output == OutputFormat.Console, subscriptionId,
+            settings.Timeframe, settings.From, settings.To);
+
         // Write the output
-        await _outputFormatters[settings.Output].WriteOutput(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts);
-        
+        await _outputFormatters[settings.Output]
+            .WriteOutput(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts);
+
         return 0;
     }
 
@@ -86,20 +104,24 @@ public class ShowCommand : AsyncCommand<ShowSettings>
     }
 
 
-    private async Task<IEnumerable<CostItem>> RetrieveCosts(bool canWriteToConsole, Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
+    private async Task<IEnumerable<CostItem>> RetrieveCosts(bool canWriteToConsole, Guid subscriptionId,
+        TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000", UriKind.Relative);
-        
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+
         var payload = new
         {
             type = "ActualCost",
             timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom ? new
-            {
-                from = from.ToString("yyyy-MM-dd"),
-                to = to.ToString("yyyy-MM-dd")
-            } : null,
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
             dataSet = new
             {
                 granularity = "Daily",
@@ -110,12 +132,13 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                         name = "Cost",
                         function = "Sum"
                     },
-                    totalCostUSD = new  {
+                    totalCostUSD = new
+                    {
                         name = "CostUSD",
-                        function =  "Sum"
+                        function = "Sum"
                     }
                 },
-                sorting= new[]
+                sorting = new[]
                 {
                     new
                     {
@@ -123,13 +146,12 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                         name = "UsageDate"
                     }
                 }
-              
             }
         };
-       
+
         var response = await _client.PostAsJsonAsync(uri, payload);
         response.EnsureSuccessStatusCode();
-        
+
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
         var items = new List<CostItem>();
@@ -140,28 +162,32 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
 
             var currency = row[3].ToString();
-          
+
             var costItem = new CostItem(date, value, valueUsd, currency);
             items.Add(costItem);
         }
 
         return items;
     }
-    
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool canWriteToConsole,Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
+
+    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool canWriteToConsole,
+        Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000", UriKind.Relative);
-        
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+
         var payload = new
         {
             type = "ActualCost",
             timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom ? new
-            {
-                from = from.ToString("yyyy-MM-dd"),
-                to = to.ToString("yyyy-MM-dd")
-            } : null,
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
             dataSet = new
             {
                 granularity = "None",
@@ -172,12 +198,13 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                         name = "Cost",
                         function = "Sum"
                     },
-                    totalCostUSD = new  {
+                    totalCostUSD = new
+                    {
                         name = "CostUSD",
-                        function =  "Sum"
+                        function = "Sum"
                     }
                 },
-                sorting= new[]
+                sorting = new[]
                 {
                     new
                     {
@@ -199,14 +226,14 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                     {
                         Name = "PublisherType",
                         Operator = "In",
-                        Values = new [] {"azure"}
+                        Values = new[] { "azure" }
                     }
                 }
             }
         };
         var response = await _client.PostAsJsonAsync(uri, payload);
         response.EnsureSuccessStatusCode();
-        
+
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
         var items = new List<CostNamedItem>();
@@ -217,28 +244,32 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
 
             var currency = row[3].ToString();
-          
+
             var costItem = new CostNamedItem(serviceName, value, valueUsd, currency);
             items.Add(costItem);
         }
 
         return items;
     }
-    
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool canWriteToConsole,Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
+
+    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool canWriteToConsole, Guid subscriptionId,
+        TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000", UriKind.Relative);
-        
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+
         var payload = new
         {
             type = "ActualCost",
             timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom ? new
-            {
-                from = from.ToString("yyyy-MM-dd"),
-                to = to.ToString("yyyy-MM-dd")
-            } : null,
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
             dataSet = new
             {
                 granularity = "None",
@@ -249,12 +280,13 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                         name = "Cost",
                         function = "Sum"
                     },
-                    totalCostUSD = new  {
+                    totalCostUSD = new
+                    {
                         name = "CostUSD",
-                        function =  "Sum"
+                        function = "Sum"
                     }
                 },
-                sorting= new[]
+                sorting = new[]
                 {
                     new
                     {
@@ -276,14 +308,14 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                     {
                         Name = "PublisherType",
                         Operator = "In",
-                        Values = new [] {"azure"}
+                        Values = new[] { "azure" }
                     }
                 }
             }
         };
         var response = await _client.PostAsJsonAsync(uri, payload);
         response.EnsureSuccessStatusCode();
-        
+
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
         var items = new List<CostNamedItem>();
@@ -294,23 +326,24 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
 
             var currency = row[3].ToString();
-          
+
             var costItem = new CostNamedItem(location, value, valueUsd, currency);
             items.Add(costItem);
         }
 
         return items;
     }
-   
-    private async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool canWriteToConsole,Guid subscriptionId)
+
+    private async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool canWriteToConsole, Guid subscriptionId)
     {
         var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000", UriKind.Relative);
-        
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+
         var payload = new
         {
             type = "ActualCost",
-            
+
             dataSet = new
             {
                 granularity = "Daily",
@@ -322,7 +355,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                         function = "Sum"
                     }
                 },
-                sorting= new[]
+                sorting = new[]
                 {
                     new
                     {
@@ -336,14 +369,14 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                     {
                         Name = "PublisherType",
                         Operator = "In",
-                        Values = new [] {"azure"}
+                        Values = new[] { "azure" }
                     }
                 }
             }
         };
         var response = await _client.PostAsJsonAsync(uri, payload);
         response.EnsureSuccessStatusCode();
-        
+
         CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
         var items = new List<CostItem>();
@@ -351,16 +384,16 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         {
             var date = DateOnly.ParseExact(row[1].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
             var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-        
+
             var currency = row[3].ToString();
-          
+
             var costItem = new CostItem(date, value, value, currency);
             items.Add(costItem);
         }
 
         return items;
     }
-    
+
     static string GetDefaultAzureSubscriptionId()
     {
         var startInfo = new ProcessStartInfo
