@@ -44,7 +44,7 @@ OPTIONS:
     -h, --help            Prints help information
         --debug           Increase logging verbosity to show all debug logs  
     -s, --subscription    The subscription id to use
-    -o, --output          The output format to use. Defaults to Console (Console, Json)
+    -o, --output          The output format to use. Defaults to Console (Console, Json, Text)
     -t, --timeframe       The timeframe to use for the costs. Defaults to BillingMonthToDate. When set to Custom, specify the from and to dates using the --from and --to options
         --from            The start date to use for the costs. Defaults to the first day of the previous month
         --to              The end date to use for the costs. Defaults to the current date
@@ -56,6 +56,9 @@ COMMANDS:
 When you do not specify a subscription id, it will fetch the actively selected one of the `az cli` instead. 
 
 > If the application is not working properly, you can use the `--debug` parameter to increase the logging verbosity and see more details.
+
+> This tool uses the Azure Cost Management API to get the cost. Not all subscriptions have access to this API. To check if your subscription has access, you can use the `az account subscription show --subscription-id yourid --query '[subscriptionPolicies.quotaId]' -o tsv
+` command. Validate the resulting quota id with the ones on the [Microsoft list](https://learn.microsoft.com/en-us/azure/cost-management-billing/costs/understand-cost-mgt-data#supported-microsoft-azure-offers) to see if it is supported.
 
 ## Authentication
 

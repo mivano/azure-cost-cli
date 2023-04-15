@@ -3,7 +3,12 @@ using Spectre.Console;
 
 public class JsonOutputFormatter : OutputFormatter
 {
-    public override Task WriteOutput(ShowSettings settings, IEnumerable<CostItem> costs, IEnumerable<CostItem> forecastedCosts, IEnumerable<CostNamedItem> byServiceNameCosts,IEnumerable<CostNamedItem> byLocationCosts)
+    public override Task WriteOutput(ShowSettings settings,
+        IEnumerable<CostItem> costs,
+        IEnumerable<CostItem> forecastedCosts,
+        IEnumerable<CostNamedItem> byServiceNameCosts,
+        IEnumerable<CostNamedItem> byLocationCosts,
+        IEnumerable<CostNamedItem> byResourceGroupCosts)
     {
         var output = new
         {
@@ -14,13 +19,14 @@ public class JsonOutputFormatter : OutputFormatter
                 lastSevenDaysCost = costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7))).Sum(a => a.Cost),
                 lastThirtyDaysCost = costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30))).Sum(a => a.Cost),
             },
-            cost = costs.Select(a=> new {a.Date, a.Cost, a.Currency}),
-            forecastedCosts = forecastedCosts.Select(a=> new {a.Date, a.Cost, a.Currency}),
-            byServiceNames = byServiceNameCosts.Select(a=> new {ServiceName =a.ItemName, a.Cost, a.Currency}),
-            ByLocation = byLocationCosts.Select(a=> new {Location = a.ItemName, a.Cost,  a.Currency})
+            cost = costs.OrderBy(a=>a.Date).Select(a=> new {a.Date, a.Cost, a.Currency}),
+            forecastedCosts = forecastedCosts.OrderByDescending(a=>a.Date).Select(a=> new {a.Date, a.Cost, a.Currency}),
+            byServiceNames = byServiceNameCosts.OrderByDescending(a=>a.Cost).Select(a=> new {ServiceName =a.ItemName, a.Cost, a.Currency}),
+            ByLocation = byLocationCosts.OrderByDescending(a=>a.Cost).Select(a=> new {Location = a.ItemName, a.Cost,  a.Currency}),
+            ByResourceGroup = byResourceGroupCosts.OrderByDescending(a=>a.Cost).Select(a=> new {ResourceGroup = a.ItemName, a.Cost, a.Currency})
         };
         
-       Console.Write( JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true }));
+        Console.Write( JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true }));
         
         return Task.CompletedTask;
     }

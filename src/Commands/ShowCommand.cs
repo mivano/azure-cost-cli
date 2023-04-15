@@ -55,6 +55,10 @@ public class ShowCommand : AsyncCommand<ShowSettings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, ShowSettings settings)
     {
+        // Show version
+        if (settings.Debug)
+            AnsiConsole.WriteLine($"Version: {typeof(ShowCommand).Assembly.GetName().Version}");
+        
         await RetrieveToken(settings.Debug);
 
         // Get the subscription ID from the settings
@@ -83,18 +87,21 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             }
         }
 
-        // Fetch the costs
+        // Fetch the costs from the Azure Cost Management API
         var costs = await RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
         var forecastedCosts = await RetrieveForecastedCosts(settings.Debug, subscriptionId);
-        var byServiceNameCosts = await RetrieveCostByServiceName(settings.Debug,
+        var byServiceNameCosts =  await RetrieveCostByServiceName(settings.Debug,
             subscriptionId, settings.Timeframe, settings.From, settings.To);
-        var byLocationCosts = await RetrieveCostByLocation(settings.Debug, subscriptionId,
+        var byLocationCosts =  await RetrieveCostByLocation(settings.Debug, subscriptionId,
+            settings.Timeframe, settings.From, settings.To);
+        var byResourceGroupCosts =  await RetrieveCostByResourceGroup(settings.Debug, subscriptionId,
             settings.Timeframe, settings.From, settings.To);
 
+      
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteOutput(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts);
+            .WriteOutput(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts, byResourceGroupCosts);
 
         return 0;
     }
@@ -123,7 +130,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
     {
         if (includeDebugOutput)
         { 
-            AnsiConsole.WriteLine($"Retrieving costs from {uri} using the following payload:");
+            AnsiConsole.WriteLine($"Retrieving data from {uri} using the following payload:");
             AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
             AnsiConsole.WriteLine();
         }
@@ -366,6 +373,92 @@ public class ShowCommand : AsyncCommand<ShowSettings>
             var currency = row[3].ToString();
 
             var costItem = new CostNamedItem(location, value, valueUsd, currency);
+            items.Add(costItem);
+        }
+
+        return items;
+    }
+    
+    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Guid subscriptionId,
+        TimeframeType timeFrame, DateOnly from, DateOnly to)
+    {
+        var uri = new Uri(
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+     //   "type":"Dimension","name":"ResourceGroupName"},{"type":"Dimension","name":"ChargeType"},{"type":"Dimension","name":"PublisherType"
+        var payload = new
+        {
+            type = "ActualCost",
+            timeframe = timeFrame.ToString(),
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
+            dataSet = new
+            {
+                granularity = "None",
+                aggregation = new
+                {
+                    totalCost = new
+                    {
+                        name = "Cost",
+                        function = "Sum"
+                    },
+                    totalCostUSD = new
+                    {
+                        name = "CostUSD",
+                        function = "Sum"
+                    }
+                },
+                sorting = new[]
+                {
+                    new
+                    {
+                        direction = "Ascending",
+                        name = "UsageDate"
+                    }
+                },
+                grouping = new[]
+                {
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ResourceGroupName"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ChargeType"
+                    }
+                },
+                filter = new
+                {
+                    Dimensions = new
+                    {
+                        Name = "PublisherType",
+                        Operator = "In",
+                        Values = new[] { "azure" }
+                    }
+                }
+            }
+        };
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
+
+        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
+
+        var items = new List<CostNamedItem>();
+        foreach (var row in content.properties.rows)
+        {
+            var resourceGroupName = row[2].ToString();
+            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
+            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
+
+            var currency = row[3].ToString();
+
+            var costItem = new CostNamedItem(resourceGroupName, value, valueUsd, currency);
             items.Add(costItem);
         }
 

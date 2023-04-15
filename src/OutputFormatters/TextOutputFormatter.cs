@@ -2,9 +2,12 @@ using System.Text.Json;
 
 public class TextOutputFormatter : OutputFormatter
 {
-    public override Task WriteOutput(ShowSettings settings, IEnumerable<CostItem> costs,
-        IEnumerable<CostItem> forecastedCosts, IEnumerable<CostNamedItem> byServiceNameCosts,
-        IEnumerable<CostNamedItem> byLocationCosts)
+    public override Task WriteOutput(ShowSettings settings, 
+        IEnumerable<CostItem> costs,
+        IEnumerable<CostItem> forecastedCosts,
+        IEnumerable<CostNamedItem> byServiceNameCosts,
+        IEnumerable<CostNamedItem> byLocationCosts,
+        IEnumerable<CostNamedItem> byResourceGroupCosts)
     {
         var output = new
         {
@@ -30,20 +33,28 @@ public class TextOutputFormatter : OutputFormatter
         Console.WriteLine($"  Yesterday: {output.costs.yesterdayCost:N2} {currency}");
         Console.WriteLine($"  Last 7 days: {output.costs.lastSevenDaysCost:N2} {currency}");
         Console.WriteLine($"  Last 30 days: {output.costs.lastThirtyDaysCost:N2} {currency}");
+        
         Console.WriteLine();
         Console.WriteLine("By Service Name:");
-        foreach (var cost in byServiceNameCosts.OrderByDescending(a=>a.Cost))
+        foreach (var cost in byServiceNameCosts.TrimList())
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
 
         Console.WriteLine();
         Console.WriteLine("By Location:");
-        foreach (var cost in byLocationCosts.OrderByDescending(a=>a.Cost))
+        foreach (var cost in byLocationCosts.TrimList())
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
 
+        Console.WriteLine();
+        Console.WriteLine("By Resource Group:");
+        foreach (var cost in byResourceGroupCosts.TrimList())
+        {
+            Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
+        }
+        
         return Task.CompletedTask;
     }
 }

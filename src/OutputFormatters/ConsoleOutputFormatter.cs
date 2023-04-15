@@ -5,7 +5,8 @@ public class ConsoleOutputFormatter : OutputFormatter
     public override Task WriteOutput(ShowSettings settings, IEnumerable<CostItem> costs,
         IEnumerable<CostItem> forecastedCosts,
         IEnumerable<CostNamedItem> byServiceNameCosts,
-        IEnumerable<CostNamedItem> byLocationCosts)
+        IEnumerable<CostNamedItem> byLocationCosts,
+        IEnumerable<CostNamedItem> byResourceGroupCosts)
     {
         var todaysDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
@@ -82,35 +83,29 @@ public class ConsoleOutputFormatter : OutputFormatter
                 .FullSize()
             ;
 
-        var servicesTable = new Table();
-        servicesTable.Title = new TableTitle("Azure Costs by Service");
-        servicesTable.Border(TableBorder.None);
-        servicesTable.ShowHeaders = false;
-        servicesTable.AddColumn("Service Name");
-        servicesTable.AddColumn(new TableColumn("Cost").Centered());
         var counter = 2;
-        foreach (var cost in byServiceNameCosts.OrderByDescending(a => a.Cost))
+        foreach (var cost in byServiceNameCosts.TrimList())
         {
-            servicesTable.AddRow(cost.ItemName, $"{cost.Cost:N2} {currency}");
             servicesBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
         }
 
+        // Render the resource groups table
+        var resourceGroupBreakdown = new BreakdownChart()
+            .Width(60);
+
+        counter = 2;
+        foreach (var rg in byResourceGroupCosts.TrimList())
+        {
+            resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(rg.Cost, 2), Color.FromInt32(counter++));
+        }
 
         // Render the locations table
         var locationsBreakdown = new BreakdownChart()
             .Width(60);
 
-        var locationsTable = new Table();
-        locationsTable.Title = new TableTitle("Azure Costs by Location");
-        locationsTable.Border(TableBorder.None);
-        locationsTable.ShowHeaders = false;
-        locationsTable.AddColumn("Location");
-        locationsTable.AddColumn(new TableColumn("Cost").Centered());
-
         counter = 2;
-        foreach (var cost in byLocationCosts.OrderByDescending(a => a.Cost))
+        foreach (var cost in byLocationCosts.TrimList())
         {
-            locationsTable.AddRow(cost.ItemName, $"{cost.Cost:N2} {currency}");
             locationsBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
         }
 
@@ -123,16 +118,14 @@ public class ConsoleOutputFormatter : OutputFormatter
         subTable.AddRow(new Rows(
                 new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
                 new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
-                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded))
-            , new Rows(last7DaysChart, next7DaysChart));
+                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded)
+            )
+            , new Rows(last7DaysChart,
+                nextSevenDaysOfForecast.Any() ? next7DaysChart : new Text("No forecast data available"),
+                new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)));
 
         subTable.Columns[0].Padding(2, 2).Centered();
         subTable.Columns[1].Padding(2, 2).Centered();
-
-
-        // subTable.AddRow(servicesTable, locationsTable);
-        //  subTable.AddRow(servicesBreakdown, locationsBreakdown);
-
 
         rootTable.AddRow(subTable);
 

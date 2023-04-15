@@ -10,7 +10,7 @@ public class ShowSettings : LogCommandSettings
     public Guid Subscription { get; set; }
 
     [CommandOption("-o|--output")] 
-    [Description("The output format to use. Defaults to Console (Console, Json)")]
+    [Description("The output format to use. Defaults to Console (Console, Json, Text)")]
     public OutputFormat Output { get; set; } = OutputFormat.Console;
     
     [CommandOption("-t|--timeframe")]
