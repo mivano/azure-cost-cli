@@ -1,28 +1,18 @@
 using System.Diagnostics;
-using System.Globalization;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
-using Azure.Core;
-using Azure.Identity;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using Spectre.Console.Json;
 
 public class ShowCommand : AsyncCommand<ShowSettings>
 {
-    private readonly HttpClient _client;
+    private readonly ICostRetriever _costRetriever;
+
     private readonly Dictionary<OutputFormat, OutputFormatter> _outputFormatters = new();
 
-    public ShowCommand()
+    public ShowCommand(ICostRetriever costRetriever)
     {
-        // Setup the http client
-        var handler = new HttpClientHandler();
-        handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-        _client = new HttpClient(handler);
-        _client.BaseAddress = new Uri("https://management.azure.com/");
-
+        _costRetriever = costRetriever;
+        
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -59,8 +49,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(ShowCommand).Assembly.GetName().Version}");
         
-        await RetrieveToken(settings.Debug);
-
+      
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -88,14 +77,14 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         }
 
         // Fetch the costs from the Azure Cost Management API
-        var costs = await RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
+        var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
-        var forecastedCosts = await RetrieveForecastedCosts(settings.Debug, subscriptionId);
-        var byServiceNameCosts =  await RetrieveCostByServiceName(settings.Debug,
+        var forecastedCosts = await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId);
+        var byServiceNameCosts =  await _costRetriever.RetrieveCostByServiceName(settings.Debug,
             subscriptionId, settings.Timeframe, settings.From, settings.To);
-        var byLocationCosts =  await RetrieveCostByLocation(settings.Debug, subscriptionId,
+        var byLocationCosts =  await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
             settings.Timeframe, settings.From, settings.To);
-        var byResourceGroupCosts =  await RetrieveCostByResourceGroup(settings.Debug, subscriptionId,
+        var byResourceGroupCosts =  await _costRetriever.RetrieveCostByResourceGroup(settings.Debug, subscriptionId,
             settings.Timeframe, settings.From, settings.To);
 
       
@@ -106,423 +95,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         return 0;
     }
 
-    private async Task RetrieveToken(bool includeDebugOutput)
-    {
-        // Get the token by using the DefaultAzureCredential
-        var tokenCredential = new ChainedTokenCredential(
-            new AzureCliCredential(),
-            new DefaultAzureCredential());
-        
-        if (includeDebugOutput)
-            AnsiConsole.WriteLine($"Using token credential: {tokenCredential.GetType().Name} to fetch a token.");
-        
-        var token = await tokenCredential.GetTokenAsync(new TokenRequestContext(new[]
-            { $"https://management.azure.com/.default" }));
-
-        if (includeDebugOutput)
-            AnsiConsole.WriteLine($"Token retrieved and expires at: {token.ExpiresOn}");
-        
-        // Set as the bearer token for the HTTP client
-        _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
-    }
-
-    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object payload, Uri uri)
-    {
-        if (includeDebugOutput)
-        { 
-            AnsiConsole.WriteLine($"Retrieving data from {uri} using the following payload:");
-            AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
-            AnsiConsole.WriteLine();
-        }
-
-        var response = await _client.PostAsJsonAsync(uri, payload);
-        
-        if (includeDebugOutput)
-        {
-            AnsiConsole.WriteLine($"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
-            if (!response.IsSuccessStatusCode)
-            {
-                AnsiConsole.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
-            }
-        }
-
-        response.EnsureSuccessStatusCode();
-        return response;
-    }
-    
-    private async Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
-        TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
-            UriKind.Relative);
-
-        var payload = new
-        {
-            type = "ActualCost",
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
-                ? new
-                {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
-                }
-                : null,
-            dataSet = new
-            {
-                granularity = "Daily",
-                aggregation = new
-                {
-                    totalCost = new
-                    {
-                        name = "Cost",
-                        function = "Sum"
-                    },
-                    totalCostUSD = new
-                    {
-                        name = "CostUSD",
-                        function = "Sum"
-                    }
-                },
-                sorting = new[]
-                {
-                    new
-                    {
-                        direction = "Ascending",
-                        name = "UsageDate"
-                    }
-                }
-            }
-        };
-
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
-        var items = new List<CostItem>();
-        foreach (var row in content.properties.rows)
-        {
-            var date = DateOnly.ParseExact(row[2].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
-            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
-
-            var currency = row[3].ToString();
-
-            var costItem = new CostItem(date, value, valueUsd, currency);
-            items.Add(costItem);
-        }
-
-        return items;
-    }
-
-  
-
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
-        Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
-            UriKind.Relative);
-
-        var payload = new
-        {
-            type = "ActualCost",
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
-                ? new
-                {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
-                }
-                : null,
-            dataSet = new
-            {
-                granularity = "None",
-                aggregation = new
-                {
-                    totalCost = new
-                    {
-                        name = "Cost",
-                        function = "Sum"
-                    },
-                    totalCostUSD = new
-                    {
-                        name = "CostUSD",
-                        function = "Sum"
-                    }
-                },
-                sorting = new[]
-                {
-                    new
-                    {
-                        direction = "Ascending",
-                        name = "UsageDate"
-                    }
-                },
-                grouping = new[]
-                {
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ServiceName"
-                    }
-                },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
-            }
-        };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
-        var items = new List<CostNamedItem>();
-        foreach (var row in content.properties.rows)
-        {
-            var serviceName = row[2].ToString();
-            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
-
-            var currency = row[3].ToString();
-
-            var costItem = new CostNamedItem(serviceName, value, valueUsd, currency);
-            items.Add(costItem);
-        }
-
-        return items;
-    }
-
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
-        TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
-            UriKind.Relative);
-
-        var payload = new
-        {
-            type = "ActualCost",
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
-                ? new
-                {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
-                }
-                : null,
-            dataSet = new
-            {
-                granularity = "None",
-                aggregation = new
-                {
-                    totalCost = new
-                    {
-                        name = "Cost",
-                        function = "Sum"
-                    },
-                    totalCostUSD = new
-                    {
-                        name = "CostUSD",
-                        function = "Sum"
-                    }
-                },
-                sorting = new[]
-                {
-                    new
-                    {
-                        direction = "Ascending",
-                        name = "UsageDate"
-                    }
-                },
-                grouping = new[]
-                {
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ResourceLocation"
-                    }
-                },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
-            }
-        };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
-        var items = new List<CostNamedItem>();
-        foreach (var row in content.properties.rows)
-        {
-            var location = row[2].ToString();
-            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
-
-            var currency = row[3].ToString();
-
-            var costItem = new CostNamedItem(location, value, valueUsd, currency);
-            items.Add(costItem);
-        }
-
-        return items;
-    }
-    
-    private async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Guid subscriptionId,
-        TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
-            UriKind.Relative);
-     //   "type":"Dimension","name":"ResourceGroupName"},{"type":"Dimension","name":"ChargeType"},{"type":"Dimension","name":"PublisherType"
-        var payload = new
-        {
-            type = "ActualCost",
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
-                ? new
-                {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
-                }
-                : null,
-            dataSet = new
-            {
-                granularity = "None",
-                aggregation = new
-                {
-                    totalCost = new
-                    {
-                        name = "Cost",
-                        function = "Sum"
-                    },
-                    totalCostUSD = new
-                    {
-                        name = "CostUSD",
-                        function = "Sum"
-                    }
-                },
-                sorting = new[]
-                {
-                    new
-                    {
-                        direction = "Ascending",
-                        name = "UsageDate"
-                    }
-                },
-                grouping = new[]
-                {
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ResourceGroupName"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ChargeType"
-                    }
-                },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
-            }
-        };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
-        var items = new List<CostNamedItem>();
-        foreach (var row in content.properties.rows)
-        {
-            var resourceGroupName = row[2].ToString();
-            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
-
-            var currency = row[3].ToString();
-
-            var costItem = new CostNamedItem(resourceGroupName, value, valueUsd, currency);
-            items.Add(costItem);
-        }
-
-        return items;
-    }
-
-    private async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId)
-    {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000",
-            UriKind.Relative);
-
-        var payload = new
-        {
-            type = "ActualCost",
-
-            dataSet = new
-            {
-                granularity = "Daily",
-                aggregation = new
-                {
-                    totalCost = new
-                    {
-                        name = "Cost",
-                        function = "Sum"
-                    }
-                },
-                sorting = new[]
-                {
-                    new
-                    {
-                        direction = "Ascending",
-                        name = "UsageDate"
-                    }
-                },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
-            }
-        };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
-        var items = new List<CostItem>();
-        foreach (var row in content.properties.rows)
-        {
-            var date = DateOnly.ParseExact(row[1].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
-            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-
-            var currency = row[3].ToString();
-
-            var costItem = new CostItem(date, value, value, currency);
-            items.Add(costItem);
-        }
-
-        return items;
-    }
+   
 
     static string GetDefaultAzureSubscriptionId()
     {

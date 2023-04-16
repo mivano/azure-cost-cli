@@ -27,7 +27,11 @@
     
     <ItemGroup>
       <PackageReference Include="Azure.Identity" Version="1.8.2" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="7.0.5" />
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+      <PackageReference Include="Polly" Version="7.2.3" />
+      <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
       <PackageReference Include="Spectre.Console" Version="0.46.0" />
       <PackageReference Include="Spectre.Console.Cli" Version="0.46.0" />
       <PackageReference Include="Spectre.Console.Json" Version="0.46.0" />

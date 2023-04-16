@@ -9,11 +9,20 @@ public class ConsoleOutputFormatter : OutputFormatter
         IEnumerable<CostNamedItem> byResourceGroupCosts)
     {
         var todaysDate = DateOnly.FromDateTime(DateTime.UtcNow);
-
+        var todayTitle = "Today";
+        var yesterdayTitle = "Yesterday";
+        
+        if (todaysDate > costs.Max(a => a.Date))
+        {
+            todaysDate = costs.Max(a => a.Date);
+            todayTitle = todaysDate.ToString("d");
+            yesterdayTitle = todaysDate.AddDays(-1).ToString("d");
+        }
+        
         var costToday = costs.Where(a => a.Date == todaysDate).Sum(a => a.Cost);
         var costSinceStartOfCurrentMonth =
             costs.Where(x => x.Date >= todaysDate.AddDays(-todaysDate.Day + 1)).Sum(x => x.Cost);
-        var costYesterday = costs.FirstOrDefault(a => a.Date == todaysDate.AddDays(-1)).Cost;
+        var costYesterday = costs.Where(a => a.Date == todaysDate.AddDays(-1)).Sum(a=>a.Cost);
         var costLastSevenDays = costs.Where(x => x.Date >= todaysDate.AddDays(-7)).Sum(x => x.Cost);
         var costLastThirtyDays = costs.Where(x => x.Date >= todaysDate.AddDays(-30)).Sum(x => x.Cost);
 
@@ -45,9 +54,9 @@ public class ConsoleOutputFormatter : OutputFormatter
 
 
         // Add some rows
-        table.AddRow("[green bold]Today:[/]", $"{costToday:N2} {currency}");
-        table.AddRow("[green bold]Yesterday:[/]", $"{costYesterday:N2} {currency}");
-        table.AddRow("[blue bold]Since start month:[/]", $"{costSinceStartOfCurrentMonth:N2} {currency}");
+        table.AddRow("[green bold]" +todayTitle + ":[/]", $"{costToday:N2} {currency}");
+        table.AddRow("[green bold]" + yesterdayTitle + ":[/]", $"{costYesterday:N2} {currency}");
+        table.AddRow("[blue bold]Since start of " + todaysDate.ToString("MMM")+ ":[/]", $"{costSinceStartOfCurrentMonth:N2} {currency}");
         table.AddRow("[yellow bold]Last 7 days:[/]", $"{costLastSevenDays:N2} {currency}");
         table.AddRow("[yellow bold]Last 30 days:[/]", $"{costLastThirtyDays:N2} {currency}");
 
