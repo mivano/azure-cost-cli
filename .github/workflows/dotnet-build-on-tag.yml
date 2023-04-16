@@ -37,7 +37,7 @@ jobs:
         dotnet pack --configuration Release /p:PackageVersion=$TAG_NAME --output nupkgs
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: packages
         path: src/nupkgs/*.nupkg
