@@ -16,5 +16,5 @@ public interface ICostRetriever
     Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Guid subscriptionId,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId);
+    Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to);
 }

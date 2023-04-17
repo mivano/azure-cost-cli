@@ -399,7 +399,7 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId)
+    public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000",
@@ -408,7 +408,14 @@ public class AzureCostApiRetriever : ICostRetriever
         var payload = new
         {
             type = "ActualCost",
-
+            timeframe = timeFrame.ToString(),
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
             dataSet = new
             {
                 granularity = "Daily",
@@ -424,17 +431,8 @@ public class AzureCostApiRetriever : ICostRetriever
                 {
                     new
                     {
-                        direction = "Ascending",
+                        direction = "ascending",
                         name = "UsageDate"
-                    }
-                },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
                     }
                 }
             }

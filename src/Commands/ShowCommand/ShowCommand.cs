@@ -83,7 +83,8 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         // Fetch the costs from the Azure Cost Management API
         var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
-        var forecastedCosts = await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId);
+        var forecastedCosts = await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId, TimeframeType.Custom,
+            settings.To, settings.To.AddDays(14));
         var byServiceNameCosts =  await _costRetriever.RetrieveCostByServiceName(settings.Debug,
             subscriptionId, settings.Timeframe, settings.From, settings.To);
         var byLocationCosts =  await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
