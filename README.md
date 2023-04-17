@@ -1,9 +1,7 @@
 # Azure Cost CLI
 
 ![https://www.nuget.org/packages/azure-cost-cli](https://img.shields.io/nuget/dt/azure-cost-cli)
-
 ![https://github.com/mivano/azure-cost-cli/releases/latest](https://img.shields.io/github/v/release/mivano/azure-cost-cli)
-
 ![https://github.com/mivano/azure-cost-cli/actions/workflows/dotnet.yml](https://img.shields.io/github/actions/workflow/status/mivano/azure-cost-cli/dotnet.yml)
 
 This is a simple command line tool to get the cost of your Azure subscription. It uses the Azure Cost Management API to get the cost and output the results to the console or JSON. E.g. so it can be used in a workflow to get the cost of your subscription and use it in subsequent steps.
