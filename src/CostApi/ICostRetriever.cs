@@ -1,3 +1,7 @@
+using AzureCostCli.Commands;
+
+namespace AzureCostCli.CostApi;
+
 public interface ICostRetriever
 {
     Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,

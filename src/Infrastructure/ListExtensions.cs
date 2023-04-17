@@ -1,8 +1,12 @@
+using AzureCostCli.CostApi;
+
+namespace AzureCostCli.Infrastructure;
+
 public static class ListExtensions{
 
     public static List<CostNamedItem> TrimList(this IEnumerable<CostNamedItem> items, int threshold = 10)
     {
-        if (items.Count() <= threshold)
+        if (threshold<=0 || items.Count() <= threshold)
         {
             return items.OrderByDescending(item => item.Cost).ToList();
         }

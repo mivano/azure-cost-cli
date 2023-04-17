@@ -1,4 +1,8 @@
+using AzureCostCli.CostApi;
+using AzureCostCli.Infrastructure;
 using Spectre.Console;
+
+namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class ConsoleOutputFormatter : OutputFormatter
 {
@@ -93,7 +97,7 @@ public class ConsoleOutputFormatter : OutputFormatter
             ;
 
         var counter = 2;
-        foreach (var cost in byServiceNameCosts.TrimList())
+        foreach (var cost in byServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
             servicesBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
         }
@@ -103,7 +107,7 @@ public class ConsoleOutputFormatter : OutputFormatter
             .Width(60);
 
         counter = 2;
-        foreach (var rg in byResourceGroupCosts.TrimList())
+        foreach (var rg in byResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
             resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(rg.Cost, 2), Color.FromInt32(counter++));
         }
@@ -113,7 +117,7 @@ public class ConsoleOutputFormatter : OutputFormatter
             .Width(60);
 
         counter = 2;
-        foreach (var cost in byLocationCosts.TrimList())
+        foreach (var cost in byLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
             locationsBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
         }

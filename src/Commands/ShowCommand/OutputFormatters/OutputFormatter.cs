@@ -1,3 +1,7 @@
+using AzureCostCli.CostApi;
+
+namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+
 public abstract class OutputFormatter
 {
     public abstract Task WriteOutput(ShowSettings settings,

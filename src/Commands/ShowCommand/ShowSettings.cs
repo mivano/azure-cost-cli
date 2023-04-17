@@ -1,7 +1,7 @@
 using System.ComponentModel;
-using System.Globalization;
 using Spectre.Console.Cli;
 
+namespace AzureCostCli.Commands.ShowCommand;
 
 public class ShowSettings : LogCommandSettings
 {
@@ -24,4 +24,9 @@ public class ShowSettings : LogCommandSettings
     [CommandOption("--to")]
     [Description("The end date to use for the costs. Defaults to the current date.")]
     public DateOnly To { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    
+    [CommandOption("--others-cutoff")]
+    [Description("The number of items to show before collapsing the rest into an 'Others' item.")]
+    [DefaultValue(10)]
+    public int OthersCutoff { get; set; } = 10;
 }

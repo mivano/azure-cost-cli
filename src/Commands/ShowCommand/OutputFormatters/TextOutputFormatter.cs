@@ -1,4 +1,7 @@
-using System.Text.Json;
+using AzureCostCli.CostApi;
+using AzureCostCli.Infrastructure;
+
+namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class TextOutputFormatter : OutputFormatter
 {
@@ -36,21 +39,21 @@ public class TextOutputFormatter : OutputFormatter
         
         Console.WriteLine();
         Console.WriteLine("By Service Name:");
-        foreach (var cost in byServiceNameCosts.TrimList())
+        foreach (var cost in byServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
 
         Console.WriteLine();
         Console.WriteLine("By Location:");
-        foreach (var cost in byLocationCosts.TrimList())
+        foreach (var cost in byLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
 
         Console.WriteLine();
         Console.WriteLine("By Resource Group:");
-        foreach (var cost in byResourceGroupCosts.TrimList())
+        foreach (var cost in byResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }

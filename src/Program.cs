@@ -1,4 +1,7 @@
-﻿
+﻿using AzureCostCli.Commands;
+using AzureCostCli.Commands.ShowCommand;
+using AzureCostCli.CostApi;
+using AzureCostCli.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 

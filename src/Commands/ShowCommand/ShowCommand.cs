@@ -1,7 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json;
+using AzureCostCli.Commands.ShowCommand.OutputFormatters;
+using AzureCostCli.CostApi;
 using Spectre.Console;
 using Spectre.Console.Cli;
+
+namespace AzureCostCli.Commands.ShowCommand;
 
 public class ShowCommand : AsyncCommand<ShowSettings>
 {

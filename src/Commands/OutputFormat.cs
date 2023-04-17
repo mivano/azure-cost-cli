@@ -1,3 +1,5 @@
+namespace AzureCostCli.Commands;
+
 public enum OutputFormat
 {
     Console,

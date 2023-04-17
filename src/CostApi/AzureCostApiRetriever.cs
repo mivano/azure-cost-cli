@@ -1,13 +1,15 @@
 using System.Globalization;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Azure.Core;
 using Azure.Identity;
+using AzureCostCli.Commands;
 using Polly;
 using Spectre.Console;
 using Spectre.Console.Json;
+
+namespace AzureCostCli.CostApi;
 
 public class AzureCostApiRetriever : ICostRetriever
 {

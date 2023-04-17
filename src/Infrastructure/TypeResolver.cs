@@ -1,5 +1,6 @@
 using Spectre.Console.Cli;
 
+namespace AzureCostCli.Infrastructure;
 
 public sealed class TypeResolver : ITypeResolver, IDisposable
 {

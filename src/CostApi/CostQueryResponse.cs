@@ -1,3 +1,5 @@
+namespace AzureCostCli.CostApi;
+
 public class CostQueryResponse
 {
     public object eTag { get; set; }

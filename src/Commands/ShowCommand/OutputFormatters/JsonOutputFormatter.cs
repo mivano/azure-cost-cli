@@ -1,5 +1,7 @@
 using System.Text.Json;
-using Spectre.Console;
+using AzureCostCli.CostApi;
+
+namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class JsonOutputFormatter : OutputFormatter
 {
