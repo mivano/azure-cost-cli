@@ -30,8 +30,9 @@ public class MarkdownOutputFormatter : OutputFormatter
         
         Console.WriteLine(
             $"# Azure Cost Overview for {settings.Subscription} from {costs.Min(a => a.Date)} to {costs.Max(a => a.Date)}");
-        Console.WriteLine("");
-        Console.WriteLine("## Totals:");
+        Console.WriteLine();
+        Console.WriteLine("## Totals");
+        Console.WriteLine();
         Console.WriteLine("|Period|Amount|");
         Console.WriteLine("|---|---:|");
         Console.WriteLine($"|Today|{output.costs.todaysCost:N2} {currency}|");
@@ -40,7 +41,8 @@ public class MarkdownOutputFormatter : OutputFormatter
         Console.WriteLine($"|Last 30 days|{output.costs.lastThirtyDaysCost:N2} {currency}|");
         
         Console.WriteLine();
-        Console.WriteLine("## By Service Name:");
+        Console.WriteLine("## By Service Name");
+        Console.WriteLine();
         Console.WriteLine("|Service|Amount|");
         Console.WriteLine("|---|---:|");
         foreach (var cost in byServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
@@ -49,7 +51,8 @@ public class MarkdownOutputFormatter : OutputFormatter
         }
 
         Console.WriteLine();
-        Console.WriteLine("## By Location:");
+        Console.WriteLine("## By Location");
+        Console.WriteLine();
         Console.WriteLine("|Location|Amount|");
         Console.WriteLine("|---|---:|");
         foreach (var cost in byLocationCosts.TrimList(threshold: settings.OthersCutoff))
@@ -58,7 +61,8 @@ public class MarkdownOutputFormatter : OutputFormatter
         }
 
         Console.WriteLine();
-        Console.WriteLine("## By Resource Group:");
+        Console.WriteLine("## By Resource Group");
+        Console.WriteLine();
         Console.WriteLine("|Resource Group|Amount|");
         Console.WriteLine("|---|---:|");
         foreach (var cost in byResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
