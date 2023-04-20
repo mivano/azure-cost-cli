@@ -21,6 +21,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
         _outputFormatters.Add(OutputFormat.Text, new TextOutputFormatter());
+        _outputFormatters.Add(OutputFormat.Markdown, new MarkdownOutputFormatter());
     }
 
     public override ValidationResult Validate(CommandContext context, ShowSettings settings)
