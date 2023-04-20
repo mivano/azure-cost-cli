@@ -163,13 +163,54 @@ By Location:
 
 ```
 
+
+### Markdown
+
+A simple mardkwon format. It will output the results in a serie of simple table.
+
+```markdown
+# Azure Cost Overview for 574385a9-08e9-49fe-91a2-27660d92b8f5 from 01/04/2023 to 14/04/2023                                                                    
+
+## Totals
+
+|Period|Amount|
+|---|---:|
+|Today|0,52 EUR|
+|Yesterday|2,37 EUR|
+|Last 7 days|17,09 EUR|
+|Last 30 days|30,89 EUR|
+
+## By Service Name
+
+|Period|Amount|
+|---|---:|
+|API Management|19,52 EUR|
+|Azure App Service|5,32 EUR|
+|Azure Monitor|3,67 EUR|
+|Container Registry|2,06 EUR|
+|Log Analytics|0,17 EUR|
+|Storage|0,13 EUR|
+|Key Vault|0,00 EUR|
+|Bandwidth|0,00 EUR|
+
+## By Location
+
+|Period|Amount|
+|---|---:|
+|EU West|30,69 EUR|
+|Unknown|0,20 EUR|
+|US West|0,00 EUR|
+|US West 2|0,00 EUR|
+
+```
+
 ## To do
 
 - [x] Show time range the report is based on
 - [x] Open source it on GitHub!
 - [x] Show the forecasted cost
 - [ ] Set thresholds, so it can return an error code
-- [ ] Generate markdown, so you can include it in a workflow job summary
+- [x] Generate markdown, so you can include it in a workflow job summary
 - [ ] More options to set and filter on
 - [x] Validate date ranges
 - [x] Workflow to push to NuGet
