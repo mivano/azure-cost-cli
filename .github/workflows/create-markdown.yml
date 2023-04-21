@@ -10,11 +10,6 @@ jobs:
   run-azure-cost-cli:
     runs-on: ubuntu-latest
     steps:
-      - name: Install .NET SDK
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '6.0.x'
-
       - name: Azure Login
         uses: azure/login@v1
         with:
