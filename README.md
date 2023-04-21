@@ -89,7 +89,7 @@ azure-cost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o json --query "ByResourceGr
 will output:
 
 ```json
-[["mindbyte-sand-api",28.94824],["rg-scitor-prd-weu",16.457219149662315],["rg-scitor-tst-weu",0.252499694771765],["cloud-storage-westeu",0.183537445632]]
+[["mindbyte-sand-api",28.94824],["rg-test",16.457219149662315],["rg-weu",0.252499694771765],["cloud-storage-westeu",0.183537445632]]
 ```
 
 For the JMESPath parsing, it uses the [JMESPath.Net](https://github.com/jdevillard/JmesPath.Net) library. Not all constructions might be implemented yet. If you find a query that does not work, please open an issue with a reproducable path at their repo.
