@@ -36,7 +36,7 @@ azure-cost --help
 
 Which will show:
 
-```
+```bash
 USAGE:
     azure-cost [OPTIONS]
 
@@ -52,6 +52,8 @@ OPTIONS:
     -t, --timeframe       The timeframe to use for the costs. Defaults to BillingMonthToDate. When set to Custom, specify the from and to dates using the --from and --to options
         --from            The start date to use for the costs. Defaults to the first day of the previous month
         --to              The end date to use for the costs. Defaults to the current date
+        --others-cutoff    10         The number of items to show before collapsing the rest into an 'Others' item                                                                
+        --query           JMESPath query string. See http://jmespath.org/ for more information and examples     
 
 COMMANDS:
     show    Show the cost details for a subscription
