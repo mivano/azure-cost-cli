@@ -1,6 +1,8 @@
 using System.Text.Json;
 using AzureCostCli.CostApi;
 using DevLab.JmesPath;
+using Spectre.Console;
+using Spectre.Console.Json;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
@@ -30,19 +32,33 @@ public class JsonOutputFormatter : OutputFormatter
         };
 
         var json =JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
-        
+
         if (!string.IsNullOrWhiteSpace(settings.Query))
         {
             var jmes = new JmesPath();
-            
-            var result = jmes.Transform(json, settings.Query);
-            
-            Console.Write(result);
+
+            json = jmes.Transform(json, settings.Query);
+
         }
-        else
-        {
-            Console.Write(json);
-        }
+        
+switch (settings.Output)
+{
+    case OutputFormat.Json:
+        Console.Write(json);
+        break;
+    default:
+        AnsiConsole.Write(
+            new JsonText(json)
+                .BracesColor(Color.Red)
+                .BracketColor(Color.Green)
+                .ColonColor(Color.Blue)
+                .CommaColor(Color.Red)
+                .StringColor(Color.Green)
+                .NumberColor(Color.Blue)
+                .BooleanColor(Color.Red)
+                .NullColor(Color.Green));
+        break;
+}
         
         return Task.CompletedTask;
     }

@@ -48,7 +48,7 @@ OPTIONS:
     -h, --help            Prints help information
         --debug           Increase logging verbosity to show all debug logs  
     -s, --subscription    The subscription id to use
-    -o, --output          The output format to use. Defaults to Console (Console, Json, Text)
+    -o, --output          The output format to use. Defaults to Console (Console, Json, JsonC, Markdown, Text)
     -t, --timeframe       The timeframe to use for the costs. Defaults to BillingMonthToDate. When set to Custom, specify the from and to dates using the --from and --to options
         --from            The start date to use for the costs. Defaults to the first day of the previous month
         --to              The end date to use for the costs. Defaults to the current date
@@ -104,9 +104,9 @@ The default output format. It will output the results to the console in a graphi
 
 ![](screenshot.png)
 
-### Json
+### Json / JsonC
 
-The Json format is great for further processing of the data. It will output the results in a JSON format to the console. Using the > operator, you can redirect the output to a file.
+The Json format is great for further processing of the data. It will output the results in a JSON format to the console. Using the > operator, you can redirect the output to a file. Use `jsonc` to get a colorized output.
 
 ```bash
 azure-cost show -s 00000000-0000-0000-0000-000000000000 -o json > cost.json

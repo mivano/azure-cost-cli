@@ -5,5 +5,6 @@ public enum OutputFormat
     Console,
     Json,
     Markdown,
-    Text
+    Text,
+    Jsonc
 }

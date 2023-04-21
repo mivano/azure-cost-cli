@@ -20,6 +20,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
+        _outputFormatters.Add(OutputFormat.Jsonc, new JsonOutputFormatter());
         _outputFormatters.Add(OutputFormat.Text, new TextOutputFormatter());
         _outputFormatters.Add(OutputFormat.Markdown, new MarkdownOutputFormatter());
     }
