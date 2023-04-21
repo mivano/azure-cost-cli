@@ -16,7 +16,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Install Azure Cost CLI
-        run: dotnet tool install -g azure-cost-cli
+        run: dotnet tool install -g azure-cost-cli --no-cache
 
       - name: Run Azure Cost CLI
         run: azure-cost -o markdown --subscription ${{ github.event.inputs.az-subscription-id }} >> $GITHUB_STEP_SUMMARY
