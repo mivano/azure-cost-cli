@@ -72,6 +72,38 @@ When you do not specify a subscription id, it will fetch the actively selected o
 
 To make the call to the Azure cost API, you do need to run this from a user account with permissions to access the cost overview of the subscription. Further more, it needs to find the active credentials and it does so by using the `ChainedTokenCredential` provider which will look for the `az cli` token first. Make sure to run `az login` (with optionally the `--tenant` parameter) to make sure you have an active session.
 
+## Use in a GitHub workflow
+
+You can use this tool in a GitHub workflow to get the cost of your subscription and store the results in markdown as a Job Summary. This can be used to get a quick overview of the cost of your subscription.
+
+```yaml
+name: Azure Cost CLI Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      az-subscription-id:
+        description: 'Azure Subscription ID'
+        required: true
+jobs:
+  run-azure-cost-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Install Azure Cost CLI
+        run: dotnet tool install -g azure-cost-cli
+
+      - name: Run Azure Cost CLI
+        run: azure-cost -o markdown --subscription ${{ github.event.inputs.az-subscription-id }} >> $GITHUB_STEP_SUMMARY
+
+```
+
+The last step output the markdown to the Job Summary. This can be used to show the cost of the subscription in the workflow summary. Use it on a schedule to get for example a daily overview. Alternatively you can use the `-o json` parameter to get the results in JSON format and use it for further processing.
+
 ## Query
 
 Use the `--query` to specify a [JMESPath](https://jmespath.org) expression. This allows you to filter the results. For example, to get the yesterday cost of the subscription, you can use the following query:
