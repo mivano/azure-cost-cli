@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands.ShowCommand;
+namespace AzureCostCli.Commands;
 
-public class ShowSettings : LogCommandSettings
+public class CostSettings : LogCommandSettings
 {
     [CommandOption("-s|--subscription")]
     [Description("The subscription id to use.")]
@@ -33,5 +33,4 @@ public class ShowSettings : LogCommandSettings
     [CommandOption("--query")]
     [Description("JMESPath query string. See http://jmespath.org/ for more information and examples.")]
     public string Query { get; set; } = string.Empty;
-    
 }

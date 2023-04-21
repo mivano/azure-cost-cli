@@ -41,8 +41,9 @@ USAGE:
     azure-cost [OPTIONS]
 
 EXAMPLES:
-    azure-cost show -s 00000000-0000-0000-0000-000000000000
-    azure-cost show -s 00000000-0000-0000-0000-000000000000 -o json
+    azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000
+    azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000 -o json
+    azure-cost costByResource -s 00000000-0000-0000-0000-000000000000 -o text
 
 OPTIONS:
     -h, --help            Prints help information
@@ -56,7 +57,9 @@ OPTIONS:
         --query           JMESPath query string. See http://jmespath.org/ for more information and examples     
 
 COMMANDS:
-    show    Show the cost details for a subscription
+    accumulatedCost    Show the accumulated cost details
+    costByResource     Show the cost details by resource
+
 ```
 
 When you do not specify a subscription id, it will fetch the actively selected one of the `az cli` instead. 
@@ -98,11 +101,31 @@ jobs:
         run: dotnet tool install -g azure-cost-cli
 
       - name: Run Azure Cost CLI
-        run: azure-cost -o markdown --subscription ${{ github.event.inputs.az-subscription-id }} >> $GITHUB_STEP_SUMMARY
+        run: azure-cost accumulatedCost -o markdown --subscription ${{ github.event.inputs.az-subscription-id }} >> $GITHUB_STEP_SUMMARY
 
 ```
 
 The last step output the markdown to the Job Summary. This can be used to show the cost of the subscription in the workflow summary. Use it on a schedule to get for example a daily overview. Alternatively you can use the `-o json` parameter to get the results in JSON format and use it for further processing.
+
+## Commands
+
+### Accumulated Cost
+
+This will retrieve the accumulated cost of the subscription. This is the total cost of the subscription since the beginning of the period specified. We will try to fetch the forecast as well and organise by location, type and resource group. You can use the different formatters to get the results in different formats.
+
+> This is the default command when you do not specify a command.
+
+```bash
+azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5
+```
+
+### Cost By Resource
+
+This will retrieve the cost of the subscription by resource. This will fetch the resource details including the meter information. It is up to the formatter how this is returned. Use the `json` formatter to get the full details.
+
+```bash
+azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o json
+```
 
 ## Query
 
@@ -179,6 +202,14 @@ azure-cost show -s 00000000-0000-0000-0000-000000000000 -o json > cost.json
   "ByLocation": [
     {
       "Location": "EU West",
+      "Cost": 30.68711937543843,
+      "Currency": "EUR"
+    },
+    // snip
+  ],
+   "ByResourceGroup": [
+    {
+      "ResourceGroup": "rg-west-eu",
       "Cost": 30.68711937543843,
       "Currency": "EUR"
     },

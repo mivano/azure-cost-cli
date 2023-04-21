@@ -2,18 +2,19 @@ using System.Diagnostics;
 using System.Text.Json;
 using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
+using AzureCostCli.Infrastructure;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.ShowCommand;
 
-public class ShowCommand : AsyncCommand<ShowSettings>
+public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 {
     private readonly ICostRetriever _costRetriever;
 
-    private readonly Dictionary<OutputFormat, OutputFormatter> _outputFormatters = new();
+    private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
 
-    public ShowCommand(ICostRetriever costRetriever)
+    public AccumulatedCostCommand(ICostRetriever costRetriever)
     {
         _costRetriever = costRetriever;
         
@@ -25,7 +26,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         _outputFormatters.Add(OutputFormat.Markdown, new MarkdownOutputFormatter());
     }
 
-    public override ValidationResult Validate(CommandContext context, ShowSettings settings)
+    public override ValidationResult Validate(CommandContext context, AccumulatedCostSettings settings)
     {
         // Validate if the timeframe is set to Custom, then the from and to dates must be specified and the from date must be before the to date
         if (settings.Timeframe == TimeframeType.Custom)
@@ -49,11 +50,11 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, ShowSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings)
     {
         // Show version
         if (settings.Debug)
-            AnsiConsole.WriteLine($"Version: {typeof(ShowCommand).Assembly.GetName().Version}");
+            AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
         
       
         // Get the subscription ID from the settings
@@ -67,7 +68,7 @@ public class ShowCommand : AsyncCommand<ShowSettings>
                 if (settings.Debug)
                     AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
                 
-                subscriptionId = Guid.Parse(GetDefaultAzureSubscriptionId());
+                subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
                 
                 if (settings.Debug)
                     AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
@@ -85,8 +86,11 @@ public class ShowCommand : AsyncCommand<ShowSettings>
         // Fetch the costs from the Azure Cost Management API
         var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
-        var forecastedCosts = await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId, TimeframeType.Custom,
-            settings.To, settings.To.AddDays(14));
+        var forecastedCosts = await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
+            TimeframeType.Custom,
+            costs.Max(a => a.Date),
+            new DateOnly(settings.To.Year, settings.To.Month,
+                DateTime.DaysInMonth(settings.To.Year, settings.To.Month)));      
         var byServiceNameCosts =  await _costRetriever.RetrieveCostByServiceName(settings.Debug,
             subscriptionId, settings.Timeframe, settings.From, settings.To);
         var byLocationCosts =  await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
@@ -97,50 +101,8 @@ public class ShowCommand : AsyncCommand<ShowSettings>
       
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteOutput(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts, byResourceGroupCosts);
+            .WriteAccumulatedCost(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts, byResourceGroupCosts);
 
         return 0;
-    }
-
-   
-
-    static string GetDefaultAzureSubscriptionId()
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = "az",
-            Arguments = "account show",
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using (var process = new Process { StartInfo = startInfo })
-        {
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-            {
-                string error = process.StandardError.ReadToEnd();
-                throw new Exception($"Error executing 'az account show': {error}");
-            }
-
-            using (var jsonDocument = JsonDocument.Parse(output))
-            {
-                JsonElement root = jsonDocument.RootElement;
-                if (root.TryGetProperty("id", out JsonElement idElement))
-                {
-                    string subscriptionId = idElement.GetString();
-                    return subscriptionId;
-                }
-                else
-                {
-                    throw new Exception("Unable to find the 'id' property in the JSON output.");
-                }
-            }
-        }
     }
 }

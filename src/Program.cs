@@ -1,4 +1,5 @@
 ﻿using AzureCostCli.Commands;
+using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
@@ -23,22 +24,25 @@ var registrar = new TypeRegistrar(registrations);
 var app = new CommandApp(registrar);
 
 // We default to the ShowCommand
-app.SetDefaultCommand<ShowCommand>();
+app.SetDefaultCommand<AccumulatedCostCommand>();
 
 app.Configure(config =>
 {
   config.SetApplicationName("azure-cost");
 
-  config.AddExample(new[] { "show", "-s", "00000000-0000-0000-0000-000000000000" });
-  config.AddExample(new[] { "show", "-s", "00000000-0000-0000-0000-000000000000", "-o", "json" });
-  config.AddExample(new[] { "show", "-s", "00000000-0000-0000-0000-000000000000", "-o", "text" });
+  config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000" });
+  config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000", "-o", "json" });
+  config.AddExample(new[] { "costByResource", "-s", "00000000-0000-0000-0000-000000000000", "-o", "text" });
 
 #if DEBUG
   config.PropagateExceptions();
 #endif
 
-  config.AddCommand<ShowCommand>("show")
-      .WithDescription("Show the cost details for a subscription.");
+  config.AddCommand<AccumulatedCostCommand>("accumulatedCost")
+      .WithDescription("Show the accumulated cost details.");
+  
+  config.AddCommand<CostByResourceCommand>("costByResource")
+    .WithDescription("Show the cost details by resource.");
   
   config.ValidateExamples();
 });

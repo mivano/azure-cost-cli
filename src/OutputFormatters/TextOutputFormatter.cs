@@ -3,9 +3,9 @@ using AzureCostCli.Infrastructure;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
-public class TextOutputFormatter : OutputFormatter
+public class TextOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteOutput(ShowSettings settings, 
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, 
         IEnumerable<CostItem> costs,
         IEnumerable<CostItem> forecastedCosts,
         IEnumerable<CostNamedItem> byServiceNameCosts,
@@ -58,6 +58,29 @@ public class TextOutputFormatter : OutputFormatter
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
         
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
+    {
+        Console.WriteLine(
+            $"Azure Cost Overview for {settings.Subscription} by resource");
+
+        Console.WriteLine();
+            
+        foreach (var resource in resources.OrderByDescending(a=>a.Cost))
+        {
+            Console.WriteLine($"{resource.ResourceId.Split('/').Last()} - {resource.ResourceType} - {resource.ResourceLocation} - {resource.ResourceGroupName} - {resource.Cost:N2} {resource.Currency}");
+            
+            foreach (var metered in resources
+                         .Where(a=>a.ResourceId == resource.ResourceId)
+                         .OrderByDescending(a=>a.Cost))
+            {
+                Console.WriteLine($"  {metered.ServiceName} - {metered.ServiceTier} - {metered.Meter} - {metered.Cost:N2} {metered.Currency}");
+            }
+            
+        }
+      
         return Task.CompletedTask;
     }
 }

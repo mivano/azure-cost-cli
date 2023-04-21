@@ -5,6 +5,7 @@ using System.Text.Json;
 using Azure.Core;
 using Azure.Identity;
 using AzureCostCli.Commands;
+using Newtonsoft.Json.Linq;
 using Polly;
 using Spectre.Console;
 using Spectre.Console.Json;
@@ -454,5 +455,123 @@ public class AzureCostApiRetriever : ICostRetriever
         }
 
         return items;
+    }
+
+    public async Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool includeDebugOutput, Guid subscriptionId, TimeframeType timeFrame, DateOnly from,
+        DateOnly to)
+    {
+        
+        var uri = new Uri(
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+            
+        var payload = new
+        {
+            type = "ActualCost",
+            timeframe = timeFrame.ToString(),
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
+            dataSet = new
+            {
+                granularity = "None",
+                aggregation = new
+                {
+                    totalCost = new
+                    {
+                        name = "Cost",
+                        function = "Sum"
+                    },
+                    totalCostUSD = new
+                    {
+                        name = "CostUSD",
+                        function = "Sum"
+                    }
+                },
+                include = new[] { "Tags"},
+                grouping = new[]
+                {
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ResourceId"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ResourceType"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ResourceLocation"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ChargeType"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ResourceGroupName"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "PublisherType"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ServiceName"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ServiceTier"
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "Meter"
+                    }
+                },
+               
+            }
+        };
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
+
+        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
+        
+        var items = new List<CostResourceItem>();
+        foreach (JsonElement row in content.properties.rows)
+        {
+            double cost = row[0].GetDouble();
+            double costUSD = row[1].GetDouble();
+            string resourceId = row[2].GetString();
+            string resourceType = row[3].GetString();
+            string resourceLocation = row[4].GetString();
+            string chargeType = row[5].GetString();
+            string resourceGroupName = row[6].GetString();
+            string publisherType = row[7].GetString();
+            string serviceName = row[8].GetString();
+            string serviceTier = row[9].GetString();
+            string meter = row[10].GetString();
+            string[] tags = row[11].EnumerateArray().Select(tag => tag.GetString()).ToArray();
+            string currency = row[12].GetString();
+    
+            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, resourceLocation, 
+                chargeType, resourceGroupName, publisherType, serviceName, serviceTier, meter, tags, currency);
+    
+            items.Add(item);
+        }
+
+        return items;
+        
     }
 }

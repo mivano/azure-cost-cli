@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace AzureCostCli.CostApi;
 
 public class CostQueryResponse
@@ -20,5 +22,5 @@ public class Properties
 {
     public Columns[] columns { get; set; }
     public object nextLink { get; set; }
-    public object[][] rows { get; set; }
+    public JsonElement[] rows { get; set; }
 }

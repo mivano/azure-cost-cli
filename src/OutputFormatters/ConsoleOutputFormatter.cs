@@ -4,9 +4,9 @@ using Spectre.Console;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
-public class ConsoleOutputFormatter : OutputFormatter
+public class ConsoleOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteOutput(ShowSettings settings, IEnumerable<CostItem> costs,
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, IEnumerable<CostItem> costs,
         IEnumerable<CostItem> forecastedCosts,
         IEnumerable<CostNamedItem> byServiceNameCosts,
         IEnumerable<CostNamedItem> byLocationCosts,
@@ -64,30 +64,28 @@ public class ConsoleOutputFormatter : OutputFormatter
         table.AddRow("[yellow bold]Last 7 days:[/]", $"{costLastSevenDays:N2} {currency}");
         table.AddRow("[yellow bold]Last 30 days:[/]", $"{costLastThirtyDays:N2} {currency}");
 
-        // Get the last 7 days of costs, starting by the current date, and iterate over them
-        // to see if there are any cost spikes
-
-        var last7DaysChart = new BarChart()
+        var accumulatedCostChart = new BarChart()
             .Width(60)
-            .Label("Last 7 days")
+            .Label("Accumulated cost")
             .CenterLabel();
 
-        var lastSevenDays = costs.Where(x => x.Date >= todaysDate.AddDays(-7)).OrderBy(x => x.Date).ToList();
-        foreach (var day in lastSevenDays)
+        var accumulatedCost = costs.OrderBy(x => x.Date).ToList();
+        double accumulatedCostValue = 0.0;
+        foreach (var day in accumulatedCost)
         {
-            last7DaysChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(day.Cost, 2), Color.Green);
+            double costValue = day.Cost;
+            accumulatedCostValue += costValue;
+            accumulatedCostChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(accumulatedCostValue, 2), Color.Green);
         }
 
-
-        var nextSevenDaysOfForecast = forecastedCosts.Where(x => x.Date >= todaysDate.AddDays(1)).OrderBy(x => x.Date)
-            .Take(14).ToList();
-        var next7DaysChart = new BarChart()
-            .Width(60)
-            .Label($"Next {nextSevenDaysOfForecast.Count} days")
-            .CenterLabel();
-        foreach (var day in nextSevenDaysOfForecast)
+        var forecastedData = forecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
+        .ToList();
+      
+        foreach (var day in forecastedData)
         {
-            next7DaysChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(day.Cost, 2), Color.Olive);
+            double costValue = day.Cost;
+            accumulatedCostValue += costValue;
+            accumulatedCostChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(accumulatedCostValue, 2), Color.LightGreen);
         }
 
         // Render the services table
@@ -133,8 +131,7 @@ public class ConsoleOutputFormatter : OutputFormatter
                 new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
                 new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded)
             )
-            , new Rows(last7DaysChart,
-                nextSevenDaysOfForecast.Any() ? next7DaysChart : new Text("No forecast data available"),
+            , new Rows(accumulatedCostChart,
                 new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)));
 
         subTable.Columns[0].Padding(2, 2).Centered();
@@ -145,6 +142,55 @@ public class ConsoleOutputFormatter : OutputFormatter
         AnsiConsole.Write(rootTable);
 
 
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
+    {
+        var tree = new Tree("Cost by resources");
+            
+        foreach (var resource in resources.OrderByDescending(a=>a.Cost))
+        {
+            var table = new Table()
+                .RoundedBorder()
+                .AddColumn("Resource")
+                .AddColumn("Resource Type")
+                .AddColumn("Location")
+                .AddColumn("Resource group name")
+                .AddColumn("Tags")
+                .AddColumn("Cost", column => column.RightAligned());
+            
+           table.AddRow(new Markup(resource.ResourceId.Split('/').Last()),
+               new Markup(resource.ResourceType),
+               new Markup(resource.ResourceLocation),
+               new Markup(resource.ResourceGroupName),
+               new Text(string.Join(",",resource.Tags)),
+               new Markup($"{resource.Cost:N2} {resource.Currency}"));
+
+           var treeNode = tree.AddNode(table);
+           
+           var subTable = new Table()
+               .Expand()
+               .AddColumn("Service name")
+               .AddColumn("Service tier")
+               .AddColumn("Meter")
+               .AddColumn("Cost",column => column.RightAligned());
+
+           foreach (var metered in resources
+                        .Where(a=>a.ResourceId == resource.ResourceId)
+                        .OrderByDescending(a=>a.Cost))
+           {
+               subTable.AddRow(new Markup(metered.ServiceName),
+                   new Markup(metered.ServiceTier),
+                   new Markup(metered.Meter),
+                   new Markup($"{metered.Cost:N2} {metered.Currency}"));
+           }
+           
+           treeNode.AddNode(subTable);
+        }
+      
+        AnsiConsole.Write(tree);
+        
         return Task.CompletedTask;
     }
 }
