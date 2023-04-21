@@ -1,5 +1,6 @@
 using System.Text.Json;
 using AzureCostCli.CostApi;
+using DevLab.JmesPath;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
@@ -27,8 +28,21 @@ public class JsonOutputFormatter : OutputFormatter
             ByLocation = byLocationCosts.OrderByDescending(a=>a.Cost).Select(a=> new {Location = a.ItemName, a.Cost,  a.Currency}),
             ByResourceGroup = byResourceGroupCosts.OrderByDescending(a=>a.Cost).Select(a=> new {ResourceGroup = a.ItemName, a.Cost, a.Currency})
         };
+
+        var json =JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });
         
-        Console.Write( JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true }));
+        if (!string.IsNullOrWhiteSpace(settings.Query))
+        {
+            var jmes = new JmesPath();
+            
+            var result = jmes.Transform(json, settings.Query);
+            
+            Console.Write(result);
+        }
+        else
+        {
+            Console.Write(json);
+        }
         
         return Task.CompletedTask;
     }

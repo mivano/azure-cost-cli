@@ -29,4 +29,9 @@ public class ShowSettings : LogCommandSettings
     [Description("The number of items to show before collapsing the rest into an 'Others' item.")]
     [DefaultValue(10)]
     public int OthersCutoff { get; set; } = 10;
+    
+    [CommandOption("--query")]
+    [Description("JMESPath query string. See http://jmespath.org/ for more information and examples.")]
+    public string Query { get; set; } = string.Empty;
+    
 }
