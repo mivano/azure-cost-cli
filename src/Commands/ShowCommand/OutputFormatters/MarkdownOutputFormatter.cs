@@ -27,9 +27,10 @@ public class MarkdownOutputFormatter : OutputFormatter
         };
 
         var currency = costs.FirstOrDefault()?.Currency;
-        
-        Console.WriteLine(
-            $"# Azure Cost Overview for {settings.Subscription} from {costs.Min(a => a.Date)} to {costs.Max(a => a.Date)}");
+
+        Console.WriteLine("# Azure Cost Overview");
+        Console.WriteLine();
+        Console.WriteLine($"> Details for subscription id `{settings.Subscription}` from **{costs.Min(a => a.Date)}** to **{costs.Max(a => a.Date)}**");
         Console.WriteLine();
         Console.WriteLine("## Totals");
         Console.WriteLine();
@@ -69,6 +70,9 @@ public class MarkdownOutputFormatter : OutputFormatter
         {
             Console.WriteLine($"|{cost.ItemName}|{cost.Cost:N2} {currency}|");
         }
+
+        Console.WriteLine();
+        Console.WriteLine($"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}</sup>");
         
         return Task.CompletedTask;
     }

@@ -84,9 +84,7 @@ The default output format. It will output the results to the console in a graphi
 The Json format is great for further processing of the data. It will output the results in a JSON format to the console. Using the > operator, you can redirect the output to a file.
 
 ```bash
-
 azure-cost show -s 00000000-0000-0000-0000-000000000000 -o json > cost.json
-
 ```
 
 ```json
@@ -166,52 +164,58 @@ By Location:
 
 ### Markdown
 
-A simple mardkwon format. It will output the results in a serie of simple table.
+A markdown format. It will output the results in a series of simple tables.
+
+```bash
+azure-cost show -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown > cost.md
+```
 
 ```markdown
-# Azure Cost Overview for 574385a9-08e9-49fe-91a2-27660d92b8f5 from 01/04/2023 to 14/04/2023                                                                    
+# Azure Cost Overview
+
+> Details for subscription id `574385a9-08e9-49fe-91a2-27660d92b8f5` from **01/04/2023** to **20/04/2023**
 
 ## Totals
 
 |Period|Amount|
 |---|---:|
-|Today|0,52 EUR|
-|Yesterday|2,37 EUR|
-|Last 7 days|17,09 EUR|
-|Last 30 days|30,89 EUR|
+|Today|0,00 EUR|
+|Yesterday|1,27 EUR|
+|Last 7 days|15,48 EUR|
+|Last 30 days|45,84 EUR|
 
 ## By Service Name
 
-|Period|Amount|
+|Service|Amount|
 |---|---:|
-|API Management|19,52 EUR|
-|Azure App Service|5,32 EUR|
-|Azure Monitor|3,67 EUR|
-|Container Registry|2,06 EUR|
-|Log Analytics|0,17 EUR|
-|Storage|0,13 EUR|
+|API Management|28,95 EUR|
+|Azure App Service|7,89 EUR|
+|Azure Monitor|5,51 EUR|
+|Container Registry|3,06 EUR|
+|Log Analytics|0,25 EUR|
+|Storage|0,19 EUR|
 |Key Vault|0,00 EUR|
 |Bandwidth|0,00 EUR|
 
 ## By Location
 
-|Period|Amount|
+|Location|Amount|
 |---|---:|
-|EU West|30,69 EUR|
-|Unknown|0,20 EUR|
+|EU West|45,55 EUR|
+|Unknown|0,30 EUR|
 |US West|0,00 EUR|
+|US North Central|0,00 EUR|
 |US West 2|0,00 EUR|
+
+## By Resource Group
+
+|Resource Group|Amount|
+|---|---:|
+|mindbyte-sand-api|28,95 EUR|
+|mindbyte-sand-azuremonitor|5,51 EUR|
+|mindbyte-sand-registry|3,06 EUR|
+
+<sup>Generated at 2023-04-21 07:40:23</sup>
 
 ```
 
-## To do
-
-- [x] Show time range the report is based on
-- [x] Open source it on GitHub!
-- [x] Show the forecasted cost
-- [ ] Set thresholds, so it can return an error code
-- [x] Generate markdown, so you can include it in a workflow job summary
-- [ ] More options to set and filter on
-- [x] Validate date ranges
-- [x] Workflow to push to NuGet
-- [ ] Export the cost of the resources to a file
