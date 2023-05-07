@@ -5,7 +5,6 @@ using System.Text.Json;
 using Azure.Core;
 using Azure.Identity;
 using AzureCostCli.Commands;
-using Newtonsoft.Json.Linq;
 using Polly;
 using Spectre.Console;
 using Spectre.Console.Json;

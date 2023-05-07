@@ -6,6 +6,6 @@ public enum TimeframeType
     Custom,	
     MonthToDate,	
     TheLastBillingMonth,	
-    TheLastMonth	,
+    TheLastMonth,
     WeekToDate,
 }

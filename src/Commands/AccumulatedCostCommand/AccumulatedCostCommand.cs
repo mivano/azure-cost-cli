@@ -86,11 +86,46 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         // Fetch the costs from the Azure Cost Management API
         var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
-        var forecastedCosts = await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
-            TimeframeType.Custom,
-            costs.Max(a => a.Date),
-            new DateOnly(settings.To.Year, settings.To.Month,
-                DateTime.DaysInMonth(settings.To.Year, settings.To.Month)));      
+       
+        List<CostItem> forecastedCosts = new List<CostItem>();
+
+        // Find the maximum date of the retrieved costs
+        DateOnly maxRetrievedCostDate = costs.Max(a => a.Date);
+
+        // Check if the 'settings.To' date is equal to or greater than today's date
+        DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly forecastStartDate;
+
+        switch (settings.Timeframe)
+        {
+            case TimeframeType.BillingMonthToDate:
+            case TimeframeType.MonthToDate:
+                forecastStartDate = DateOnly.FromDateTime(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
+                break;
+            case TimeframeType.TheLastBillingMonth:
+            case TimeframeType.TheLastMonth:
+                forecastStartDate = DateOnly.FromDateTime(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1));
+                break;
+            case TimeframeType.WeekToDate:
+                forecastStartDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek));
+                break;
+            default:
+                // Custom Timeframe
+                forecastStartDate = settings.To >= today ? today : default;
+                break;
+        }
+
+        if (forecastStartDate != default)
+        {
+            DateOnly forecastEndDate = new DateOnly(settings.To.Year, settings.To.Month,
+                DateTime.DaysInMonth(settings.To.Year, settings.To.Month));
+
+            forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
+                TimeframeType.Custom,
+                forecastStartDate,
+                forecastEndDate)).ToList();
+        }
+        
         var byServiceNameCosts =  await _costRetriever.RetrieveCostByServiceName(settings.Debug,
             subscriptionId, settings.Timeframe, settings.From, settings.To);
         var byLocationCosts =  await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,

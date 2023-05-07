@@ -1,3 +1,4 @@
+using System.Globalization;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using Spectre.Console;
