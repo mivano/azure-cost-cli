@@ -10,7 +10,7 @@ public class CostSettings : LogCommandSettings
     public Guid Subscription { get; set; }
 
     [CommandOption("-o|--output")] 
-    [Description("The output format to use. Defaults to Console (Console, Json, JsonC, Text, Markdown)")]
+    [Description("The output format to use. Defaults to Console (Console, Json, JsonC, Text, Markdown, Csv)")]
     public OutputFormat Output { get; set; } = OutputFormat.Console;
     
     [CommandOption("-t|--timeframe")]

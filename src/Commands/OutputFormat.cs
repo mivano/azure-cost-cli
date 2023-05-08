@@ -6,5 +6,6 @@ public enum OutputFormat
     Json,
     Markdown,
     Text,
-    Jsonc
+    Jsonc,
+    Csv
 }

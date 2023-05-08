@@ -49,7 +49,7 @@ OPTIONS:
     -h, --help            Prints help information
         --debug           Increase logging verbosity to show all debug logs  
     -s, --subscription    The subscription id to use
-    -o, --output          The output format to use. Defaults to Console (Console, Json, JsonC, Markdown, Text)
+    -o, --output          The output format to use. Defaults to Console (Console, Json, JsonC, Markdown, Text, Csv)
     -t, --timeframe       The timeframe to use for the costs. Defaults to BillingMonthToDate. When set to Custom, specify the from and to dates using the --from and --to options
         --from            The start date to use for the costs. Defaults to the first day of the previous month
         --to              The end date to use for the costs. Defaults to the current date
@@ -164,7 +164,7 @@ The default output format. It will output the results to the console in a graphi
 The Json format is great for further processing of the data. It will output the results in a JSON format to the console. Using the > operator, you can redirect the output to a file. Use `jsonc` to get a colorized output.
 
 ```bash
-azure-cost show -s 00000000-0000-0000-0000-000000000000 -o json > cost.json
+azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000 -o json > cost.json
 ```
 
 ```json
@@ -249,13 +249,32 @@ By Location:
 
 ```
 
+### Csv
+
+A CSV format. It will output the results in a CSV format which can be used in Excel or other tools. It will use the default culture of your system to format the numbers.
+
+```bash
+azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o csv > cost.csv
+```
+
+```csv
+Date,Cost,CostUsd,Currencycost
+01/05/2023,"2,366588585885843","2,563252097372957",EUR
+02/05/2023,"2,36675103555328","2,563428046607759",EUR
+03/05/2023,"2,366643737168579","2,563311831727289",EUR
+04/05/2023,"2,366407861778791","2,563056355092609",EUR
+05/05/2023,"2,367958990965315","2,564736383114534",EUR
+06/05/2023,"1,904236728129323","2,06247880023687",EUR
+07/05/2023,"2,36694351092248","2,613934066287242",EUR
+08/05/2023,"0,521257579853968","0,575650808311731",EUR
+```
 
 ### Markdown
 
 A markdown format. It will output the results in a series of simple tables.
 
 ```bash
-azure-cost show -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown > cost.md
+azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown > cost.md
 ```
 
 ```markdown
@@ -307,3 +326,4 @@ azure-cost show -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown > cost.md
 
 ```
 
+Excluded in the above sample, but it will also include mermaidjs diagrams as well.

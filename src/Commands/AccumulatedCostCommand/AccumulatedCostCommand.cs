@@ -24,6 +24,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         _outputFormatters.Add(OutputFormat.Jsonc, new JsonOutputFormatter());
         _outputFormatters.Add(OutputFormat.Text, new TextOutputFormatter());
         _outputFormatters.Add(OutputFormat.Markdown, new MarkdownOutputFormatter());
+        _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
 
     public override ValidationResult Validate(CommandContext context, AccumulatedCostSettings settings)
