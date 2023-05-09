@@ -8,33 +8,28 @@ namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class JsonOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings,
-        IEnumerable<CostItem> costs,
-        IEnumerable<CostItem> forecastedCosts,
-        IEnumerable<CostNamedItem> byServiceNameCosts,
-        IEnumerable<CostNamedItem> byLocationCosts,
-        IEnumerable<CostNamedItem> byResourceGroupCosts)
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings,AccumulatedCostDetails accumulatedCostDetails)
     {
         var output = new
         {
             totals = new
             {
-                todaysCost = costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => a.Cost),
-                yesterdayCost = costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
+                todaysCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => a.Cost),
+                yesterdayCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
                     .Sum(a => a.Cost),
-                lastSevenDaysCost = costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)))
+                lastSevenDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)))
                     .Sum(a => a.Cost),
-                lastThirtyDaysCost = costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
+                lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
                     .Sum(a => a.Cost),
             },
-            cost = costs.OrderBy(a => a.Date).Select(a => new { a.Date, a.Cost, a.Currency }),
-            forecastedCosts = forecastedCosts.OrderByDescending(a => a.Date)
+            cost = accumulatedCostDetails.Costs.OrderBy(a => a.Date).Select(a => new { a.Date, a.Cost, a.Currency }),
+            forecastedCosts = accumulatedCostDetails.ForecastedCosts.OrderByDescending(a => a.Date)
                 .Select(a => new { a.Date, a.Cost, a.Currency }),
-            byServiceNames = byServiceNameCosts.OrderByDescending(a => a.Cost)
+            byServiceNames = accumulatedCostDetails.ByServiceNameCosts.OrderByDescending(a => a.Cost)
                 .Select(a => new { ServiceName = a.ItemName, a.Cost, a.Currency }),
-            ByLocation = byLocationCosts.OrderByDescending(a => a.Cost)
+            ByLocation = accumulatedCostDetails.ByLocationCosts.OrderByDescending(a => a.Cost)
                 .Select(a => new { Location = a.ItemName, a.Cost, a.Currency }),
-            ByResourceGroup = byResourceGroupCosts.OrderByDescending(a => a.Cost)
+            ByResourceGroup = accumulatedCostDetails.ByResourceGroupCosts.OrderByDescending(a => a.Cost)
                 .Select(a => new { ResourceGroup = a.ItemName, a.Cost, a.Currency })
         };
 

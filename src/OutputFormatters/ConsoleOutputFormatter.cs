@@ -7,35 +7,31 @@ namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class ConsoleOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, IEnumerable<CostItem> costs,
-        IEnumerable<CostItem> forecastedCosts,
-        IEnumerable<CostNamedItem> byServiceNameCosts,
-        IEnumerable<CostNamedItem> byLocationCosts,
-        IEnumerable<CostNamedItem> byResourceGroupCosts)
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, AccumulatedCostDetails accumulatedCostDetails)
     {
         var todaysDate = DateOnly.FromDateTime(DateTime.UtcNow);
         var todayTitle = "Today";
         var yesterdayTitle = "Yesterday";
         
-        if (todaysDate > costs.Max(a => a.Date))
+        if (todaysDate > accumulatedCostDetails.Costs.Max(a => a.Date))
         {
-            todaysDate = costs.Max(a => a.Date);
+            todaysDate = accumulatedCostDetails.Costs.Max(a => a.Date);
             todayTitle = todaysDate.ToString("d");
             yesterdayTitle = todaysDate.AddDays(-1).ToString("d");
         }
         
-        var costToday = costs.Where(a => a.Date == todaysDate).Sum(a => a.Cost);
+        var costToday = accumulatedCostDetails.Costs.Where(a => a.Date == todaysDate).Sum(a => a.Cost);
         var costSinceStartOfCurrentMonth =
-            costs.Where(x => x.Date >= todaysDate.AddDays(-todaysDate.Day + 1)).Sum(x => x.Cost);
-        var costYesterday = costs.Where(a => a.Date == todaysDate.AddDays(-1)).Sum(a=>a.Cost);
-        var costLastSevenDays = costs.Where(x => x.Date >= todaysDate.AddDays(-7)).Sum(x => x.Cost);
-        var costLastThirtyDays = costs.Where(x => x.Date >= todaysDate.AddDays(-30)).Sum(x => x.Cost);
+            accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-todaysDate.Day + 1)).Sum(x => x.Cost);
+        var costYesterday = accumulatedCostDetails.Costs.Where(a => a.Date == todaysDate.AddDays(-1)).Sum(a=>a.Cost);
+        var costLastSevenDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-7)).Sum(x => x.Cost);
+        var costLastThirtyDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-30)).Sum(x => x.Cost);
 
-        var currency = costs.FirstOrDefault()?.Currency;
+        var currency = accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
 
         // Header
         var headerInfo =
-            $"[bold]Azure Cost Overview[/] for [blue]{settings.Subscription}[/] from [green]{costs.Min(a => a.Date)}[/] to [green]{costs.Max(a => a.Date)}[/]";
+            $"[bold]Azure Cost Overview[/] for [blue]{accumulatedCostDetails.Subscription.displayName}[/] from [green]{accumulatedCostDetails.Costs.Min(a => a.Date)}[/] to [green]{accumulatedCostDetails.Costs.Max(a => a.Date)}[/]";
 
         var rootTable = new Table();
         rootTable.Expand();
@@ -70,7 +66,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             .Label("Accumulated cost")
             .CenterLabel();
 
-        var accumulatedCost = costs.OrderBy(x => x.Date).ToList();
+        var accumulatedCost = accumulatedCostDetails.Costs.OrderBy(x => x.Date).ToList();
         double accumulatedCostValue = 0.0;
         foreach (var day in accumulatedCost)
         {
@@ -79,7 +75,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             accumulatedCostChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(accumulatedCostValue, 2), Color.Green);
         }
 
-        var forecastedData = forecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
+        var forecastedData = accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
         .ToList();
       
         foreach (var day in forecastedData)
@@ -96,7 +92,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             ;
 
         var counter = 2;
-        foreach (var cost in byServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
+        foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
             servicesBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
         }
@@ -106,7 +102,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             .Width(60);
 
         counter = 2;
-        foreach (var rg in byResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+        foreach (var rg in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
             resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(rg.Cost, 2), Color.FromInt32(counter++));
         }
@@ -116,7 +112,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             .Width(60);
 
         counter = 2;
-        foreach (var cost in byLocationCosts.TrimList(threshold: settings.OthersCutoff))
+        foreach (var cost in accumulatedCostDetails.ByLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
             locationsBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
         }

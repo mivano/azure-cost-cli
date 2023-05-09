@@ -84,6 +84,9 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             }
         }
 
+        // Fetch the subscription details
+        var subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+        
         // Fetch the costs from the Azure Cost Management API
         var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, settings.Timeframe,
             settings.From, settings.To);
@@ -137,7 +140,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
       
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteAccumulatedCost(settings, costs, forecastedCosts, byServiceNameCosts, byLocationCosts, byResourceGroupCosts);
+            .WriteAccumulatedCost(settings, new AccumulatedCostDetails(subscription, costs, forecastedCosts, byServiceNameCosts, byLocationCosts, byResourceGroupCosts));
 
         return 0;
     }

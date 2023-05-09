@@ -5,31 +5,26 @@ namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class TextOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, 
-        IEnumerable<CostItem> costs,
-        IEnumerable<CostItem> forecastedCosts,
-        IEnumerable<CostNamedItem> byServiceNameCosts,
-        IEnumerable<CostNamedItem> byLocationCosts,
-        IEnumerable<CostNamedItem> byResourceGroupCosts)
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, AccumulatedCostDetails accumulatedCostDetails)
     {
         var output = new
         {
             costs = new
             {
-                todaysCost = costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => a.Cost),
-                yesterdayCost = costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
+                todaysCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => a.Cost),
+                yesterdayCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
                     .Sum(a => a.Cost),
-                lastSevenDaysCost = costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)))
+                lastSevenDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)))
                     .Sum(a => a.Cost),
-                lastThirtyDaysCost = costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
+                lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
                     .Sum(a => a.Cost),
             },
         };
 
-        var currency = costs.FirstOrDefault()?.Currency;
+        var currency = accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
         
         Console.WriteLine(
-            $"Azure Cost Overview for {settings.Subscription} from {costs.Min(a => a.Date)} to {costs.Max(a => a.Date)}");
+            $"Azure Cost Overview for {accumulatedCostDetails.Subscription.displayName} from {accumulatedCostDetails.Costs.Min(a => a.Date)} to {accumulatedCostDetails.Costs.Max(a => a.Date)}");
         Console.WriteLine();
         Console.WriteLine("Totals:");
         Console.WriteLine($"  Today: {output.costs.todaysCost:N2} {currency}");
@@ -39,21 +34,21 @@ public class TextOutputFormatter : BaseOutputFormatter
         
         Console.WriteLine();
         Console.WriteLine("By Service Name:");
-        foreach (var cost in byServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
+        foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
 
         Console.WriteLine();
         Console.WriteLine("By Location:");
-        foreach (var cost in byLocationCosts.TrimList(threshold: settings.OthersCutoff))
+        foreach (var cost in accumulatedCostDetails.ByLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }
 
         Console.WriteLine();
         Console.WriteLine("By Resource Group:");
-        foreach (var cost in byResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+        foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
             Console.WriteLine($"  {cost.ItemName}: {cost.Cost:N2} {currency}");
         }

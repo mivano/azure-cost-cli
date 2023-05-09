@@ -62,6 +62,8 @@ public class AzureCostApiRetriever : ICostRetriever
         _tokenRetrieved = true;
     }
 
+    
+    
     private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object payload, Uri uri)
     {
         await RetrieveToken(includeDebugOutput);
@@ -73,7 +75,7 @@ public class AzureCostApiRetriever : ICostRetriever
             AnsiConsole.WriteLine();
         }
 
-        var response = await _client.PostAsJsonAsync(uri, payload);
+        var response = payload==null ? await _client.GetAsync(uri) :  await _client.PostAsJsonAsync(uri, payload);
 
         if (includeDebugOutput)
         {
@@ -402,6 +404,28 @@ public class AzureCostApiRetriever : ICostRetriever
         }
 
         return items;
+    }
+
+    public async Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId)
+    {
+        var uri = new Uri(
+            $"/subscriptions/{subscriptionId}/?api-version=2019-11-01",
+            UriKind.Relative);
+        
+        var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
+        
+        var content = await response.Content.ReadFromJsonAsync<Subscription>();
+
+        if (includeDebugOutput)
+        {
+            var json = JsonSerializer.Serialize(content, new JsonSerializerOptions { WriteIndented = true });
+            AnsiConsole.WriteLine("Retrieved subscription details:");
+            AnsiConsole.Write(new JsonText(json));
+            AnsiConsole.WriteLine();
+        }
+        
+        return content;
+
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,

@@ -4,6 +4,8 @@ namespace AzureCostCli.CostApi;
 
 public interface ICostRetriever
 {
+    Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId);
+    
     Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 

@@ -7,13 +7,12 @@ namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
 
 public class CsvOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, IEnumerable<CostItem> costs, IEnumerable<CostItem> forecastedCosts,
-        IEnumerable<CostNamedItem> byServiceNameCosts, IEnumerable<CostNamedItem> byLocationCosts, IEnumerable<CostNamedItem> byResourceGroupCosts)
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, AccumulatedCostDetails accumulatedCostDetails)
     {
         using (var writer = new StringWriter())
         using (var csv = new CsvWriter(writer, CultureInfo.CurrentCulture))
         {
-            csv.WriteRecords(costs);
+            csv.WriteRecords(accumulatedCostDetails.Costs);
         
             Console.Write(writer.ToString());
         }
