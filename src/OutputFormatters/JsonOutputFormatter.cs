@@ -22,15 +22,15 @@ public class JsonOutputFormatter : BaseOutputFormatter
                 lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
                     .Sum(a => a.Cost),
             },
-            cost = accumulatedCostDetails.Costs.OrderBy(a => a.Date).Select(a => new { a.Date, a.Cost, a.Currency }),
+            cost = accumulatedCostDetails.Costs.OrderBy(a => a.Date).Select(a => new { a.Date, a.Cost, a.Currency, a.CostUsd }),
             forecastedCosts = accumulatedCostDetails.ForecastedCosts.OrderByDescending(a => a.Date)
-                .Select(a => new { a.Date, a.Cost, a.Currency }),
+                .Select(a => new { a.Date, a.Cost,  a.Currency, a.CostUsd }),
             byServiceNames = accumulatedCostDetails.ByServiceNameCosts.OrderByDescending(a => a.Cost)
-                .Select(a => new { ServiceName = a.ItemName, a.Cost, a.Currency }),
+                .Select(a => new { ServiceName = a.ItemName, a.Cost, a.Currency, a.CostUsd }),
             ByLocation = accumulatedCostDetails.ByLocationCosts.OrderByDescending(a => a.Cost)
-                .Select(a => new { Location = a.ItemName, a.Cost, a.Currency }),
+                .Select(a => new { Location = a.ItemName, a.Cost, a.Currency, a.CostUsd }),
             ByResourceGroup = accumulatedCostDetails.ByResourceGroupCosts.OrderByDescending(a => a.Cost)
-                .Select(a => new { ResourceGroup = a.ItemName, a.Cost, a.Currency })
+                .Select(a => new { ResourceGroup = a.ItemName, a.Cost, a.Currency, a.CostUsd })
         };
 
         var json = JsonSerializer.Serialize(output, new JsonSerializerOptions { WriteIndented = true });

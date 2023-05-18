@@ -397,7 +397,7 @@ public class AzureCostApiRetriever : ICostRetriever
             var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
             var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
 
-            var currency = row[3].ToString();
+            var currency = row[4].ToString();
 
             var costItem = new CostNamedItem(resourceGroupName, value, valueUsd, currency);
             items.Add(costItem);

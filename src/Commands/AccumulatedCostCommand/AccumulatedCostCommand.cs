@@ -92,10 +92,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             settings.From, settings.To);
        
         List<CostItem> forecastedCosts = new List<CostItem>();
-
-        // Find the maximum date of the retrieved costs
-        DateOnly maxRetrievedCostDate = costs.Max(a => a.Date);
-
+        
         // Check if the 'settings.To' date is equal to or greater than today's date
         DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
         DateOnly forecastStartDate;

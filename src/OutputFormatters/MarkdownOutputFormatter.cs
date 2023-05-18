@@ -24,7 +24,6 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 
         var currency = accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
         var culture = CultureInfo.GetCultureInfo("en-US");
-        var todaysDate = DateOnly.FromDateTime(DateTime.UtcNow);
 
         Console.WriteLine("# Azure Cost Overview");
         Console.WriteLine();
