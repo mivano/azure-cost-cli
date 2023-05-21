@@ -89,7 +89,8 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("   title Cost by service");
         foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            Console.WriteLine($"   \"{cost.ItemName}\" : {cost.Cost.ToString("F2", culture)}");
+            var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
+            Console.WriteLine($"   \"{name}\" : {cost.Cost.ToString("F2", culture)}");
         }
         Console.WriteLine("```");
 
@@ -110,7 +111,8 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("   title Cost by location");
         foreach (var cost in accumulatedCostDetails.ByLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            Console.WriteLine($"   \"{cost.ItemName}\" : {cost.Cost.ToString("F2", culture)}");
+            var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
+            Console.WriteLine($"   \"{name}\" : {cost.Cost.ToString("F2", culture)}");
         }
         Console.WriteLine("```");
 
@@ -131,7 +133,8 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("   title Cost by resource group");
         foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            Console.WriteLine($"   \"{cost.ItemName}\" : {cost.Cost.ToString("F2", culture)}");
+            var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
+            Console.WriteLine($"   \"{name}\" : {cost.Cost.ToString("F2", culture)}");
         }
         Console.WriteLine("```");
         

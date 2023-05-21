@@ -31,6 +31,6 @@ public class CostSettings : LogCommandSettings
     public int OthersCutoff { get; set; } = 10;
     
     [CommandOption("--query")]
-    [Description("JMESPath query string. See http://jmespath.org/ for more information and examples.")]
+    [Description("JMESPath query string, applicable for the Json output only. See http://jmespath.org/ for more information and examples.")]
     public string Query { get; set; } = string.Empty;
 }
