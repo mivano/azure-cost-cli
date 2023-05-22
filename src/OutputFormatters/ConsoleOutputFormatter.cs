@@ -20,14 +20,14 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             yesterdayTitle = todaysDate.AddDays(-1).ToString("d");
         }
         
-        var costToday = accumulatedCostDetails.Costs.Where(a => a.Date == todaysDate).Sum(a => a.Cost);
+        var costToday = accumulatedCostDetails.Costs.Where(a => a.Date == todaysDate).Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
         var costSinceStartOfCurrentMonth =
-            accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-todaysDate.Day + 1)).Sum(x => x.Cost);
-        var costYesterday = accumulatedCostDetails.Costs.Where(a => a.Date == todaysDate.AddDays(-1)).Sum(a=>a.Cost);
-        var costLastSevenDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-7)).Sum(x => x.Cost);
-        var costLastThirtyDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-30)).Sum(x => x.Cost);
+            accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-todaysDate.Day + 1)).Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+        var costYesterday = accumulatedCostDetails.Costs.Where(a => a.Date == todaysDate.AddDays(-1)).Sum(a=>settings.UseUSD ? a.CostUsd : a.Cost);
+        var costLastSevenDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-7)).Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+        var costLastThirtyDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-30)).Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
 
-        var currency = accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
+        var currency = settings.UseUSD ? "USD" : accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
 
         // Header
         var headerInfo =
@@ -70,7 +70,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         double accumulatedCostValue = 0.0;
         foreach (var day in accumulatedCost)
         {
-            double costValue = day.Cost;
+            double costValue = settings.UseUSD ? day.CostUsd : day.Cost;
             accumulatedCostValue += costValue;
             accumulatedCostChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(accumulatedCostValue, 2), Color.Green);
         }
@@ -80,7 +80,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
       
         foreach (var day in forecastedData)
         {
-            double costValue = day.Cost;
+            double costValue = settings.UseUSD ? day.CostUsd : day.Cost;
             accumulatedCostValue += costValue;
             accumulatedCostChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(accumulatedCostValue, 2), Color.LightGreen);
         }
@@ -94,7 +94,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         var counter = 2;
         foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            servicesBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
+            servicesBreakdown.AddItem(cost.ItemName, Math.Round(settings.UseUSD ? cost.CostUsd : cost.Cost, 2), Color.FromInt32(counter++));
         }
 
         // Render the resource groups table
@@ -104,7 +104,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         counter = 2;
         foreach (var rg in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(rg.Cost, 2), Color.FromInt32(counter++));
+            resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(settings.UseUSD ? rg.CostUsd : rg.Cost, 2), Color.FromInt32(counter++));
         }
 
         // Render the locations table
@@ -114,7 +114,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         counter = 2;
         foreach (var cost in accumulatedCostDetails.ByLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            locationsBreakdown.AddItem(cost.ItemName, Math.Round(cost.Cost, 2), Color.FromInt32(counter++));
+            locationsBreakdown.AddItem(cost.ItemName, Math.Round(settings.UseUSD ? cost.CostUsd : cost.Cost, 2), Color.FromInt32(counter++));
         }
 
 
@@ -162,7 +162,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                new Markup(resource.ResourceLocation),
                new Markup(resource.ResourceGroupName),
                new Text(string.Join(",",resource.Tags)),
-               new Markup($"{resource.Cost:N2} {resource.Currency}"));
+               settings.UseUSD ? new Markup($"{resource.CostUSD:N2} USD") : new Markup($"{resource.Cost:N2} {resource.Currency}"));
 
            var treeNode = tree.AddNode(table);
            
@@ -180,7 +180,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                subTable.AddRow(new Markup(metered.ServiceName),
                    new Markup(metered.ServiceTier),
                    new Markup(metered.Meter),
-                   new Markup($"{metered.Cost:N2} {metered.Currency}"));
+                   settings.UseUSD ? new Markup($"{metered.CostUSD:N2} USD"):new Markup($"{metered.Cost:N2} {metered.Currency}"));
            }
            
            treeNode.AddNode(subTable);

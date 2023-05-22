@@ -14,13 +14,13 @@ public class JsonOutputFormatter : BaseOutputFormatter
         {
             totals = new
             {
-                todaysCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => a.Cost),
+                todaysCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => settings.UseUSD ? a.CostUsd :  a.Cost),
                 yesterdayCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
-                    .Sum(a => a.Cost),
+                    .Sum(a => settings.UseUSD ? a.CostUsd :  a.Cost),
                 lastSevenDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)))
-                    .Sum(a => a.Cost),
+                    .Sum(a => settings.UseUSD ? a.CostUsd :  a.Cost),
                 lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
-                    .Sum(a => a.Cost),
+                    .Sum(a => settings.UseUSD ? a.CostUsd :  a.Cost),
             },
             cost = accumulatedCostDetails.Costs.OrderBy(a => a.Date).Select(a => new { a.Date, a.Cost, a.Currency, a.CostUsd }),
             forecastedCosts = accumulatedCostDetails.ForecastedCosts.OrderByDescending(a => a.Date)

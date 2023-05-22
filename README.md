@@ -54,7 +54,8 @@ OPTIONS:
         --from            The start date to use for the costs. Defaults to the first day of the previous month
         --to              The end date to use for the costs. Defaults to the current date
         --others-cutoff    10         The number of items to show before collapsing the rest into an 'Others' item                                                                
-        --query           JMESPath query string. See http://jmespath.org/ for more information and examples     
+        --query           JMESPath query string. See http://jmespath.org/ for more information and examples  
+        --useUSD          Force the use of USD for the currency. Defaults to false to use the currency returned by the API        
 
 COMMANDS:
     accumulatedCost    Show the accumulated cost details

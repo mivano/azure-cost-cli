@@ -12,17 +12,17 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         {
             costs = new
             {
-                todaysCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => a.Cost),
+                todaysCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow)).Sum(a => settings.UseUSD ? a.CostUsd :a.Cost),
                 yesterdayCost = accumulatedCostDetails.Costs.Where(a => a.Date == DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)))
-                    .Sum(a => a.Cost),
+                    .Sum(a =>settings.UseUSD ? a.CostUsd :a.Cost),
                 lastSevenDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7)))
-                    .Sum(a => a.Cost),
+                    .Sum(a => settings.UseUSD ? a.CostUsd :a.Cost),
                 lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
-                    .Sum(a => a.Cost),
+                    .Sum(a => settings.UseUSD ? a.CostUsd :a.Cost),
             },
         };
 
-        var currency = accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
+        var currency = settings.UseUSD ? "USD":accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
         var culture = CultureInfo.GetCultureInfo("en-US");
 
         Console.WriteLine("# Azure Cost Overview");
@@ -52,7 +52,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         foreach (var day in accumulatedCost)
         {
             
-            double costValue = day.Cost;
+            double costValue =settings.UseUSD ? day.CostUsd :day.Cost;
             accumulatedCostValue += costValue;
             
             Console.WriteLine($"   section {day.Date.ToString("dd MMM")}");
@@ -64,7 +64,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
       
         foreach (var day in forecastedData)
         {
-            double costValue = day.Cost;
+            double costValue = settings.UseUSD ? day.CostUsd :day.Cost;;
             accumulatedCostValue += costValue;
             Console.WriteLine($"   section {day.Date.ToString("dd MMM")}");
             Console.WriteLine($"   {currency} {Math.Round(accumulatedCostValue, 2):F2} : done, 0, {Math.Round(accumulatedCostValue* 100, 0) }");
@@ -79,7 +79,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("|---|---:|");
         foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            Console.WriteLine($"|{cost.ItemName}|{cost.Cost:N2} {currency}|");
+            Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd :cost.Cost):N2} {currency}|");
         }
         
         // Create a pie chart using mermaidjs
@@ -90,7 +90,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
         {
             var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
-            Console.WriteLine($"   \"{name}\" : {cost.Cost.ToString("F2", culture)}");
+            Console.WriteLine($"   \"{name}\" : {(settings.UseUSD ? cost.CostUsd :cost.Cost).ToString("F2", culture)}");
         }
         Console.WriteLine("```");
 
@@ -101,7 +101,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("|---|---:|");
         foreach (var cost in accumulatedCostDetails.ByLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            Console.WriteLine($"|{cost.ItemName}|{cost.Cost:N2} {currency}|");
+            Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd :cost.Cost):N2} {currency}|");
         }
         
         // Create a pie chart using mermaidjs
@@ -112,7 +112,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         foreach (var cost in accumulatedCostDetails.ByLocationCosts.TrimList(threshold: settings.OthersCutoff))
         {
             var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
-            Console.WriteLine($"   \"{name}\" : {cost.Cost.ToString("F2", culture)}");
+            Console.WriteLine($"   \"{name}\" : {(settings.UseUSD ? cost.CostUsd :cost.Cost).ToString("F2", culture)}");
         }
         Console.WriteLine("```");
 
@@ -123,7 +123,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("|---|---:|");
         foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
-            Console.WriteLine($"|{cost.ItemName}|{cost.Cost:N2} {currency}|");
+            Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd :cost.Cost):N2} {currency}|");
         }
 
         // Generate a pie chart using mermaidjs
@@ -134,12 +134,12 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
         {
             var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
-            Console.WriteLine($"   \"{name}\" : {cost.Cost.ToString("F2", culture)}");
+            Console.WriteLine($"   \"{name}\" : {(settings.UseUSD ? cost.CostUsd :cost.Cost).ToString("F2", culture)}");
         }
         Console.WriteLine("```");
         
         Console.WriteLine();
-        Console.WriteLine($"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} for subscription with id {accumulatedCostDetails.Subscription.subscriptionId}</sup>");
+        Console.WriteLine($"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} for subscription with id `{accumulatedCostDetails.Subscription.subscriptionId}`</sup>");
 
         return Task.CompletedTask;
     }
@@ -152,7 +152,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine("|---|---|---|---|---|---|---|---:|");
         foreach (var cost in resources)
         {
-            Console.WriteLine($"|{cost.ResourceId.Split('/').Last()} | {cost.ResourceType} | {cost.ResourceLocation} | {cost.ResourceGroupName} |  {cost.ServiceName} | {cost.ServiceTier} | {cost.Meter} | {cost.Cost:N2} {cost.Currency} |");
+            Console.WriteLine($"|{cost.ResourceId.Split('/').Last()} | {cost.ResourceType} | {cost.ResourceLocation} | {cost.ResourceGroupName} |  {cost.ServiceName} | {cost.ServiceTier} | {cost.Meter} | {(settings.UseUSD ? cost.CostUSD :cost.Cost):N2} {(settings.UseUSD ? "USD" :cost.Currency)} |");
         }
         
         return Task.CompletedTask;

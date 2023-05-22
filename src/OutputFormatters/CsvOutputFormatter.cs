@@ -22,8 +22,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
     public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
     {
-     
-      
+
         using (var writer = new StringWriter())
         using (var csv = new CsvWriter(writer, CultureInfo.CurrentCulture))
         {

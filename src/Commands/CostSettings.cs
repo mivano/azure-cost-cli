@@ -33,4 +33,9 @@ public class CostSettings : LogCommandSettings
     [CommandOption("--query")]
     [Description("JMESPath query string, applicable for the Json output only. See http://jmespath.org/ for more information and examples.")]
     public string Query { get; set; } = string.Empty;
+    
+    [CommandOption("--useUSD")]
+    [Description("Force the use of USD for the currency. Defaults to false to use the currency returned by the API.")]
+    [DefaultValue(false)]
+    public bool UseUSD { get; set; }
 }
