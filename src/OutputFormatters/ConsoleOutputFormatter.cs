@@ -63,7 +63,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         var accumulatedCostChart = new BarChart()
             .Width(60)
-            .Label("Accumulated cost")
+            .Label($"Accumulated cost in {currency}")
             .CenterLabel();
 
         var accumulatedCost = accumulatedCostDetails.Costs.OrderBy(x => x.Date).ToList();
@@ -75,8 +75,11 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             accumulatedCostChart.AddItem(day.Date.ToString("dd MMM"), Math.Round(accumulatedCostValue, 2), Color.Green);
         }
 
-        var forecastedData = accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
-        .ToList();
+        var forecastedData = accumulatedCostDetails
+            .ForecastedCosts
+            .Where(x => x.Date > accumulatedCost.Last().Date)
+            .OrderBy(x => x.Date)
+            .ToList();
       
         foreach (var day in forecastedData)
         {
@@ -87,9 +90,9 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         // Render the services table
         var servicesBreakdown = new BreakdownChart()
+                .UseValueFormatter(value => $"{value:N2} {currency}")
                 .Expand()
-                .FullSize()
-            ;
+                .FullSize();
 
         var counter = 2;
         foreach (var cost in accumulatedCostDetails.ByServiceNameCosts.TrimList(threshold: settings.OthersCutoff))
@@ -99,6 +102,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         // Render the resource groups table
         var resourceGroupBreakdown = new BreakdownChart()
+            .UseValueFormatter(value => $"{value:N2} {currency}")
             .Width(60);
 
         counter = 2;
@@ -109,6 +113,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         // Render the locations table
         var locationsBreakdown = new BreakdownChart()
+            .UseValueFormatter(value => $"{value:N2} {currency}")
             .Width(60);
 
         counter = 2;
