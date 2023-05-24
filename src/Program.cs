@@ -1,9 +1,12 @@
 ﻿using AzureCostCli.Commands;
+using AzureCostCli.Commands.Assist;
 using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenAI.GPT3.Extensions;
 using Spectre.Console.Cli;
 
 // Setup the DI
@@ -16,7 +19,13 @@ registrations.AddHttpClient("CostApi", client =>
   client.DefaultRequestHeaders.Add("Accept", "application/json");
 }).AddPolicyHandler(AzureCostApiRetriever.GetRetryAfterPolicy());
 
+var configuration = new ConfigurationManager();
+
+configuration.AddEnvironmentVariables();
+configuration.AddUserSecrets<Program>();
+registrations.AddScoped<IConfiguration>(_ => configuration);
 registrations.AddTransient<ICostRetriever, AzureCostApiRetriever>();
+registrations.AddOpenAIService(); // You do need to have the key in your user secrets or environment variables
 
 var registrar = new TypeRegistrar(registrations);
 
@@ -43,6 +52,9 @@ app.Configure(config =>
   
   config.AddCommand<CostByResourceCommand>("costByResource")
     .WithDescription("Show the cost details by resource.");
+  
+  config.AddCommand<AssistCommand>("assist")
+    .WithDescription("AI Assist over your Azure cost.");
   
   config.ValidateExamples();
 });
