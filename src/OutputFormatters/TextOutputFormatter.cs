@@ -92,4 +92,44 @@ public class TextOutputFormatter : BaseOutputFormatter
       
         return Task.CompletedTask;
     }
+
+    public override Task WriteBudgets(BudgetsSettings settings, IEnumerable<BudgetItem> budgets)
+    {
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine(
+                $"Azure Budgets for {settings.Subscription}");
+
+            Console.WriteLine();
+        }
+
+        foreach (var budget in budgets.OrderByDescending(a=>a.Name))
+        {
+            Console.WriteLine(
+                $"Budget `{budget.Name}` with an amount of {budget.Amount:N2} (time grain of {budget.TimeGrain} from {budget.StartDate} to {budget.EndDate}) ");
+            foreach (var notification in budget.Notifications)
+            {
+                Console.WriteLine(
+                    $"  {notification.Name} (is {(notification.Enabled?"enabled":"disabled")}) when {notification.Operator} {notification.Threshold:N2} then contact:");
+                foreach (var email in notification.ContactEmails)
+                {
+                    Console.WriteLine($"   - {email}");
+                }
+                
+                foreach (var role in notification.ContactRoles)
+                {
+                    Console.WriteLine($"   - {role}");
+                }
+
+                foreach (var group in notification.ContactGroups)
+                {
+                    Console.WriteLine($"   - {group}");
+                }
+            }
+
+            Console.WriteLine();
+        }
+      
+        return Task.CompletedTask;
+    }
 }

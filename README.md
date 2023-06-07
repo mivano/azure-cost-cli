@@ -44,6 +44,8 @@ EXAMPLES:
     azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000
     azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000 -o json
     azure-cost costByResource -s 00000000-0000-0000-0000-000000000000 -o text
+    azure-cost budgets -s 00000000-0000-0000-0000-000000000000
+
 
 OPTIONS:
     -h, --help            Prints help information
@@ -61,6 +63,7 @@ OPTIONS:
 COMMANDS:
     accumulatedCost    Show the accumulated cost details
     costByResource     Show the cost details by resource
+    budgets            Get the available budgets   
 
 ```
 
@@ -127,6 +130,14 @@ This will retrieve the cost of the subscription by resource. This will fetch the
 
 ```bash
 azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o json
+```
+
+### Budgets
+
+This will retrieve the available budgets for the subscription. It will show the current status of the budget and the amount of the budget. As well as listing the configured notifications. 
+
+```bash
+azure-cost budgets -s 574385a9-08e9-49fe-91a2-27660d92b8f5 
 ```
 
 ## Query

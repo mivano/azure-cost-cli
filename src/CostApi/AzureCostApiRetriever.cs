@@ -64,7 +64,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
     
     
-    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object payload, Uri uri)
+    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
     {
         await RetrieveToken(includeDebugOutput);
 
@@ -616,5 +616,82 @@ public class AzureCostApiRetriever : ICostRetriever
         }
 
         return items;
+    }
+
+    public async Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool includeDebugOutput, Guid subscriptionId)
+    {
+        var uri = new Uri(
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/budgets/?api-version=2021-10-01",
+            UriKind.Relative);
+        
+        var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
+
+        var json = await response.Content.ReadAsStringAsync();
+        var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var items = root.GetProperty("value");
+
+        List<BudgetItem> budgetItems = new List<BudgetItem>();
+
+        foreach (var item in items.EnumerateArray())
+        {
+            var properties = item.GetProperty("properties");
+
+                var id = item.GetProperty("id").GetString();
+                var name = item.GetProperty("name").GetString();
+                var amount = properties.GetProperty("amount").GetDouble();
+                var timeGrain = properties.GetProperty("timeGrain").GetString();
+
+                var timePeriod = properties.GetProperty("timePeriod");
+                var startDate = DateTime.Parse(timePeriod.GetProperty("startDate").GetString());
+                var endDate = DateTime.Parse(timePeriod.GetProperty("endDate").GetString());
+
+                double? currentSpendAmount = null;
+                string currentSpendCurrency = null;
+                if (properties.TryGetProperty("currentSpend", out var currentSpend))
+                {
+                    currentSpendAmount = currentSpend.GetProperty("amount").GetDouble();
+                    currentSpendCurrency = currentSpend.GetProperty("unit").GetString();
+                }
+
+                double? forecastAmount = null;
+                string forecastCurrency = null;
+                if (properties.TryGetProperty("forecastSpend", out var forecastSpend))
+                {
+                    forecastAmount = forecastSpend.GetProperty("amount").GetDouble();
+                    forecastCurrency = forecastSpend.GetProperty("unit").GetString();
+                }
+
+                List<Notification> notifications = null;
+                if (properties.TryGetProperty("notifications", out var notificationsElement))
+                {
+                    notifications = new List<Notification>();
+                    foreach (var notificationProperty in notificationsElement.EnumerateObject())
+                    {
+                        var enabled = notificationProperty.Value.GetProperty("enabled").GetBoolean();
+                        var operatorValue = notificationProperty.Value.GetProperty("operator").GetString();
+                        var threshold = notificationProperty.Value.GetProperty("threshold").GetDouble();
+
+                        var contactEmails = notificationProperty.Value.GetProperty("contactEmails").EnumerateArray().Select(x => x.GetString()).ToList();
+                        var contactRoles = notificationProperty.Value.GetProperty("contactRoles").EnumerateArray().Select(x => x.GetString()).ToList();
+
+                        List<string> contactGroups = null;
+                        if (notificationProperty.Value.TryGetProperty("contactGroups", out var contactGroupsElement))
+                        {
+                            contactGroups = contactGroupsElement.EnumerateArray().Select(x => x.GetString()).ToList();
+                        }
+
+                        var notification = new Notification(notificationProperty.Name, enabled, operatorValue, threshold, contactEmails, contactRoles, contactGroups);
+
+                        notifications.Add(notification);
+                    }
+                }
+
+                var budgetItem = new BudgetItem(name, id, amount, timeGrain, startDate, endDate, currentSpendAmount, currentSpendCurrency, forecastAmount, forecastCurrency, notifications);
+                budgetItems.Add(budgetItem);
+        }
+
+        return budgetItems;
+
     }
 }
