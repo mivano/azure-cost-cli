@@ -38,4 +38,9 @@ public class CostSettings : LogCommandSettings
     [Description("Force the use of USD for the currency. Defaults to false to use the currency returned by the API.")]
     [DefaultValue(false)]
     public bool UseUSD { get; set; }
+    
+    [CommandOption("--skipHeader")]
+    [Description("Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false.")]
+    [DefaultValue(false)]
+    public bool SkipHeader { get; set; }
 }

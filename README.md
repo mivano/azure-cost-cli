@@ -56,6 +56,7 @@ OPTIONS:
         --others-cutoff    10         The number of items to show before collapsing the rest into an 'Others' item                                                                
         --query           JMESPath query string. See http://jmespath.org/ for more information and examples  
         --useUSD          Force the use of USD for the currency. Defaults to false to use the currency returned by the API        
+        --skipHeader      Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false 
 
 COMMANDS:
     accumulatedCost    Show the accumulated cost details
@@ -252,7 +253,7 @@ By Location:
 
 ### Csv
 
-A CSV format. It will output the results in a CSV format which can be used in Excel or other tools. It will use the default culture of your system to format the numbers.
+A CSV format. It will output the results in a CSV format which can be used in Excel or other tools. It will use the default culture of your system to format the numbers. If you combine the output of multiple runs into one file (like using the `>>` to append to a file), you can use the `--skipHeader` parameter to prevent the header from being written multiple times.
 
 ```bash
 azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o csv > cost.csv

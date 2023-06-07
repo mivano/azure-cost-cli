@@ -58,11 +58,14 @@ public class TextOutputFormatter : BaseOutputFormatter
 
     public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
     {
-        Console.WriteLine(
-            $"Azure Cost Overview for {settings.Subscription} by resource");
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine(
+                $"Azure Cost Overview for {settings.Subscription} by resource");
 
-        Console.WriteLine();
-            
+            Console.WriteLine();
+        }
+
         foreach (var resource in resources.OrderByDescending(a=>a.Cost))
         {
             if (settings.UseUSD)
