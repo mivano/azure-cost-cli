@@ -10,36 +10,37 @@ public class CsvOutputFormatter : BaseOutputFormatter
 {
     public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, AccumulatedCostDetails accumulatedCostDetails)
     {
-        var config = new CsvConfiguration(CultureInfo.CurrentCulture)
-        {
-            HasHeaderRecord = settings.SkipHeader == false
-        };
-        
-        using (var writer = new StringWriter())
-        using (var csv = new CsvWriter(writer, config))
-        {
-            csv.WriteRecords(accumulatedCostDetails.Costs);
-        
-            Console.Write(writer.ToString());
-        }
-        
-        return Task.CompletedTask;
+        return ExportToCsv(settings.SkipHeader, accumulatedCostDetails.Costs);
     }
 
     public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
     {
+        return ExportToCsv(settings.SkipHeader, resources);
+    }
+    
+    public override Task WriteBudgets(BudgetsSettings settings, IEnumerable<BudgetItem> budgets)
+    {
+        return ExportToCsv(settings.SkipHeader, budgets);
+    }
+
+    private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
+    {
         var config = new CsvConfiguration(CultureInfo.CurrentCulture)
         {
-            HasHeaderRecord = settings.SkipHeader == false
+            HasHeaderRecord = skipHeader == false
         };
         using (var writer = new StringWriter())
         using (var csv = new CsvWriter(writer, config))
         {
             csv.WriteRecords(resources);
-        
+
             Console.Write(writer.ToString());
         }
-        
+
         return Task.CompletedTask;
     }
+
+   
+    
+    
 }

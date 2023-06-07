@@ -162,4 +162,50 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         
         return Task.CompletedTask;
     }
+
+    public override Task WriteBudgets(BudgetsSettings settings, IEnumerable<BudgetItem> budgets)
+    {
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine(
+                $"# Azure Budgets for {settings.Subscription}");
+
+            Console.WriteLine();
+        }
+
+        foreach (var budget in budgets.OrderByDescending(a=>a.Name))
+        {
+            Console.WriteLine(
+                $"## Budget `{budget.Name}` ");
+            Console.WriteLine($"Has an amount of {budget.Amount:N2}");
+            Console.WriteLine($"The time grain is {budget.TimeGrain} and the time period is {budget.StartDate} to {budget.EndDate}");
+
+            Console.WriteLine();
+            
+            foreach (var notification in budget.Notifications)
+            {
+                Console.WriteLine(
+                    $"### Notification `{notification.Name}`");
+                Console.WriteLine($"This notification is {(notification.Enabled?"enabled":"disabled")} and when {notification.Operator} {notification.Threshold:N2} then contact:");
+                foreach (var email in notification.ContactEmails)
+                {
+                    Console.WriteLine($" - {email}");
+                }
+                
+                foreach (var role in notification.ContactRoles)
+                {
+                    Console.WriteLine($" - {role}");
+                }
+
+                foreach (var group in notification.ContactGroups)
+                {
+                    Console.WriteLine($" - {group}");
+                }
+            }
+
+            Console.WriteLine();
+        }
+      
+        return Task.CompletedTask;
+    }
 }

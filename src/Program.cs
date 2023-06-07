@@ -33,7 +33,8 @@ app.Configure(config =>
   config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000" });
   config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000", "-o", "json" });
   config.AddExample(new[] { "costByResource", "-s", "00000000-0000-0000-0000-000000000000", "-o", "text" });
-
+  config.AddExample(new[] { "budgets", "-s", "00000000-0000-0000-0000-000000000000" });
+  
 #if DEBUG
   config.PropagateExceptions();
 #endif
@@ -43,6 +44,9 @@ app.Configure(config =>
   
   config.AddCommand<CostByResourceCommand>("costByResource")
     .WithDescription("Show the cost details by resource.");
+  
+  config.AddCommand<BudgetsCommand>("budgets")
+    .WithDescription("Get the available budgets.");
   
   config.ValidateExamples();
 });

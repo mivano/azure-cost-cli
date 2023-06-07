@@ -195,4 +195,42 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         
         return Task.CompletedTask;
     }
+
+    public override Task WriteBudgets(BudgetsSettings settings, IEnumerable<BudgetItem> budgets)
+    {
+        var table = new Table()
+            .RoundedBorder()
+            .Expand()
+            .Title("Budgets")
+            .AddColumn("Name")
+            .AddColumn("Amount")
+            .AddColumn("Time Grain")
+            .AddColumn("Notifications")
+           ;
+
+        foreach (var budget in budgets.OrderByDescending(a => a.Name))
+        {
+
+            var notifications = new Table()
+                .RoundedBorder()
+                .Expand()
+                .AddColumn("Name")
+                .AddColumn("State")
+                .AddColumn("Operator")
+                .AddColumn("Threshold");
+            
+            
+
+            foreach (var notification in budget.Notifications)
+            {
+                notifications.AddRow(new Markup(notification.Name), new Markup(notification.Enabled ? ":check_mark_button: " : ":cross_mark: "), new Markup(notification.Operator), new Markup(notification.Threshold.ToString("N2")));
+            }
+
+            table.AddRow(new Markup($"[bold]{budget.Name}[/]"),new Markup( budget.Amount.ToString("N2")),new Markup( budget.TimeGrain), notifications);
+        }
+
+        AnsiConsole.Write(table);
+        
+        return Task.CompletedTask;
+    }
 }
