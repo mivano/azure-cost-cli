@@ -4,7 +4,7 @@
 [![Latest release](https://img.shields.io/github/v/release/mivano/azure-cost-cli)](https://github.com/mivano/azure-cost-cli/releases/latest)
 [![Latest build](https://img.shields.io/github/actions/workflow/status/mivano/azure-cost-cli/dotnet.yml)](https://github.com/mivano/azure-cost-cli/actions/workflows/dotnet.yml)
 
-This is a simple command line tool to get the cost of your Azure subscription. It uses the Azure Cost Management API to get the cost and output the results to the console or JSON. E.g. so it can be used in a workflow to get the cost of your subscription and use it in subsequent steps.
+This is a simple command line tool to get the cost of your Azure subscription. It uses the Azure Cost Management API to get the cost and output the results to the console, text, csv, markdown or JSON. E.g. so it can be used in a workflow to get the cost of your subscription and use it in subsequent steps.
 
 ![](screenshot.png)
 
@@ -50,7 +50,7 @@ EXAMPLES:
 OPTIONS:
     -h, --help            Prints help information
         --debug           Increase logging verbosity to show all debug logs  
-    -s, --subscription    The subscription id to use
+    -s, --subscription    The subscription id to use. Will try to fetch the active id if not specified.
     -o, --output          The output format to use. Defaults to Console (Console, Json, JsonC, Markdown, Text, Csv)
     -t, --timeframe       The timeframe to use for the costs. Defaults to BillingMonthToDate. When set to Custom, specify the from and to dates using the --from and --to options
         --from            The start date to use for the costs. Defaults to the first day of the previous month
@@ -67,7 +67,7 @@ COMMANDS:
 
 ```
 
-When you do not specify a subscription id, it will fetch the actively selected one of the `az cli` instead. 
+> When you do not specify a subscription id, it will fetch the actively selected one of the `az cli` instead. 
 
 > If the application is not working properly, you can use the `--debug` parameter to increase the logging verbosity and see more details.
 
@@ -82,7 +82,7 @@ To make the call to the Azure cost API, you do need to run this from a user acco
 
 ## Use in a GitHub workflow
 
-You can use this tool in a GitHub workflow to get the cost of your subscription and store the results in markdown as a Job Summary. This can be used to get a quick overview of the cost of your subscription.
+You can use this tool in a GitHub workflow to get the cost of your subscription and store the results in markdown as a Job Summary. This can be used to get a quick overview of the cost of your subscription. Have a look at the [workflow](https://github.com/mivano/azure-cost-cli/actions/workflows/create-markdown.yml) in this repository for an example output.
 
 ```yaml
 name: Azure Cost CLI Workflow

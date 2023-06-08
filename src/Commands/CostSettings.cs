@@ -6,7 +6,7 @@ namespace AzureCostCli.Commands;
 public class CostSettings : LogCommandSettings
 {
     [CommandOption("-s|--subscription")]
-    [Description("The subscription id to use.")]
+    [Description("The subscription id to use. Will try to fetch the active id if not specified.")]
     public Guid Subscription { get; set; }
 
     [CommandOption("-o|--output")] 

@@ -205,7 +205,14 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 
             Console.WriteLine();
         }
-      
+
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                $"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} for subscription with id `{settings.Subscription}`</sup>");
+        }
+
         return Task.CompletedTask;
     }
 }
