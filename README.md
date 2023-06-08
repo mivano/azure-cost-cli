@@ -162,6 +162,21 @@ will output:
 
 For the JMESPath parsing, it uses the [JMESPath.Net](https://github.com/jdevillard/JmesPath.Net) library. Not all constructions might be implemented yet. If you find a query that does not work, please open an issue with a reproducable path at their repo.
 
+## Timeframe
+
+The default timeframe is the billing month to date. You can specify a custom timeframe using the `--from` and `--to` parameters and setting the `-t custom`. The timeframe is specified in the ISO 8601 format. 
+
+Other options are:
+
+- BillingMonthToDate
+- Custom
+- MonthToDate
+- TheLastBillingMonth
+- TheLastMonth
+- WeekToDate
+
+These options are based on the types exposed by the [query API](https://learn.microsoft.com/en-us/rest/api/cost-management/query/usage?tabs=HTTP#timeframetype).
+
 ## Output formats
 
 The tool supports multiple output formats. The default is `Console` which will output the results to the console. You can specify a different format using the `--output` parameter. The following formats are supported:
