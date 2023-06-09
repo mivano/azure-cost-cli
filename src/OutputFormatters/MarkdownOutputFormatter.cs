@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -205,6 +206,57 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 
             Console.WriteLine();
         }
+
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                $"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} for subscription with id `{settings.Subscription}`</sup>");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
+    {
+       
+        var currency = settings.UseUSD ? "USD" : dailyCosts.First().Currency;
+
+        var markdown = new StringBuilder();
+
+        markdown.AppendLine("# Daily Costs\n");
+
+// Markdown table header
+        markdown.AppendLine($"| Date | Cost ({currency}) | Breakdown |");
+        markdown.AppendLine("|------|----------------|-----------|");
+
+        foreach (var day in dailyCosts.GroupBy(a => a.Date).OrderBy(a => a.Key))
+        {
+            var topCosts = day.OrderByDescending(item => settings.UseUSD ? item.CostUsd : item.Cost)
+                .Take(settings.OthersCutoff).ToList();
+
+            var othersCost = day.Except(topCosts)
+                .Sum(item => settings.UseUSD ? item.CostUsd : item.Cost);
+
+            topCosts.Add(new CostDailyItem(day.Key, "Other", othersCost, othersCost, day.First().Currency));
+
+            var dailyCost = 0D; // Keep track of the total cost for this day
+            var breakdown = new List<string>();
+
+            foreach (var item in topCosts)
+            {
+                var itemCost = settings.UseUSD ? item.CostUsd : item.Cost;
+                dailyCost += itemCost;
+                var percentage = (itemCost / day.Sum(i => settings.UseUSD ? i.CostUsd : i.Cost)) * 100;
+                breakdown.Add($"**{item.Name}**: `{itemCost.ToString("F2")}` (_{percentage.ToString("F2")}%_)");
+            }
+
+            // Markdown table row
+            markdown.AppendLine($"| **{day.Key.ToString("yyyy-MM-dd")}** | **{dailyCost.ToString("F2")}** | {string.Join(", ", breakdown)} |");
+        }
+
+// Output markdown
+        Console.WriteLine(markdown.ToString());
 
         if (settings.SkipHeader == false)
         {

@@ -23,6 +23,11 @@ public class CsvOutputFormatter : BaseOutputFormatter
         return ExportToCsv(settings.SkipHeader, budgets);
     }
 
+    public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
+    {
+        return ExportToCsv(settings.SkipHeader, dailyCosts);
+    }
+
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {
         var config = new CsvConfiguration(CultureInfo.CurrentCulture)
