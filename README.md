@@ -46,8 +46,9 @@ USAGE:
 
 EXAMPLES:
     azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000
-    azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000 -o json
+    azure-cost accumulatedCost -o json
     azure-cost costByResource -s 00000000-0000-0000-0000-000000000000 -o text
+    azure-cost dailyCosts --dimension MeterCategory
     azure-cost budgets -s 00000000-0000-0000-0000-000000000000
 
 
@@ -159,7 +160,7 @@ azure-cost dailyCosts
 
 The above screenshots show the default console output, but the other formatters can also be used.
 
-The available dimensions are: `ResourceGroup,'ResourceGroupName','ResourceLocation','ConsumedService','ResourceType','ResourceId','MeterId','BillingMonth','MeterCategory','MeterSubcategory','Meter','AccountName','DepartmentName','SubscriptionId','SubscriptionName','ServiceName','ServiceTier','EnrollmentAccountName','BillingAccountId','ResourceGuid','BillingPeriod','InvoiceNumber','ChargeType','PublisherType','ReservationId','ReservationName','Frequency','PartNumber','CostAllocationRuleName','MarkupRuleName','PricingModel','BenefitId','BenefitName'
+The available dimensions are: `ResourceGroup`,`ResourceGroupName`,`ResourceLocation`,`ConsumedService`,`ResourceType`,`ResourceId`,`MeterId`,`BillingMonth`,`MeterCategory`,`MeterSubcategory`,`Meter`,`AccountName`,`DepartmentName`,`SubscriptionId`,`SubscriptionName`,`ServiceName`,`ServiceTier`,`EnrollmentAccountName`,`BillingAccountId`,`ResourceGuid`,`BillingPeriod`,`InvoiceNumber`,`ChargeType`,`PublisherType`,`ReservationId`,`ReservationName`,`Frequency`,`PartNumber`,`CostAllocationRuleName`,`MarkupRuleName`,`PricingModel`,`BenefitId`,`BenefitName`
 
 ### Budgets
 
