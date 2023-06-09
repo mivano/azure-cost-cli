@@ -43,4 +43,8 @@ public class CostSettings : LogCommandSettings
     [Description("Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false.")]
     [DefaultValue(false)]
     public bool SkipHeader { get; set; }
+
+    [CommandOption("--filter")]
+    [Description("Filter the output by the specified properties. Defaults to no filtering and can be multiple values.")]
+    public string[] Filter { get; set; }
 }

@@ -15,7 +15,19 @@ public class AzureCostApiRetriever : ICostRetriever
 {
     private readonly HttpClient _client;
     private bool _tokenRetrieved;
-
+    private static string RetryAfterHeader = "x-ms-ratelimit-microsoft.costmanagement-clienttype-retry-after";
+    
+    public enum DimensionNames
+    {
+        PublisherType,
+        ResourceGroupName,
+        ServiceName,
+        BillingPeriod,
+        MeterCategory,
+        MeterSubCategory,
+        // Add more dimension names as needed
+    }
+    
     public AzureCostApiRetriever(IHttpClientFactory httpClientFactory)
     {
         _client = httpClientFactory.CreateClient("CostApi");
@@ -24,12 +36,12 @@ public class AzureCostApiRetriever : ICostRetriever
     public static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy()
     {
         return Policy.HandleResult<HttpResponseMessage>
-            (msg => msg.Headers.TryGetValues("x-ms-ratelimit-microsoft.costmanagement-entity-retry-after",
+            (msg => msg.Headers.TryGetValues(RetryAfterHeader,
                 out var _))
             .WaitAndRetryAsync(
                 retryCount: 3,
                 sleepDurationProvider: (_, response, _) =>
-                    response.Result.Headers.TryGetValues("x-ms-ratelimit-microsoft.costmanagement-entity-retry-after",
+                    response.Result.Headers.TryGetValues(RetryAfterHeader,
                         out var seconds)
                         ? TimeSpan.FromSeconds(int.Parse(seconds.First()))
                         : TimeSpan.FromSeconds(5),
@@ -61,8 +73,46 @@ public class AzureCostApiRetriever : ICostRetriever
 
         _tokenRetrieved = true;
     }
-
     
+    
+    private object GenerateFilters(string[] filterArgs)
+    {
+
+        if (filterArgs == null || filterArgs.Length == 0)
+            return new { };
+        
+        var filters = new List<object>();
+        foreach (var arg in filterArgs)
+        {
+            var filterParts = arg.Split('=');
+            var name = filterParts[0];
+            var values = filterParts[1].Split(';');
+
+            // Define default filter dictionary
+            var filterDict = new Dictionary<string, object>()
+            {
+                { "Name", name },
+                { "Operator", "In" },
+                { "Values", new List<string>(values) }
+            };
+
+            // Decide if this is a Dimension or a Tag filter
+            if (Enum.IsDefined(typeof(DimensionNames), name))
+            {
+                filters.Add(new { Dimensions = filterDict });
+            }
+            else
+            {
+                filters.Add(new { Tags = filterDict });
+            }
+        }
+
+        return new 
+        {
+            And = filters
+        };
+    }
+
     
     private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
     {
@@ -92,12 +142,15 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
+        string[] filter,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
             UriKind.Relative);
 
+        var filters= GenerateFilters(filter);
+        
         var payload = new
         {
             type = "ActualCost",
@@ -125,6 +178,7 @@ public class AzureCostApiRetriever : ICostRetriever
                         function = "Sum"
                     }
                 },
+                filter = filters,
                 sorting = new[]
                 {
                     new
@@ -158,7 +212,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
-        Guid subscriptionId, TimeframeType timeFrame, DateOnly from, DateOnly to)
+        Guid subscriptionId, string[] filter, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
@@ -207,15 +261,7 @@ public class AzureCostApiRetriever : ICostRetriever
                         name = "ServiceName"
                     }
                 },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
+                filter = GenerateFilters(filter)
             }
         };
         var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
@@ -238,7 +284,7 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
+    public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,string[] filter, 
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -288,15 +334,7 @@ public class AzureCostApiRetriever : ICostRetriever
                         name = "ResourceLocation"
                     }
                 },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
+                filter = GenerateFilters(filter)
             }
         };
         var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
@@ -320,7 +358,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Guid subscriptionId,
+        Guid subscriptionId,string[] filter, 
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -375,15 +413,7 @@ public class AzureCostApiRetriever : ICostRetriever
                         name = "ChargeType"
                     }
                 },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
+                filter = GenerateFilters(filter)
             }
         };
         var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
@@ -407,7 +437,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
     
     public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
-        Guid subscriptionId, string dimension,
+        Guid subscriptionId, string[] filter, string dimension,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -462,15 +492,7 @@ public class AzureCostApiRetriever : ICostRetriever
                         name = "ChargeType"
                     }
                 },
-                filter = new
-                {
-                    Dimensions = new
-                    {
-                        Name = "PublisherType",
-                        Operator = "In",
-                        Values = new[] { "azure" }
-                    }
-                }
+                filter = GenerateFilters(filter)
             }
         };
         var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
@@ -517,7 +539,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
     }
 
-    public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,
+    public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,string[] filter, 
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -546,6 +568,7 @@ public class AzureCostApiRetriever : ICostRetriever
                         function = "Sum"
                     }
                 },
+                filter = GenerateFilters(filter),
                 sorting = new[]
                 {
                     new
@@ -592,7 +615,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool includeDebugOutput,
-        Guid subscriptionId, TimeframeType timeFrame, DateOnly from,
+        Guid subscriptionId, string[] filter, TimeframeType timeFrame, DateOnly from,
         DateOnly to)
     {
         var uri = new Uri(
@@ -627,6 +650,7 @@ public class AzureCostApiRetriever : ICostRetriever
                     }
                 },
                 include = new[] { "Tags" },
+                filter = GenerateFilters(filter),
                 grouping = new[]
                 {
                     new

@@ -64,6 +64,7 @@ OPTIONS:
         --query           JMESPath query string. See http://jmespath.org/ for more information and examples  
         --useUSD          Force the use of USD for the currency. Defaults to false to use the currency returned by the API        
         --skipHeader      Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false 
+        --filter          Filter the output by the specified properties. Defaults to no filtering and can be multiple values.
 
 COMMANDS:
     accumulatedCost    Show the accumulated cost details
@@ -169,6 +170,16 @@ This will retrieve the available budgets for the subscription. It will show the 
 ```bash
 azure-cost budgets -s 574385a9-08e9-49fe-91a2-27660d92b8f5 
 ```
+
+## Filter
+
+With the `--filter` option you can pass in one or more properties to filter on. 
+
+```bash
+azure-cost --filter "ResourceGroupName=yourresourcegroup;myresourcegroup" --filter "owner=me" 
+```
+
+In the example above, we look for resources in either `yourresourcegroup` or `myresourcegroup` and having a tag named `owner` with the value `me`.
 
 ## Query
 

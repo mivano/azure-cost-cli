@@ -89,6 +89,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         
         // Fetch the costs from the Azure Cost Management API
         var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId, 
+            settings.Filter,
             settings.Dimension,
             settings.Timeframe,
             settings.From, settings.To);
