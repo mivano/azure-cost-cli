@@ -31,8 +31,9 @@ app.Configure(config =>
   config.SetApplicationName("azure-cost");
 
   config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000" });
-  config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000", "-o", "json" });
+  config.AddExample(new[] { "accumulatedCost", "-o", "json" });
   config.AddExample(new[] { "costByResource", "-s", "00000000-0000-0000-0000-000000000000", "-o", "text" });
+  config.AddExample(new[] { "dailyCosts", "--dimension", "MeterCategory" });
   config.AddExample(new[] { "budgets", "-s", "00000000-0000-0000-0000-000000000000" });
   
 #if DEBUG
@@ -41,6 +42,9 @@ app.Configure(config =>
 
   config.AddCommand<AccumulatedCostCommand>("accumulatedCost")
       .WithDescription("Show the accumulated cost details.");
+  
+  config.AddCommand<DailyCostCommand>("dailyCosts")
+    .WithDescription("Show the daily cost by a given dimension.");
   
   config.AddCommand<CostByResourceCommand>("costByResource")
     .WithDescription("Show the cost details by resource.");

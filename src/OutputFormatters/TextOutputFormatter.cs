@@ -1,3 +1,4 @@
+using System.Globalization;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -130,6 +131,48 @@ public class TextOutputFormatter : BaseOutputFormatter
             Console.WriteLine();
         }
       
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
+    {
+
+// Calculate the maximum daily cost
+        var maxDailyCost = dailyCosts.GroupBy(a => a.Date)
+            .Max(group => group.Sum(item => settings.UseUSD ? item.CostUsd : item.Cost));
+
+        var currency = settings.UseUSD ? "USD" : dailyCosts.First().Currency; 
+
+        Console.WriteLine($"Daily Costs:\n------------");
+        Console.WriteLine($"Date        Cost ({currency}) Breakdown");
+
+        foreach (var day in dailyCosts.GroupBy(a => a.Date).OrderBy(a => a.Key))
+        {
+            var topCosts = day.OrderByDescending(item => settings.UseUSD ? item.CostUsd : item.Cost)
+                .Take(settings.OthersCutoff).ToList();
+
+            var othersCost = day.Except(topCosts)
+                .Sum(item => settings.UseUSD ? item.CostUsd : item.Cost);
+
+            topCosts.Add(new CostDailyItem(day.Key, "Other", othersCost, othersCost, day.First().Currency));
+
+            Console.Write($"{day.Key.ToString(CultureInfo.CurrentCulture)}  ");
+
+            var dailyCost = 0D; // Keep track of the total cost for this day
+            var breakdown = new List<string>();
+
+            foreach (var item in topCosts)
+            {
+                var itemCost = settings.UseUSD ? item.CostUsd : item.Cost;
+                dailyCost += itemCost;
+                var percentage = (itemCost / day.Sum(i => settings.UseUSD ? i.CostUsd : i.Cost)) * 100;
+                breakdown.Add($"{item.Name}: {itemCost.ToString("F2")} ({percentage.ToString("F2")}%)");
+            }
+
+            Console.Write($"{dailyCost.ToString("F2")} ");
+            Console.WriteLine(string.Join(", ", breakdown));
+        }
+
         return Task.CompletedTask;
     }
 }

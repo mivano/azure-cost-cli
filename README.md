@@ -8,6 +8,10 @@ This is a simple command line tool to get the cost of your Azure subscription. I
 
 ![](screenshot.png)
 
+Besides showing the accumulated cost, it can also show daily cost, extract resource (costs) and list budgets.
+
+![](screenshot_daily_resourcegroup.png)
+
 ## Installation
 
 You can install this tool globally, using the dotnet tool command:
@@ -63,6 +67,7 @@ OPTIONS:
 COMMANDS:
     accumulatedCost    Show the accumulated cost details
     costByResource     Show the cost details by resource
+    dailyCosts         Show the daily cost by a given dimension
     budgets            Get the available budgets   
 
 ```
@@ -112,17 +117,17 @@ jobs:
 
 The last step output the markdown to the Job Summary. This can be used to show the cost of the subscription in the workflow summary. Use it on a schedule to get for example a daily overview. Alternatively you can use the `-o json` parameter to get the results in JSON format and use it for further processing.
 
-## Commands
+## Available commands
 
 ### Accumulated Cost
 
 This will retrieve the accumulated cost of the subscription. This is the total cost of the subscription since the beginning of the period specified. We will try to fetch the forecast as well and organise by location, type and resource group. You can use the different formatters to get the results in different formats.
 
-> This is the default command when you do not specify a command.
-
 ```bash
 azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5
 ```
+
+> This is the default command when you do not specify a command.
 
 ### Cost By Resource
 
@@ -131,6 +136,30 @@ This will retrieve the cost of the subscription by resource. This will fetch the
 ```bash
 azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o json
 ```
+
+### Daily Costs
+
+The daily overview fetches the cost of the subscription for each day in the specified period. It will show the total cost of the day and the cost per dimension. The dimension is the resource group by default, but you can specify a different one using the `--dimension` parameter. 
+
+For example:
+
+```bash 
+azure-cost dailyCosts -s 574385a9-08e9-49fe-91a2-27660d92b8f5 --dimension ResourceLocation
+```
+
+![](screenshot_daily_location.png)
+
+The default dimension is the resource group.
+
+```bash 
+azure-cost dailyCosts 
+```
+
+![](screenshot_daily_resourcegroup.png)
+
+The above screenshots show the default console output, but the other formatters can also be used.
+
+The available dimensions are: `ResourceGroup,'ResourceGroupName','ResourceLocation','ConsumedService','ResourceType','ResourceId','MeterId','BillingMonth','MeterCategory','MeterSubcategory','Meter','AccountName','DepartmentName','SubscriptionId','SubscriptionName','ServiceName','ServiceTier','EnrollmentAccountName','BillingAccountId','ResourceGuid','BillingPeriod','InvoiceNumber','ChargeType','PublisherType','ReservationId','ReservationName','Frequency','PartNumber','CostAllocationRuleName','MarkupRuleName','PricingModel','BenefitId','BenefitName'
 
 ### Budgets
 
@@ -179,13 +208,14 @@ These options are based on the types exposed by the [query API](https://learn.mi
 
 ## Output formats
 
-The tool supports multiple output formats. The default is `Console` which will output the results to the console. You can specify a different format using the `--output` parameter. The following formats are supported:
+The tool supports multiple output formats. The default is `Console` which will output the results to the console. You can specify a different format using the `--output` parameter. The different commands generate different outputs using the specified formatter. The following formats are supported:
 
 ### Console
 
-The default output format. It will output the results to the console in a graphical way.
+The default output format. It will output the results to the console in a graphical way. For example the accumulated costs:
 
 ![](screenshot.png)
+
 
 ### Json / JsonC
 
@@ -246,6 +276,8 @@ azure-cost accumulatedCost -s 00000000-0000-0000-0000-000000000000 -o json > cos
 }
 ```
 
+> **Tip**: Use the `--query` parameter here to manipulate the results, like filtering and projecting the data. Do keep in mind that it operates over the already fetched data.
+
 ### Text
 
 A simple textual format. It will output the results in a simple text format.
@@ -274,6 +306,24 @@ By Location:
   Unknown: 0,20 EUR
   US West: 0,00 EUR
   US West 2: 0,00 EUR
+
+```
+
+Or when using the daily cost:
+
+```
+Daily Costs:
+------------
+Date        Cost (EUR) Breakdown
+01/06/2023  50,47 Virtual Machines: 12,09 (23,95%), Azure DevOps: 10,63 (21,06%), Azure App Service: 7,67 (15,19%), Storage: 5,84 (11,58%), Functions: 4,75 (9,41%), IoT Hub: 1,51 (2,99%), API Management: 1,48 (2,93%), Azure Cosmos DB: 1,47 (2,91%), App Configuration: 1,12 (2,23%), Container Registry: 0,94 (1,85%), Other: 2,98 (5,90%)
+02/06/2023  61,89 Virtual Machines: 20,08 (32,45%), Azure DevOps: 10,81 (17,47%), Storage: 8,69 (14,03%), Azure App Service: 7,67 (12,39%), Functions: 4,75 (7,67%), IoT Hub: 1,51 (2,44%), API Management: 1,48 (2,39%), Azure Cosmos DB: 1,47 (2,37%), App Configuration: 1,12 (1,81%), Container Registry: 0,94 (1,51%), Other: 3,38 (5,46%)
+03/06/2023  62,14 Virtual Machines: 20,08 (32,31%), Azure DevOps: 10,99 (17,69%), Storage: 8,69 (13,98%), Azure App Service: 7,67 (12,34%), Functions: 4,75 (7,64%), IoT Hub: 1,51 (2,43%), API Management: 1,48 (2,38%), Azure Cosmos DB: 1,47 (2,36%), App Configuration: 1,12 (1,81%), Container Registry: 0,94 (1,51%), Other: 3,45 (5,55%)
+04/06/2023  62,08 Virtual Machines: 20,08 (32,35%), Azure DevOps: 10,99 (17,70%), Storage: 8,69 (13,99%), Azure App Service: 7,67 (12,35%), Functions: 4,75 (7,65%), IoT Hub: 1,51 (2,43%), API Management: 1,48 (2,38%), Azure Cosmos DB: 1,47 (2,36%), App Configuration: 1,12 (1,81%), Container Registry: 0,94 (1,51%), Other: 3,39 (5,45%)
+05/06/2023  63,99 Virtual Machines: 21,51 (33,62%), Azure DevOps: 10,99 (17,18%), Storage: 8,95 (13,98%), Azure App Service: 7,67 (11,98%), Functions: 4,75 (7,42%), IoT Hub: 1,51 (2,36%), API Management: 1,48 (2,31%), Azure Cosmos DB: 1,47 (2,29%), App Configuration: 1,12 (1,76%), Container Registry: 0,94 (1,46%), Other: 3,60 (5,63%)
+06/06/2023  71,25 Virtual Machines: 23,36 (32,79%), Azure DevOps: 10,99 (15,43%), Storage: 9,30 (13,05%), Azure App Service: 7,67 (10,76%), Functions: 4,75 (6,66%), Azure Cognitive Search: 4,09 (5,74%), IoT Hub: 1,51 (2,12%), API Management: 1,48 (2,07%), Azure Cosmos DB: 1,47 (2,06%), Load Balancer: 1,13 (1,58%), Other: 5,51 (7,74%)
+07/06/2023  65,62 Virtual Machines: 23,35 (35,58%), Azure DevOps: 11,53 (17,58%), Storage: 9,28 (14,14%), Azure App Service: 6,87 (10,47%), Functions: 4,75 (7,24%), IoT Hub: 1,51 (2,30%), API Management: 1,48 (2,25%), Azure Cosmos DB: 1,47 (2,24%), App Configuration: 1,12 (1,71%), Load Balancer: 1,08 (1,65%), Other: 3,18 (4,84%)
+08/06/2023  57,04 Virtual Machines: 21,94 (38,47%), Azure DevOps: 11,72 (20,54%), Storage: 9,23 (16,18%), Functions: 3,56 (6,25%), Azure App Service: 2,61 (4,58%), IoT Hub: 1,51 (2,65%), API Management: 1,48 (2,59%), Azure Cosmos DB: 1,46 (2,56%), SQL Database: 0,89 (1,56%), Azure Database for PostgreSQL: 0,71 (1,25%), Other: 1,93 (3,38%)
+09/06/2023  4,51 Virtual Machines: 1,86 (41,19%), Storage: 1,54 (34,08%), Azure App Service: 0,33 (7,24%), API Management: 0,18 (4,09%), Azure Cosmos DB: 0,18 (4,00%), Virtual Network: 0,10 (2,24%), Load Balancer: 0,09 (2,09%), Azure Database for PostgreSQL: 0,09 (1,97%), SQL Database: 0,06 (1,40%), Container Registry: 0,04 (0,86%), Other: 0,04 (0,83%)
 
 ```
 

@@ -405,6 +405,95 @@ public class AzureCostApiRetriever : ICostRetriever
 
         return items;
     }
+    
+    public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
+        Guid subscriptionId, string dimension,
+        TimeframeType timeFrame, DateOnly from, DateOnly to)
+    {
+        var uri = new Uri(
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
+            UriKind.Relative);
+
+        var payload = new
+        {
+            type = "ActualCost",
+            timeframe = timeFrame.ToString(),
+            timePeriod = timeFrame == TimeframeType.Custom
+                ? new
+                {
+                    from = from.ToString("yyyy-MM-dd"),
+                    to = to.ToString("yyyy-MM-dd")
+                }
+                : null,
+            dataSet = new
+            {
+                granularity = "Daily",
+                aggregation = new
+                {
+                    totalCost = new
+                    {
+                        name = "Cost",
+                        function = "Sum"
+                    },
+                    totalCostUSD = new
+                    {
+                        name = "CostUSD",
+                        function = "Sum"
+                    }
+                },
+                sorting = new[]
+                {
+                    new
+                    {
+                        direction = "Ascending",
+                        name = "UsageDate"
+                    }
+                },
+                grouping = new[]
+                {
+                    new
+                    {
+                        type = "Dimension",
+                        name = dimension
+                    },
+                    new
+                    {
+                        type = "Dimension",
+                        name = "ChargeType"
+                    }
+                },
+                filter = new
+                {
+                    Dimensions = new
+                    {
+                        Name = "PublisherType",
+                        Operator = "In",
+                        Values = new[] { "azure" }
+                    }
+                }
+            }
+        };
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
+
+        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
+
+        var items = new List<CostDailyItem>();
+        foreach (var row in content.properties.rows)
+        {
+            var resourceGroupName = row[3].ToString();
+            var date = DateOnly.ParseExact(row[2].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
+
+            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
+            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
+
+            var currency = row[5].ToString();
+
+            var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency);
+            items.Add(costItem);
+        }
+
+        return items;
+    }
 
     public async Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId)
     {
