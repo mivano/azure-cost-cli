@@ -32,7 +32,7 @@ With a `--version` parameter, you can specify a specific version to install. Use
 
 ## Usage
 
-You can invoke the tool using the `azure-cost` command. You can use the `--help` parameter to get a list of all available options.
+You can invoke the tool using the `azure-cost` command. You can use the `--help` parameter to get a list of all available options. Some of the commands have additional parameters which can be shown by adding the specific command with the `--help` option.
 
 ```bash
 azure-cost --help
