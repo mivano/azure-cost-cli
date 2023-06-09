@@ -43,8 +43,8 @@ jobs:
 
     - name: Build and Pack
       run: |
-        dotnet build --configuration Release
-        dotnet pack --configuration Release /p:PackageVersion=$TAG_NAME --output nupkgs
+        dotnet build --configuration Release /p:Version=$TAG_NAME /p:AssemblyVersion=$TAG_NAME /p:FileVersion=$TAG_NAME
+        dotnet pack --configuration Release /p:PackageVersion=$TAG_NAME /p:Version=$TAG_NAME /p:AssemblyVersion=$TAG_NAME /p:FileVersion=$TAG_NAME --output nupkgs
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
