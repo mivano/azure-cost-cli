@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Azure.Core;
 using Azure.Identity;
 using AzureCostCli.Commands;
@@ -16,18 +18,28 @@ public class AzureCostApiRetriever : ICostRetriever
     private readonly HttpClient _client;
     private bool _tokenRetrieved;
     private static string RetryAfterHeader = "x-ms-ratelimit-microsoft.costmanagement-clienttype-retry-after";
-    
+    private static string RetryAfterHeader2 = "x-ms-ratelimit-microsoft.costmanagement-entity-retry-after";
+
     public enum DimensionNames
     {
         PublisherType,
         ResourceGroupName,
+        ResourceLocation,
+        ResourceId,
         ServiceName,
+        ServiceTier,
+        ServiceFamily,
+        InvoiceId,
+        CustomerName,
+        PartnerName,
+        ResourceType,
+        ChargeType,
         BillingPeriod,
         MeterCategory,
         MeterSubCategory,
         // Add more dimension names as needed
     }
-    
+
     public AzureCostApiRetriever(IHttpClientFactory httpClientFactory)
     {
         _client = httpClientFactory.CreateClient("CostApi");
@@ -36,15 +48,16 @@ public class AzureCostApiRetriever : ICostRetriever
     public static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy()
     {
         return Policy.HandleResult<HttpResponseMessage>
-            (msg => msg.Headers.TryGetValues(RetryAfterHeader,
-                out var _))
+            (msg => msg.StatusCode == HttpStatusCode.TooManyRequests)
             .WaitAndRetryAsync(
                 retryCount: 3,
                 sleepDurationProvider: (_, response, _) =>
                     response.Result.Headers.TryGetValues(RetryAfterHeader,
                         out var seconds)
                         ? TimeSpan.FromSeconds(int.Parse(seconds.First()))
-                        : TimeSpan.FromSeconds(5),
+                        :  response.Result.Headers.TryGetValues(RetryAfterHeader2,
+                            out var seconds2)
+                            ? TimeSpan.FromSeconds(int.Parse(seconds2.First())): TimeSpan.FromSeconds(5),
                 onRetryAsync: (msg, time, retries, context) => Task.CompletedTask
             );
     }
@@ -73,14 +86,13 @@ public class AzureCostApiRetriever : ICostRetriever
 
         _tokenRetrieved = true;
     }
-    
-    
-    private object GenerateFilters(string[] filterArgs)
-    {
 
+
+    private object? GenerateFilters(string[]? filterArgs)
+    {
         if (filterArgs == null || filterArgs.Length == 0)
-            return new { };
-        
+            return null;
+
         var filters = new List<object>();
         foreach (var arg in filterArgs)
         {
@@ -107,13 +119,16 @@ public class AzureCostApiRetriever : ICostRetriever
             }
         }
 
-        return new 
-        {
-            And = filters
-        };
+        if (filters.Count > 1)
+            return new
+            {
+                And = filters
+            };
+        else
+            return filters[0];
     }
 
-    
+
     private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
     {
         await RetrieveToken(includeDebugOutput);
@@ -125,7 +140,15 @@ public class AzureCostApiRetriever : ICostRetriever
             AnsiConsole.WriteLine();
         }
 
-        var response = payload==null ? await _client.GetAsync(uri) :  await _client.PostAsJsonAsync(uri, payload);
+        var options = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        var response = payload == null
+            ? await _client.GetAsync(uri)
+            : await _client.PostAsJsonAsync(uri, payload, options);
 
         if (includeDebugOutput)
         {
@@ -149,8 +172,8 @@ public class AzureCostApiRetriever : ICostRetriever
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
             UriKind.Relative);
 
-        var filters= GenerateFilters(filter);
-        
+        var filters = GenerateFilters(filter);
+
         var payload = new
         {
             type = "ActualCost",
@@ -284,7 +307,8 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,string[] filter, 
+    public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
+        string[] filter,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -358,7 +382,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Guid subscriptionId,string[] filter, 
+        Guid subscriptionId, string[] filter,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -435,7 +459,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         return items;
     }
-    
+
     public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
         Guid subscriptionId, string[] filter, string dimension,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
@@ -522,9 +546,9 @@ public class AzureCostApiRetriever : ICostRetriever
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/?api-version=2019-11-01",
             UriKind.Relative);
-        
+
         var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
-        
+
         var content = await response.Content.ReadFromJsonAsync<Subscription>();
 
         if (includeDebugOutput)
@@ -534,12 +558,12 @@ public class AzureCostApiRetriever : ICostRetriever
             AnsiConsole.Write(new JsonText(json));
             AnsiConsole.WriteLine();
         }
-        
-        return content;
 
+        return content;
     }
 
-    public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,string[] filter, 
+    public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,
+        string[] filter,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -736,7 +760,7 @@ public class AzureCostApiRetriever : ICostRetriever
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/budgets/?api-version=2021-10-01",
             UriKind.Relative);
-        
+
         var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
 
         var json = await response.Content.ReadAsStringAsync();
@@ -750,61 +774,64 @@ public class AzureCostApiRetriever : ICostRetriever
         {
             var properties = item.GetProperty("properties");
 
-                var id = item.GetProperty("id").GetString();
-                var name = item.GetProperty("name").GetString();
-                var amount = properties.GetProperty("amount").GetDouble();
-                var timeGrain = properties.GetProperty("timeGrain").GetString();
+            var id = item.GetProperty("id").GetString();
+            var name = item.GetProperty("name").GetString();
+            var amount = properties.GetProperty("amount").GetDouble();
+            var timeGrain = properties.GetProperty("timeGrain").GetString();
 
-                var timePeriod = properties.GetProperty("timePeriod");
-                var startDate = DateTime.Parse(timePeriod.GetProperty("startDate").GetString());
-                var endDate = DateTime.Parse(timePeriod.GetProperty("endDate").GetString());
+            var timePeriod = properties.GetProperty("timePeriod");
+            var startDate = DateTime.Parse(timePeriod.GetProperty("startDate").GetString());
+            var endDate = DateTime.Parse(timePeriod.GetProperty("endDate").GetString());
 
-                double? currentSpendAmount = null;
-                string currentSpendCurrency = null;
-                if (properties.TryGetProperty("currentSpend", out var currentSpend))
+            double? currentSpendAmount = null;
+            string currentSpendCurrency = null;
+            if (properties.TryGetProperty("currentSpend", out var currentSpend))
+            {
+                currentSpendAmount = currentSpend.GetProperty("amount").GetDouble();
+                currentSpendCurrency = currentSpend.GetProperty("unit").GetString();
+            }
+
+            double? forecastAmount = null;
+            string forecastCurrency = null;
+            if (properties.TryGetProperty("forecastSpend", out var forecastSpend))
+            {
+                forecastAmount = forecastSpend.GetProperty("amount").GetDouble();
+                forecastCurrency = forecastSpend.GetProperty("unit").GetString();
+            }
+
+            List<Notification> notifications = null;
+            if (properties.TryGetProperty("notifications", out var notificationsElement))
+            {
+                notifications = new List<Notification>();
+                foreach (var notificationProperty in notificationsElement.EnumerateObject())
                 {
-                    currentSpendAmount = currentSpend.GetProperty("amount").GetDouble();
-                    currentSpendCurrency = currentSpend.GetProperty("unit").GetString();
-                }
+                    var enabled = notificationProperty.Value.GetProperty("enabled").GetBoolean();
+                    var operatorValue = notificationProperty.Value.GetProperty("operator").GetString();
+                    var threshold = notificationProperty.Value.GetProperty("threshold").GetDouble();
 
-                double? forecastAmount = null;
-                string forecastCurrency = null;
-                if (properties.TryGetProperty("forecastSpend", out var forecastSpend))
-                {
-                    forecastAmount = forecastSpend.GetProperty("amount").GetDouble();
-                    forecastCurrency = forecastSpend.GetProperty("unit").GetString();
-                }
+                    var contactEmails = notificationProperty.Value.GetProperty("contactEmails").EnumerateArray()
+                        .Select(x => x.GetString()).ToList();
+                    var contactRoles = notificationProperty.Value.GetProperty("contactRoles").EnumerateArray()
+                        .Select(x => x.GetString()).ToList();
 
-                List<Notification> notifications = null;
-                if (properties.TryGetProperty("notifications", out var notificationsElement))
-                {
-                    notifications = new List<Notification>();
-                    foreach (var notificationProperty in notificationsElement.EnumerateObject())
+                    List<string> contactGroups = null;
+                    if (notificationProperty.Value.TryGetProperty("contactGroups", out var contactGroupsElement))
                     {
-                        var enabled = notificationProperty.Value.GetProperty("enabled").GetBoolean();
-                        var operatorValue = notificationProperty.Value.GetProperty("operator").GetString();
-                        var threshold = notificationProperty.Value.GetProperty("threshold").GetDouble();
-
-                        var contactEmails = notificationProperty.Value.GetProperty("contactEmails").EnumerateArray().Select(x => x.GetString()).ToList();
-                        var contactRoles = notificationProperty.Value.GetProperty("contactRoles").EnumerateArray().Select(x => x.GetString()).ToList();
-
-                        List<string> contactGroups = null;
-                        if (notificationProperty.Value.TryGetProperty("contactGroups", out var contactGroupsElement))
-                        {
-                            contactGroups = contactGroupsElement.EnumerateArray().Select(x => x.GetString()).ToList();
-                        }
-
-                        var notification = new Notification(notificationProperty.Name, enabled, operatorValue, threshold, contactEmails, contactRoles, contactGroups);
-
-                        notifications.Add(notification);
+                        contactGroups = contactGroupsElement.EnumerateArray().Select(x => x.GetString()).ToList();
                     }
-                }
 
-                var budgetItem = new BudgetItem(name, id, amount, timeGrain, startDate, endDate, currentSpendAmount, currentSpendCurrency, forecastAmount, forecastCurrency, notifications);
-                budgetItems.Add(budgetItem);
+                    var notification = new Notification(notificationProperty.Name, enabled, operatorValue, threshold,
+                        contactEmails, contactRoles, contactGroups);
+
+                    notifications.Add(notification);
+                }
+            }
+
+            var budgetItem = new BudgetItem(name, id, amount, timeGrain, startDate, endDate, currentSpendAmount,
+                currentSpendCurrency, forecastAmount, forecastCurrency, notifications);
+            budgetItems.Add(budgetItem);
         }
 
         return budgetItems;
-
     }
 }

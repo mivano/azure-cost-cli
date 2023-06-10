@@ -353,15 +353,44 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         AnsiConsole.Write(t);
 
+        var costGroupedByDay = dailyCosts.GroupBy(a => a.Date).OrderBy(a=>a.Key);
+        // Calculate trend of the cost, so we can see if we are going up or down
+        var previousCost = 0D;
+        var trend = 0D;
+        foreach (var day in costGroupedByDay)
+        {
+            var currentCost = day.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+            if (previousCost != 0)
+            {
+                trend += currentCost - previousCost;
+            }
+
+            previousCost = currentCost;
+        }
+       
+        var trendText = trend > 0 ? "up" : "down";
        var totalSum = dailyCosts.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
-       var totalSumPanel =
-           new Panel(new Text(totalSum.ToString("N2") +
-                              (settings.UseUSD ? " USD" : " " + dailyCosts.First().Currency)));
-       totalSumPanel.Header = new PanelHeader("Total costs", Justify.Center);
-       totalSumPanel.Padding(1, 0, 1, 0);
-         totalSumPanel.Border = BoxBorder.Rounded;
-         
-       AnsiConsole.Write(totalSumPanel);
+       
+       var avgCost = totalSum / costGroupedByDay.Count();
+
+       var figletTotalCost = new FigletText(totalSum.ToString("N2")).Color(trend>0 ? Color.Red : Color.Green);
+       var textTotalCost = new Markup($"Total costs in {(settings.UseUSD ? "USD" : dailyCosts.First().Currency)}, going {trendText} {(trend>0?":chart_increasing:":":chart_decreasing:")}");
+       
+       var figletAvgCost = new FigletText(avgCost.ToString("N2")).Color(Color.Blue);
+       var textAvgCost = new Markup("Avg daily costs in " +(settings.UseUSD ? "USD" :   dailyCosts.First().Currency));
+
+       
+       
+     
+
+       var rule = new Rule();
+       AnsiConsole.WriteLine();
+       AnsiConsole.Write(rule);
+       
+       AnsiConsole.Write(new Columns(
+           new Rows(figletTotalCost, textTotalCost),
+           new Rows(figletAvgCost, textAvgCost)));
+       
        
         return Task.CompletedTask;
     }

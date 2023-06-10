@@ -181,6 +181,10 @@ azure-cost --filter "ResourceGroupName=yourresourcegroup;myresourcegroup" --filt
 
 In the example above, we look for resources in either `yourresourcegroup` or `myresourcegroup` and having a tag named `owner` with the value `me`.
 
+Filters are passed along to the Cost API, so less data is retrieved. Compared to the query, where the data is queried with a JMESPATH expression and can be projected as well.
+
+Multiple filters are combined with an `and` expression, while the values are split by the `;` and used as an `or`.
+
 ## Query
 
 Use the `--query` to specify a [JMESPath](https://jmespath.org) expression. This allows you to filter the results. For example, to get the yesterday cost of the subscription, you can use the following query:
