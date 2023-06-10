@@ -93,9 +93,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
             settings.Dimension,
             settings.Timeframe,
             settings.From, settings.To);
-       
-     
-      
+        
         // Write the output
         await _outputFormatters[settings.Output]
             .WriteDailyCost(settings, dailyCost);
