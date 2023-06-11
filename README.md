@@ -421,3 +421,12 @@ azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown >
 ```
 
 Excluded in the above sample, but it will also include mermaidjs diagrams as well.
+
+
+## Let's Connect!
+
+I appreciate every star ⭐ that my projects receive, and your support means a lot to me! If you find my projects useful or enjoyable, please consider giving them a star.
+
+For inquiries, suggestions, or contributions, feel free to open an issue or a pull request. You can also reach out to me directly via [LinkedIn](https://www.linkedin.com/in/michielvanoudheusden/).
+
+![Alt](https://repobeats.axiom.co/api/embed/a5c7b68fe50da70986f5cb386be13c0e496f9e15.svg "Repobeats analytics image")
