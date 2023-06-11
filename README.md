@@ -10,7 +10,7 @@ This is a simple command line tool to get the cost of your Azure subscription. I
 
 Besides showing the accumulated cost, it can also show daily cost, extract resource (costs) and list budgets.
 
-![](screenshot_daily_resourcegroup.png)
+![](screenshot_daily_metercategory.png)
 
 ## Installation
 
