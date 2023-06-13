@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using AzureCostCli.CostApi;
 using DevLab.JmesPath;
 using Spectre.Console;
@@ -70,7 +71,14 @@ public class JsonOutputFormatter : BaseOutputFormatter
     
     private static void WriteJson(CostSettings settings, object items)
     {
-        var json = JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true });
+
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        
+#if NET6_0
+        options.Converters.Add(new DateOnlyJsonConverter());
+#endif
+        
+        var json = JsonSerializer.Serialize(items, options );
 
         if (!string.IsNullOrWhiteSpace(settings.Query))
         {
@@ -100,4 +108,18 @@ public class JsonOutputFormatter : BaseOutputFormatter
     }
 
     
+}
+
+public sealed class DateOnlyJsonConverter : JsonConverter<DateOnly>
+{
+    public override DateOnly Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return DateOnly.FromDateTime(reader.GetDateTime());
+    }
+
+    public override void Write(Utf8JsonWriter writer, DateOnly value, JsonSerializerOptions options)
+    {
+        var isoDate = value.ToString("O");
+        writer.WriteStringValue(isoDate);
+    }
 }
