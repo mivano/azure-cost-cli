@@ -11,6 +11,7 @@ public abstract class BaseOutputFormatter
     public abstract Task WriteBudgets(BudgetsSettings settings, IEnumerable<BudgetItem> budgets);
 
     public abstract Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts);
+    public abstract Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies);
 }
 
 public record AccumulatedCostDetails( 

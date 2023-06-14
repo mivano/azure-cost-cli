@@ -28,6 +28,11 @@ public class CsvOutputFormatter : BaseOutputFormatter
         return ExportToCsv(settings.SkipHeader, dailyCosts);
     }
 
+    public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
+    {
+        return ExportToCsv(settings.SkipHeader, anomalies);
+    }
+
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {
         var config = new CsvConfiguration(CultureInfo.CurrentCulture)

@@ -175,4 +175,9 @@ public class TextOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
+
+    public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
+    {
+        throw new NotImplementedException();
+    }
 }

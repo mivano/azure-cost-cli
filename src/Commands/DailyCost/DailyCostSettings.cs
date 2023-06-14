@@ -11,4 +11,5 @@ public class DailyCostSettings : CostSettings
 
     public string Dimension { get; set; } = "ResourceGroupName";
 
+   
 }

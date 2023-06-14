@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
@@ -17,7 +18,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
     public DetectAnomalyCommand(ICostRetriever costRetriever)
     {
         _costRetriever = costRetriever;
-        
+
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -56,8 +57,8 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
-        
-      
+
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -67,13 +68,14 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
             try
             {
                 if (settings.Debug)
-                    AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
-                
+                    AnsiConsole.WriteLine(
+                        "No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
+
                 subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
-                
+
                 if (settings.Debug)
                     AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
-                
+
                 settings.Subscription = subscriptionId;
             }
             catch (Exception e)
@@ -84,109 +86,174 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
             }
         }
 
-        // Fetch the subscription details
-        var subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+        // Change the settings so it uses a custom timeframe and fetch the last 30 days of data, not including today
 
-        // Select the last 60 days of data
         settings.Timeframe = TimeframeType.Custom;
-        settings.From = DateOnly.FromDateTime(DateTime.Today.AddDays(-60));
-        settings.To = DateOnly.FromDateTime(DateTime.Today);
-        
+        settings.From = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+        settings.To = DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
+
         // Fetch the costs from the Azure Cost Management API
-        var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId, 
+        var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId,
             settings.Filter,
-            "ResourceId",
+            settings.Dimension,
             settings.Timeframe,
             settings.From, settings.To);
-        
-        var costAnalyzer = new CostAnalyzer(dailyCost.ToList());
 
-        var anomalies = costAnalyzer.DetectAnomalies();
-        
+        var costAnalyzer = new CostAnalyzer(settings);
+
+        var anomalies = costAnalyzer.AnalyzeCost(dailyCost.ToList());
+
         // Write the output
-      //  await _outputFormatters[settings.Output]
-      //      .WriteDailyCost(settings, dailyCost);
+        await _outputFormatters[settings.Output]
+            .WriteAnomalyDetectionResults(settings, anomalies);
 
-      foreach (var anomaly in anomalies.Where(a=>a.Type!="No cost"))
-      {
-          Console.WriteLine($"{anomaly.Date} {anomaly.ResourceName} {anomaly.ChangeInPercent}%  {anomaly.Type} {anomaly.Description}");
-      }
-      
         return 0;
     }
 }
 
-public record AnomalyDetectionResult(
-    DateOnly Date, 
-    string ResourceName, 
-    double CurrentCost, 
-    double PreviousCost, 
-    double ChangeInPercent, 
-    double ZScore, 
-    string Type,
-    string Description);
 public class CostAnalyzer
 {
-    private List<CostDailyItem> _costData;
-    private const int MovingAveragePeriod = 30;
-    private const double ZScoreThreshold = 3;
-    private const double NoCostThreshold = 0;
-    private const double RunRateThreshold = 2;  // cost is double the average run rate
+    private int RecentActivityDays = 7;
+    private double SignificantChange = 0.5; // 50%
+    private int SteadyGrowthDays = 7;
 
-    public CostAnalyzer(List<CostDailyItem> costData)
+    public CostAnalyzer(DetectAnomalySettings settings)
     {
-        _costData = costData.OrderBy(c => c.Date).ToList();
+        RecentActivityDays = settings.RecentActivityDays;
+        SignificantChange = settings.SignificantChange;
+        SteadyGrowthDays = settings.SteadyGrowthDays;
     }
 
-    public List<AnomalyDetectionResult> DetectAnomalies()
+    public List<AnomalyDetectionResult> AnalyzeCost(List<CostDailyItem> items)
     {
-        var anomalies = new List<AnomalyDetectionResult>();
-        var costMean = _costData.Average(c => c.Cost);
-        var costStdDev = CalculateStandardDeviation(_costData.Select(c => c.Cost).ToList());
+        var groupedItems = items
+            .GroupBy(i => i.Name)
+            .Select(g => g.OrderBy(i => i.Date).ToList())
+            .ToList();
 
-        for (int i = MovingAveragePeriod; i < _costData.Count; i++)
+        var results = new Dictionary<(string, AnomalyType), AnomalyDetectionResult>();
+        foreach (var group in groupedItems)
         {
-            var previousCostData = _costData[i - 1];
-            var currentCostData = _costData[i];
+            AnomalyDetectionResult result;
 
-            var dailyRunRate = _costData.Skip(i - MovingAveragePeriod).Take(MovingAveragePeriod).Average(c => c.Cost);
-            
-            var zScore = (currentCostData.Cost - costMean) / costStdDev;
-            var changeInPercent = (currentCostData.Cost - previousCostData.Cost) / previousCostData.Cost * 100;
-            
-            string type = "";
-            string description = "";
+            // Check for new costs
+            if (group.First().Cost == 0 && group.Skip(1).Any(i => i.Cost != 0))
+            {
+                var startCostItem = group.First(i => i.Cost != 0);
+                result = new AnomalyDetectionResult
+                {
+                    Name = startCostItem.Name,
+                    DetectionDate = startCostItem.Date,
+                    Message = "New cost detected",
+                    CostDifference = startCostItem.Cost,
+                    AnomalyType = AnomalyType.NewCost,
+                    Data = group
+                };
+                results[(startCostItem.Name, AnomalyType.NewCost)] = result;
+            }
 
-            if (Math.Abs(zScore) > ZScoreThreshold)
+            // Check for removed costs
+            if (group.Last().Cost == 0)
             {
-                type = zScore > 0 ? "Spike" : "Drop";
-                description = $"The cost changed from {previousCostData.Cost} to {currentCostData.Cost}, which is a {changeInPercent}% change.";
-                anomalies.Add(new AnomalyDetectionResult(currentCostData.Date, currentCostData.Name, currentCostData.Cost, previousCostData.Cost, changeInPercent, zScore, type, description));
+                for (int i = group.Count - 2; i >= 0; i--)
+                {
+                    if (group[i].Cost != 0)
+                    {
+                        var endCostItem = group[i];
+                        result = new AnomalyDetectionResult
+                        {
+                            Name = endCostItem.Name,
+                            DetectionDate = endCostItem.Date.AddDays(1), // Assuming the cost was removed the next day
+                            Message = "Cost removed",
+                            CostDifference = -endCostItem.Cost,
+                            AnomalyType = AnomalyType.RemovedCost,
+                            Data = group
+                        };
+                        results[(endCostItem.Name, AnomalyType.RemovedCost)] = result;
+                        break;
+                    }
+                }
             }
-            else if (currentCostData.Cost == NoCostThreshold)
+
+            // Filter out inactive resources
+            if (!IsResourceActive(group)) continue;
+
+            // Check for significant cost changes
+            for (int i = 1; i < group.Count; i++)
             {
-                type = "No cost";
-                description = $"The cost changed from {previousCostData.Cost} to 0, which indicates that this resource is no longer generating any cost.";
-                anomalies.Add(new AnomalyDetectionResult(currentCostData.Date, currentCostData.Name, currentCostData.Cost, previousCostData.Cost, -100, 0, type, description));
+                var today = group[i];
+                var yesterday = group[i - 1];
+                var diff = today.Cost - yesterday.Cost;
+
+                if (Math.Abs(diff) / yesterday.Cost > SignificantChange)
+                {
+                    result = new AnomalyDetectionResult
+                    {
+                        Name = today.Name,
+                        DetectionDate = today.Date,
+                        Message = $"Significant cost change: from {yesterday.Cost} to {today.Cost} ({diff})",
+                        CostDifference = diff,
+                        AnomalyType = AnomalyType.SignificantChange,
+                        Data = group
+                    };
+                    results[(today.Name, AnomalyType.SignificantChange)] = result;
+                }
             }
-            else if (currentCostData.Cost > RunRateThreshold * dailyRunRate)
+
+            // Check for steady cost increase over a week
+            if (IsSteadyCostIncrease(group))
             {
-                type = "High run rate";
-                description = $"The cost of {currentCostData.Cost} is significantly higher than the average daily run rate of {dailyRunRate} over the last {MovingAveragePeriod} days.";
-                anomalies.Add(new AnomalyDetectionResult(currentCostData.Date, currentCostData.Name, currentCostData.Cost, previousCostData.Cost, changeInPercent, zScore, type, description));
+                var today = group.Last();
+                result = new AnomalyDetectionResult
+                {
+                    Name = today.Name,
+                    DetectionDate = today.Date,
+                    Message = "Steady cost increase over a week",
+                    CostDifference = today.Cost - group[^SteadyGrowthDays].Cost,
+                    AnomalyType = AnomalyType.SteadyGrowth,
+                    Data = group
+                };
+                results[(today.Name, AnomalyType.SteadyGrowth)] = result;
             }
         }
 
-        return anomalies;
+        return results.Values.ToList();
     }
 
-    private double CalculateStandardDeviation(List<double> values)
+    private bool IsResourceActive(IEnumerable<CostDailyItem> items)
     {
-        var average = values.Average();
-        var sumOfSquaresOfDifferences = values.Select(val => (val - average) * (val - average)).Sum();
-        return Math.Sqrt(sumOfSquaresOfDifferences / values.Count);
+        return items.Any(i => i.Date >= DateOnly.FromDateTime(DateTime.Now.AddDays(-RecentActivityDays)));
+    }
+
+    private bool IsSteadyCostIncrease(IReadOnlyCollection<CostDailyItem> items)
+    {
+        if (items.Count < SteadyGrowthDays) return false;
+
+        var lastWeekItems = items.TakeLast(SteadyGrowthDays).ToList();
+        for (int i = 1; i < lastWeekItems.Count; i++)
+        {
+            if (lastWeekItems[i].Cost <= lastWeekItems[i - 1].Cost) return false;
+        }
+
+        return true;
     }
 }
 
 
+public record AnomalyDetectionResult
+{
+    public string Name { get; init; }
+    public DateOnly DetectionDate { get; init; }
+    public string Message { get; init; }
+    public double CostDifference { get; init; }
+    public AnomalyType AnomalyType { get; init; }
+    public List<CostDailyItem> Data { get; set; }
+}
 
+public enum AnomalyType
+{
+    NewCost,
+    RemovedCost,
+    SignificantChange,
+    SteadyGrowth
+}
