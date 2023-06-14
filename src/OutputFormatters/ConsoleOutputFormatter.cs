@@ -255,7 +255,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
         const string othersLabel = "(others)";
-        
+
         var t = new Table();
         t.Border(TableBorder.None);
         t.Title($"Daily costs grouped by {settings.Dimension}");
@@ -339,7 +339,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 ? dailyCost.ToString("F2") + " USD"
                 : dailyCost.ToString("F2") + " " + day.First().Currency;
 
-            t.AddRow(new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), new Markup("[grey42]" + cost + "[/]"), c);
+            t.AddRow(new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), new Markup("[grey42]" + cost + "[/]"),
+                c);
         }
 
         t.AddEmptyRow();
@@ -353,7 +354,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         AnsiConsole.Write(t);
 
-        var costGroupedByDay = dailyCosts.GroupBy(a => a.Date).OrderBy(a=>a.Key);
+        var costGroupedByDay = dailyCosts.GroupBy(a => a.Date).OrderBy(a => a.Key);
         // Calculate trend of the cost, so we can see if we are going up or down
         var previousCost = 0D;
         var trend = 0D;
@@ -367,31 +368,95 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
             previousCost = currentCost;
         }
-       
+
         var trendText = trend > 0 ? "up" : "down";
-       var totalSum = dailyCosts.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
-       
-       var avgCost = totalSum / costGroupedByDay.Count();
+        var totalSum = dailyCosts.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
 
-       var figletTotalCost = new FigletText(totalSum.ToString("N2")).Color(trend>0 ? Color.Red : Color.Green);
-       var textTotalCost = new Markup($"Total costs in {(settings.UseUSD ? "USD" : dailyCosts.First().Currency)}, going {trendText} {(trend>0?":chart_increasing:":":chart_decreasing:")}");
-       
-       var figletAvgCost = new FigletText(avgCost.ToString("N2")).Color(Color.Blue);
-       var textAvgCost = new Markup("Avg daily costs in " +(settings.UseUSD ? "USD" :   dailyCosts.First().Currency));
+        var avgCost = totalSum / costGroupedByDay.Count();
 
-       
-       
-     
+        var figletTotalCost = new FigletText(totalSum.ToString("N2")).Color(trend > 0 ? Color.Red : Color.Green);
+        var textTotalCost =
+            new Markup(
+                $"Total costs in {(settings.UseUSD ? "USD" : dailyCosts.First().Currency)}, going {trendText} {(trend > 0 ? ":chart_increasing:" : ":chart_decreasing:")}");
 
-       var rule = new Rule();
-       AnsiConsole.WriteLine();
-       AnsiConsole.Write(rule);
-       
-       AnsiConsole.Write(new Columns(
-           new Rows(figletTotalCost, textTotalCost),
-           new Rows(figletAvgCost, textAvgCost)));
-       
-       
+        var figletAvgCost = new FigletText(avgCost.ToString("N2")).Color(Color.Blue);
+        var textAvgCost = new Markup("Avg daily costs in " + (settings.UseUSD ? "USD" : dailyCosts.First().Currency));
+
+
+        var rule = new Rule();
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(rule);
+
+        AnsiConsole.Write(new Columns(
+            new Rows(figletTotalCost, textTotalCost),
+            new Rows(figletAvgCost, textAvgCost)));
+
+
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings,
+        List<AnomalyDetectionResult> anomalies)
+    {
+        var groupedByName = anomalies.GroupBy(a => a.Name);
+
+        var tree = new Tree("[red]Detected Anomalies[/]");
+
+
+        foreach (var item in groupedByName)
+        {
+            var n = tree.AddNode($"[dim]{settings.Dimension}[/]: [bold]{item.Key}[/]");
+
+            foreach (var anomaly in item.GroupBy(a => a.AnomalyType))
+            {
+                foreach (var a in anomaly.OrderBy(b => b.DetectionDate))
+                {
+                    TreeNode subNode = null;
+                    switch (anomaly.Key)
+                    {
+                        case AnomalyType.NewCost:
+                           subNode= n.AddNode(new Markup(
+                                $"[bold]New cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                            break;
+                        case AnomalyType.RemovedCost:
+                            subNode=n.AddNode(new Markup(
+                                $"[bold]Removed cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                            break;
+                        case AnomalyType.SteadyGrowth:
+                            subNode=n.AddNode(new Markup(
+                                $"[bold]Steady growth in cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                            break;
+                        case AnomalyType.SignificantChange:
+                            subNode= n.AddNode(new Markup(
+                                $"[bold]Significant change in cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                            break;
+                    }
+                    
+                    if (subNode != null)
+                    {
+                        // Only show the relevant data for the anomaly, so from now until the detection date + a couple of days
+                        var relevantDays = a.Data.Where(c => c.Date >= a.DetectionDate.AddDays(-2) && c.Date <= a.DetectionDate.AddDays(2));
+                        
+                        foreach (var costData in relevantDays.OrderByDescending(c=>c.Date))
+                        {
+                            // Highlight the row where the anomaly was detected
+                            if (costData.Date == a.DetectionDate)
+                            {
+                                subNode.AddNode(new Markup(
+                                    $"[bold]{costData.Date}[/]: [bold red]{costData.Cost:N2}[/] [bold]<<<[/]"));
+                                continue;
+                            }
+                            subNode.AddNode(new Markup(
+                                $"[grey42]{costData.Date}[/]: {costData.Cost:N2}"));
+                        }
+                       
+                    }
+                }
+            }
+        }
+
+        AnsiConsole.Write(tree);
+
         return Task.CompletedTask;
     }
 }

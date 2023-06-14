@@ -68,7 +68,14 @@ public class JsonOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
-    
+
+    public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
+    {
+        WriteJson(settings, anomalies);
+
+        return Task.CompletedTask;
+    }
+
     private static void WriteJson(CostSettings settings, object items)
     {
 
