@@ -1,8 +1,10 @@
-﻿using AzureCostCli.Commands;
+﻿using System.ComponentModel;
+using AzureCostCli.Commands;
 using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.Infrastructure.TypeConvertors;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 
@@ -19,6 +21,10 @@ registrations.AddHttpClient("CostApi", client =>
 registrations.AddTransient<ICostRetriever, AzureCostApiRetriever>();
 
 var registrar = new TypeRegistrar(registrations);
+
+#if NET6_0
+TypeDescriptor.AddAttributes(typeof(DateOnly), new TypeConverterAttribute(typeof(DateOnlyTypeConverter)));
+#endif
 
 // Setup the application itself
 var app = new CommandApp(registrar);
