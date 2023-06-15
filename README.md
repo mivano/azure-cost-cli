@@ -178,7 +178,7 @@ The available dimensions are: `ResourceGroup`,`ResourceGroupName`,`ResourceLocat
 Based on the daily cost data, this command will try to detect anomalies and trends. It will scan for the following anomalies:
 
 - Cost that is stopped; although it is good that the cost is stopped, it might be an indication that something is wrong.
-- Cost that is increasing; this might be an indication that something is wrong.
+- Cost that is appearing; the cost was not there before and is now adding to the overall cost.
 - A spike in cost; a deviation from the normal cost pattern
 - A gradual increase in cost; so a service is growing in cost over time.
 
