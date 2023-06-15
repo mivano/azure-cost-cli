@@ -178,6 +178,27 @@ public class TextOutputFormatter : BaseOutputFormatter
 
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
     {
-        throw new NotImplementedException();
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine("Anomaly Detection Results:");
+            Console.WriteLine("--------------------------");
+            Console.WriteLine();
+        }
+
+        foreach (var dimension in anomalies.GroupBy(a=>a.Name))
+        {
+            Console.WriteLine($"+ {settings.Dimension}: {dimension.Key}");
+            Console.WriteLine();
+            foreach (var anomaly in dimension)
+            {
+                Console.WriteLine($"  - {anomaly.AnomalyType}: {anomaly.Message}");
+            }
+
+            Console.WriteLine();
+        }
+
+
+
+        return Task.CompletedTask;
     }
 }

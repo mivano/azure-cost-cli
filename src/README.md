@@ -1,6 +1,7 @@
 # Azure Cost CLI
 
-This is a simple command line tool to get the cost of your Azure subscription. It uses the Azure Cost Management API to get the cost and output the results to the console or JSON. E.g. so it can be used in a workflow to get the cost of your subscription and use it in subsequent steps.
+
+This is a simple command line tool to get the cost of your Azure subscription. It uses the Azure Cost Management API to get the cost and output the results to the console, text, csv, markdown or JSON. E.g. so it can be used in a workflow to get the cost of your subscription and use it in subsequent steps.
 
 ![](https://raw.githubusercontent.com/mivano/azure-cost-cli/main/screenshot.png)
 

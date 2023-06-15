@@ -339,7 +339,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 ? dailyCost.ToString("F2") + " USD"
                 : dailyCost.ToString("F2") + " " + day.First().Currency;
 
-            t.AddRow(new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), new Markup("[grey42]" + cost + "[/]"),
+            t.AddRow(new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), new Markup("[dim]" + cost + "[/]"),
                 c);
         }
 
@@ -416,40 +416,35 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                     {
                         case AnomalyType.NewCost:
                            subNode= n.AddNode(new Markup(
-                                $"[bold]New cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                                $":money_bag: [bold]New cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                         case AnomalyType.RemovedCost:
                             subNode=n.AddNode(new Markup(
-                                $"[bold]Removed cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                                $":money_with_wings: [bold]Removed cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                         case AnomalyType.SteadyGrowth:
                             subNode=n.AddNode(new Markup(
-                                $"[bold]Steady growth in cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                                $":chart_increasing: [bold]Steady growth in cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                         case AnomalyType.SignificantChange:
                             subNode= n.AddNode(new Markup(
-                                $"[bold]Significant change in cost detected[/] on [grey42]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
+                                $":bar_chart: [bold]Significant change in cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                     }
                     
                     if (subNode != null)
                     {
                         // Only show the relevant data for the anomaly, so from now until the detection date + a couple of days
-                        var relevantDays = a.Data.Where(c => c.Date >= a.DetectionDate.AddDays(-2) && c.Date <= a.DetectionDate.AddDays(2));
+                        var relevantDays = a.Data.Where(c => c.Date >= a.DetectionDate.AddDays(-3) && c.Date <= a.DetectionDate.AddDays(3));
+                        var chart = new BarChart();
+                        chart.Width = 50;
                         
                         foreach (var costData in relevantDays.OrderByDescending(c=>c.Date))
                         {
-                            // Highlight the row where the anomaly was detected
-                            if (costData.Date == a.DetectionDate)
-                            {
-                                subNode.AddNode(new Markup(
-                                    $"[bold]{costData.Date}[/]: [bold red]{costData.Cost:N2}[/] [bold]<<<[/]"));
-                                continue;
-                            }
-                            subNode.AddNode(new Markup(
-                                $"[grey42]{costData.Date}[/]: {costData.Cost:N2}"));
+                            chart.AddItem(costData.Date == a.DetectionDate ? $"[bold]{costData.Date.ToString(CultureInfo.CurrentCulture)}[/]": $"[dim]{costData.Date.ToString(CultureInfo.CurrentCulture)}[/]", Math.Round(costData.Cost,2), costData.Date == a.DetectionDate ? Color.Red : Color.Green);
                         }
                        
+                        subNode.AddNode(chart);
                     }
                 }
             }
@@ -531,7 +526,7 @@ internal sealed class BreakdownTags : Renderable
 
         if (ShowTagValues)
         {
-            return string.Format(culture, "{0} [grey]{1}[/]",
+            return string.Format(culture, "{0} [dim]{1}[/]",
                 item.Label.EscapeMarkup(),
                 formatter(item.Value, culture));
         }
