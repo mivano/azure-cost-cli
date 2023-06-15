@@ -270,6 +270,33 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
     {
-        throw new NotImplementedException();
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine("# Anomaly Detection Results");
+            Console.WriteLine();
+        }
+
+        foreach (var dimension in anomalies.GroupBy(a=>a.Name))
+        {
+            Console.WriteLine($"## {settings.Dimension}: {dimension.Key}");
+            Console.WriteLine();
+            Console.WriteLine("| Anomaly Type | Message |");
+            Console.WriteLine("|---|---|");
+            foreach (var anomaly in dimension)
+            {
+                Console.WriteLine($"|{anomaly.AnomalyType}| {anomaly.Message}|");
+            }
+
+            Console.WriteLine();
+        }
+
+        if (settings.SkipHeader == false)
+        {
+            Console.WriteLine();
+            Console.WriteLine(
+                $"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} for subscription with id `{settings.Subscription}`</sup>");
+        }
+
+        return Task.CompletedTask;
     }
 }

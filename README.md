@@ -8,9 +8,17 @@ This is a simple command line tool to get the cost of your Azure subscription. I
 
 ![](screenshot.png)
 
-Besides showing the accumulated cost, it can also show daily cost, extract resource (costs) and list budgets.
+Besides showing the accumulated cost, it can also show daily cost, extract resource (costs) and list budgets. 
 
-![](screenshot_daily_metercategory.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshot_daily_metercategory_dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="screenshot_daily_metercategory.png">
+  <img alt="Daily overview grouped by the meter category dimension." src="screenshot_daily_metercategory.png">
+</picture>
+
+It can also detect anomalies and trends in the cost, which can be used to further automate reporting.
+
+![](screenshot_anomalies.png)
 
 ## Installation
 
@@ -50,6 +58,7 @@ EXAMPLES:
     azure-cost costByResource -s 00000000-0000-0000-0000-000000000000 -o text
     azure-cost dailyCosts --dimension MeterCategory
     azure-cost budgets -s 00000000-0000-0000-0000-000000000000
+    azure-cost detectAnomalies --dimension ResourceId --recent-activity-days 4
 
 
 OPTIONS:
@@ -70,6 +79,7 @@ COMMANDS:
     accumulatedCost    Show the accumulated cost details
     costByResource     Show the cost details by resource
     dailyCosts         Show the daily cost by a given dimension
+    detectAnomalies    Detect anomalies and trends  
     budgets            Get the available budgets   
 
 ```
@@ -162,6 +172,33 @@ azure-cost dailyCosts
 The above screenshots show the default console output, but the other formatters can also be used.
 
 The available dimensions are: `ResourceGroup`,`ResourceGroupName`,`ResourceLocation`,`ConsumedService`,`ResourceType`,`ResourceId`,`MeterId`,`BillingMonth`,`MeterCategory`,`MeterSubcategory`,`Meter`,`AccountName`,`DepartmentName`,`SubscriptionId`,`SubscriptionName`,`ServiceName`,`ServiceTier`,`EnrollmentAccountName`,`BillingAccountId`,`ResourceGuid`,`BillingPeriod`,`InvoiceNumber`,`ChargeType`,`PublisherType`,`ReservationId`,`ReservationName`,`Frequency`,`PartNumber`,`CostAllocationRuleName`,`MarkupRuleName`,`PricingModel`,`BenefitId`,`BenefitName`
+
+### Detect Anomalies
+
+Based on the daily cost data, this command will try to detect anomalies and trends. It will scan for the following anomalies:
+
+- Cost that is stopped; although it is good that the cost is stopped, it might be an indication that something is wrong.
+- Cost that is increasing; this might be an indication that something is wrong.
+- A spike in cost; a deviation from the normal cost pattern
+- A gradual increase in cost; so a service is growing in cost over time.
+
+There are a number of settings you can use to finetune the detection.
+
+```
+--dimension               ResourceGroupName    The grouping to use. E.g. ResourceGroupName, Meter, ResourceLocation, etc. Defaults to ResourceGroupName                                               
+--recent-activity-days    7                    The number of days to use for recent activity. Defaults to 7                                                                                           
+--significant-change      0,75                 The significant change in cost to use. Defaults to 0.75 (75%)                                                                                          
+--steady-growth-days      7                    The number of days to use for steady growth. Defaults to 7                                                                                             
+--threshold-cost          2                    The thresshold cost to use. Values lower than this are excluded. Defaults to 2.00      
+```
+
+All the different formatters can be used to output the data, so you can further process it with the JSON or CSV output, send it via email with the text formatter, or use the markdown formatter to include it in a GitHub workflow. The console output will render the different anomalies in different and point out the moment in time where the anomaly was detected.
+
+![](screenshot_anomalies.png)
+
+```bash 
+azure-cost detectAnomalies
+```
 
 ### Budgets
 

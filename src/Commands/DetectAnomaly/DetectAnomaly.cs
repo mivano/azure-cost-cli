@@ -116,12 +116,14 @@ public class CostAnalyzer
     private int RecentActivityDays = 7;
     private double SignificantChange = 0.5; // 50%
     private int SteadyGrowthDays = 7;
-
+    private double ThresholdCost = 2.00d;
+    
     public CostAnalyzer(DetectAnomalySettings settings)
     {
         RecentActivityDays = settings.RecentActivityDays;
         SignificantChange = settings.SignificantChange;
         SteadyGrowthDays = settings.SteadyGrowthDays;
+        ThresholdCost = settings.ThresholdCost;
     }
 
     public List<AnomalyDetectionResult> AnalyzeCost(List<CostDailyItem> items)
@@ -137,14 +139,14 @@ public class CostAnalyzer
             AnomalyDetectionResult result;
 
             // Check for new costs
-            if (group.First().Cost == 0 && group.Skip(1).Any(i => i.Cost != 0))
+            if (group.First().Cost == 0 && group.Skip(1).Any(i => i.Cost != 0 && i.Cost > ThresholdCost))
             {
                 var startCostItem = group.First(i => i.Cost != 0);
                 result = new AnomalyDetectionResult
                 {
                     Name = startCostItem.Name,
                     DetectionDate = startCostItem.Date,
-                    Message = "New cost detected",
+                    Message = "New cost detected at " + startCostItem.Date,
                     CostDifference = startCostItem.Cost,
                     AnomalyType = AnomalyType.NewCost,
                     Data = group
@@ -160,11 +162,12 @@ public class CostAnalyzer
                     if (group[i].Cost != 0)
                     {
                         var endCostItem = group[i];
+                        var detectionDate = endCostItem.Date.AddDays(1);
                         result = new AnomalyDetectionResult
                         {
                             Name = endCostItem.Name,
-                            DetectionDate = endCostItem.Date.AddDays(1), // Assuming the cost was removed the next day
-                            Message = "Cost removed",
+                            DetectionDate = detectionDate, // Assuming the cost was removed the next day
+                            Message = $"Cost is removed at {detectionDate}",
                             CostDifference = -endCostItem.Cost,
                             AnomalyType = AnomalyType.RemovedCost,
                             Data = group
@@ -185,13 +188,13 @@ public class CostAnalyzer
                 var yesterday = group[i - 1];
                 var diff = today.Cost - yesterday.Cost;
 
-                if (Math.Abs(diff) / yesterday.Cost > SignificantChange)
+                if (Math.Abs(diff) / yesterday.Cost > SignificantChange && diff > ThresholdCost)
                 {
                     result = new AnomalyDetectionResult
                     {
                         Name = today.Name,
                         DetectionDate = today.Date,
-                        Message = $"Significant cost change: from {yesterday.Cost} to {today.Cost} ({diff})",
+                        Message = $"Significant cost change detected at {today.Date} when it went from {yesterday.Cost:N2} to {today.Cost:N2} (difference of {diff:N2})",
                         CostDifference = diff,
                         AnomalyType = AnomalyType.SignificantChange,
                         Data = group
@@ -208,7 +211,7 @@ public class CostAnalyzer
                 {
                     Name = today.Name,
                     DetectionDate = today.Date,
-                    Message = "Steady cost increase over a week",
+                    Message = "Steady cost increase over a week detected",
                     CostDifference = today.Cost - group[^SteadyGrowthDays].Cost,
                     AnomalyType = AnomalyType.SteadyGrowth,
                     Data = group

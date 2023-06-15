@@ -41,6 +41,7 @@ app.Configure(config =>
   config.AddExample(new[] { "costByResource", "-s", "00000000-0000-0000-0000-000000000000", "-o", "text" });
   config.AddExample(new[] { "dailyCosts", "--dimension", "MeterCategory" });
   config.AddExample(new[] { "budgets", "-s", "00000000-0000-0000-0000-000000000000" });
+  config.AddExample(new[] { "detectAnomalies", "--dimension", "ResourceId", "--recent-activity-days", "4" });
   
 #if DEBUG
   config.PropagateExceptions();
