@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Text.Json;
 using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;

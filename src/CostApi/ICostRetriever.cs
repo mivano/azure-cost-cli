@@ -28,6 +28,3 @@ public interface ICostRetriever
     Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Guid subscriptionId);
     Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Guid subscriptionId, string[] filter, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
 }
-
-
-

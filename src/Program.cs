@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.Prices;
 using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
@@ -16,9 +17,17 @@ registrations.AddHttpClient("CostApi", client =>
 {
   client.BaseAddress = new Uri("https://management.azure.com/");
   client.DefaultRequestHeaders.Add("Accept", "application/json");
-}).AddPolicyHandler(AzureCostApiRetriever.GetRetryAfterPolicy());
+}).AddPolicyHandler(PollyExtensions.GetRetryAfterPolicy());
+
+// And one for the price API
+registrations.AddHttpClient("PriceApi", client =>
+{
+  client.BaseAddress = new Uri("https://prices.azure.com/");
+  client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).AddPolicyHandler(PollyExtensions.GetRetryAfterPolicy());
 
 registrations.AddTransient<ICostRetriever, AzureCostApiRetriever>();
+registrations.AddTransient<IPriceRetriever, AzurePriceRetriever>();
 
 var registrar = new TypeRegistrar(registrations);
 
@@ -61,6 +70,12 @@ app.Configure(config =>
   
   config.AddCommand<BudgetsCommand>("budgets")
     .WithDescription("Get the available budgets.");
+  
+  config.AddBranch<PricesSettings>("prices", add =>
+  {
+    add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
+    add.SetDescription("Use the Azure Price catalog");
+  });
   
   config.ValidateExamples();
 });
