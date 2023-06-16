@@ -743,10 +743,26 @@ public class AzureCostApiRetriever : ICostRetriever
             string serviceName = row[8].GetString();
             string serviceTier = row[9].GetString();
             string meter = row[10].GetString();
-            string[] tags = row[11].EnumerateArray().Select(tag => tag.GetString()).ToArray();
+           
+            // Assuming row[11] contains the tags array
+            var tagsArray = row[11].EnumerateArray().ToArray();
+
+            Dictionary<string, string> tags = new Dictionary<string, string>();
+
+            foreach (var tagString in tagsArray)
+            {
+                var parts = tagString.GetString().Split(':');
+                if (parts.Length == 2) // Ensure the string is in the format "key:value"
+                {
+                    var key = parts[0].Trim('"'); // Remove quotes from the key
+                    var value = parts[1].Trim('"'); // Remove quotes from the value
+                    tags[key] = value;
+                }
+            }
+            
             string currency = row[12].GetString();
 
-            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, resourceLocation,
+            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, subscriptionId, resourceLocation,
                 chargeType, resourceGroupName, publisherType, serviceName, serviceTier, meter, tags, currency);
 
             items.Add(item);

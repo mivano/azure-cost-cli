@@ -88,9 +88,7 @@ public class CostByResourceCommand: AsyncCommand<CostByResourceSettings>
         // Fetch the costs from the Azure Cost Management API
         var resources = await _costRetriever.RetrieveCostForResources(settings.Debug, subscriptionId,settings.Filter, settings.Timeframe,
             settings.From, settings.To);
-
-
-      
+        
         // Write the output
         await _outputFormatters[settings.Output]
             .WriteCostByResource(settings, resources);
