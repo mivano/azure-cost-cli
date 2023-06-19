@@ -74,6 +74,7 @@ OPTIONS:
         --useUSD          Force the use of USD for the currency. Defaults to false to use the currency returned by the API        
         --skipHeader      Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false 
         --filter          Filter the output by the specified properties. Defaults to no filtering and can be multiple values.
+    -m, --metric           ActualCost    The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)    
 
 COMMANDS:
     accumulatedCost    Show the accumulated cost details

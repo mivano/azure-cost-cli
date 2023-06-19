@@ -90,6 +90,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         // Fetch the costs from the Azure Cost Management API
         var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, 
             settings.Filter,
+            settings.Metric,
             settings.Timeframe,
             settings.From, settings.To);
        
@@ -125,18 +126,21 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 
             forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
                 settings.Filter,
+                settings.Metric,
                 TimeframeType.Custom,
                 forecastStartDate,
                 forecastEndDate)).ToList();
         }
         
         var byServiceNameCosts =  await _costRetriever.RetrieveCostByServiceName(settings.Debug,
-            subscriptionId,settings.Filter, settings.Timeframe, settings.From, settings.To);
+            subscriptionId,settings.Filter, settings.Metric,settings.Timeframe, settings.From, settings.To);
         var byLocationCosts =  await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
             settings.Filter,
+            settings.Metric,
             settings.Timeframe, settings.From, settings.To);
         var byResourceGroupCosts =  await _costRetriever.RetrieveCostByResourceGroup(settings.Debug, subscriptionId,
             settings.Filter,
+            settings.Metric,
             settings.Timeframe, settings.From, settings.To);
 
       

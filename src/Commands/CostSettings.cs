@@ -47,4 +47,15 @@ public class CostSettings : LogCommandSettings
     [CommandOption("--filter")]
     [Description("Filter the output by the specified properties. Defaults to no filtering and can be multiple values.")]
     public string[] Filter { get; set; }
+
+    [CommandOption("-m|--metric")]
+    [Description("The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)")]
+    [DefaultValue(MetricType.ActualCost)]
+    public MetricType Metric { get; set; } = MetricType.ActualCost;
+}
+
+public enum MetricType
+{
+    ActualCost,
+    AmortizedCost
 }

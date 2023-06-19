@@ -165,7 +165,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
-        string[] filter,
+        string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -176,7 +176,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -235,7 +235,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, TimeframeType timeFrame, DateOnly from, DateOnly to)
+        Guid subscriptionId, string[] filter,MetricType metric, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
@@ -243,7 +243,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -308,7 +308,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
-        string[] filter,
+        string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -317,7 +317,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -382,7 +382,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter,
+        Guid subscriptionId, string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -391,7 +391,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -461,7 +461,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, string dimension,
+        Guid subscriptionId, string[] filter, MetricType metric, string dimension,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -470,7 +470,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -563,7 +563,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,
-        string[] filter,
+        string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -572,7 +572,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -639,7 +639,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, TimeframeType timeFrame, DateOnly from,
+        Guid subscriptionId, string[] filter, MetricType metric, TimeframeType timeFrame, DateOnly from,
         DateOnly to)
     {
         var uri = new Uri(
@@ -648,7 +648,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
