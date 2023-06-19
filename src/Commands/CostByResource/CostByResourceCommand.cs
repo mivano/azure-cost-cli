@@ -90,6 +90,7 @@ public class CostByResourceCommand: AsyncCommand<CostByResourceSettings>
             settings.Debug, 
             subscriptionId,settings.Filter,
             settings.Metric,
+            settings.ExcludeMeterDetails,
             settings.Timeframe,
             settings.From, 
             settings.To);

@@ -147,20 +147,43 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 
     public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
     {
-        if (settings.SkipHeader == false)
+
+        if (settings.ExcludeMeterDetails)
         {
-            Console.WriteLine("# Azure Cost by Resource");
-            Console.WriteLine();
-            Console.WriteLine(
-                "| ResourceName | ResourceType | Location | ResourceGroupName | ServiceName | ServiceTier | Meter | Amount |");
-            Console.WriteLine("|---|---|---|---|---|---|---|---:|");
+            if (settings.SkipHeader == false)
+            {
+                Console.WriteLine("# Azure Cost by Resource");
+                Console.WriteLine();
+                Console.WriteLine(
+                    "| ResourceName | ResourceType | Location | ResourceGroupName | Amount |");
+                Console.WriteLine("|---|---|---|---|---|---|---|---:|");
+            }
+
+            foreach (var cost in resources)
+            {
+                Console.WriteLine(
+                    $"|{cost.ResourceId.Split('/').Last()} | {cost.ResourceType} | {cost.ResourceLocation} | {cost.ResourceGroupName} | {(settings.UseUSD ? cost.CostUSD : cost.Cost):N2} {(settings.UseUSD ? "USD" : cost.Currency)} |");
+            }
+        }
+        else
+        {
+
+            if (settings.SkipHeader == false)
+            {
+                Console.WriteLine("# Azure Cost by Resource");
+                Console.WriteLine();
+                Console.WriteLine(
+                    "| ResourceName | ResourceType | Location | ResourceGroupName | ServiceName | ServiceTier | Meter | Amount |");
+                Console.WriteLine("|---|---|---|---|---|---|---|---:|");
+            }
+
+            foreach (var cost in resources)
+            {
+                Console.WriteLine(
+                    $"|{cost.ResourceId.Split('/').Last()} | {cost.ResourceType} | {cost.ResourceLocation} | {cost.ResourceGroupName} |  {cost.ServiceName} | {cost.ServiceTier} | {cost.Meter} | {(settings.UseUSD ? cost.CostUSD : cost.Cost):N2} {(settings.UseUSD ? "USD" : cost.Currency)} |");
+            }
         }
 
-        foreach (var cost in resources)
-        {
-            Console.WriteLine($"|{cost.ResourceId.Split('/').Last()} | {cost.ResourceType} | {cost.ResourceLocation} | {cost.ResourceGroupName} |  {cost.ServiceName} | {cost.ServiceTier} | {cost.Meter} | {(settings.UseUSD ? cost.CostUSD :cost.Cost):N2} {(settings.UseUSD ? "USD" :cost.Currency)} |");
-        }
-        
         return Task.CompletedTask;
     }
 

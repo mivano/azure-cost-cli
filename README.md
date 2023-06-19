@@ -150,6 +150,15 @@ This will retrieve the cost of the subscription by resource. This will fetch the
 azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o json
 ```
 
+If you are only interested in the cost of the resources, you can exclude the meter details using the `--exclude-meter-details` parameter.
+
+```bash
+azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 --exclude-meter-details
+```
+
+Do keep in mind that with the `--metric` you can either request the ActualCost or the AmortizedCost cost, but not both at the same time. The default is ActualCost.
+
+
 ### Daily Costs
 
 The daily overview fetches the cost of the subscription for each day in the specified period. It will show the total cost of the day and the cost per dimension. The dimension is the resource group by default, but you can specify a different one using the `--dimension` parameter. 
