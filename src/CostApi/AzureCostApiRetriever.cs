@@ -762,7 +762,7 @@ public class AzureCostApiRetriever : ICostRetriever
             
             string currency = row[12].GetString();
 
-            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, subscriptionId, resourceLocation,
+            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, resourceLocation,
                 chargeType, resourceGroupName, publisherType, serviceName, serviceTier, meter, tags, currency);
 
             items.Add(item);
