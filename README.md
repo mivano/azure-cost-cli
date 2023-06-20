@@ -158,6 +158,9 @@ azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 --exclude-mete
 
 Do keep in mind that with the `--metric` you can either request the ActualCost or the AmortizedCost cost, but not both at the same time. The default is ActualCost.
 
+A resource can be in multiple resource locations, like Intercontinental and West Europe. When you use `--exclude-meter-details`, the resource will be listed once and the locations will be combined.
+
+You can parse out the resource name, group name and subscription id from the ResourceId field. The format is `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`.
 
 ### Daily Costs
 

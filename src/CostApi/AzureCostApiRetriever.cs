@@ -781,11 +781,11 @@ public class AzureCostApiRetriever : ICostRetriever
             string resourceGroupName = row[6].GetString();
             string publisherType = row[7].GetString();
           
-                string serviceName = excludeMeterDetails?null:row[8].GetString();
-                string serviceTier = excludeMeterDetails?null:row[9].GetString();
-                string meter = excludeMeterDetails?null:row[10].GetString();
-          
-                int tagsColumn = excludeMeterDetails?8:11;
+            string serviceName = excludeMeterDetails?null:row[8].GetString();
+            string serviceTier = excludeMeterDetails?null:row[9].GetString();
+            string meter = excludeMeterDetails?null:row[10].GetString();
+      
+            int tagsColumn = excludeMeterDetails?8:11;
             // Assuming row[tagsColumn] contains the tags array
             var tagsArray = row[tagsColumn].EnumerateArray().ToArray();
 
@@ -811,6 +811,21 @@ public class AzureCostApiRetriever : ICostRetriever
             items.Add(item);
         }
 
+        if (excludeMeterDetails)
+        {
+            // As we do not care about the meter details, we still have the possibility of resources with the same, but having multiple locations like Intercontinental, Unknown and Unassigned
+            // We need to aggregate these resources together and show the total cost for the resource, the resource locations need to be combined as well. So it can become West Europe, Intercontinental
+            
+            var aggregatedItems = new List<CostResourceItem>();
+            var groupedItems = items.GroupBy(x => x.ResourceId);
+            foreach (var groupedItem in groupedItems)
+            {
+                var aggregatedItem = new CostResourceItem(groupedItem.Sum(x => x.Cost), groupedItem.Sum(x => x.CostUSD), groupedItem.Key, groupedItem.First().ResourceType, string.Join(", ", groupedItem.Select(x => x.ResourceLocation)), groupedItem.First().ChargeType, groupedItem.First().ResourceGroupName, groupedItem.First().PublisherType, null, null, null, groupedItem.First().Tags, groupedItem.First().Currency);
+                aggregatedItems.Add(aggregatedItem);
+            }
+            
+            return aggregatedItems;
+        }
         return items;
     }
 
