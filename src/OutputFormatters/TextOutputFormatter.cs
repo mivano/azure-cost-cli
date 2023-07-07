@@ -1,4 +1,5 @@
 using System.Globalization;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -203,5 +204,10 @@ public class TextOutputFormatter : BaseOutputFormatter
 
 
         return Task.CompletedTask;
+    }
+
+    public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
+    {
+        throw new NotImplementedException();
     }
 }

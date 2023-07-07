@@ -82,6 +82,7 @@ COMMANDS:
     dailyCosts         Show the daily cost by a given dimension
     detectAnomalies    Detect anomalies and trends  
     budgets            Get the available budgets   
+    regions            Get the available Azure regions 
 
 ```
 
@@ -220,6 +221,16 @@ This will retrieve the available budgets for the subscription. It will show the 
 ```bash
 azure-cost budgets -s 574385a9-08e9-49fe-91a2-27660d92b8f5 
 ```
+
+### Regions
+
+Retrieve a list of available regions. Besides the location and supported compliances, it will also show the available sustainability information.
+
+```bash
+azure-cost regions
+```
+
+> Not all the formatters are supported for this command. Let me know if there is a need.
 
 ## Filter
 

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.OutputFormatters.SpectreConsole;
@@ -100,8 +101,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the services table
-        var servicesBreakdown = new BreakdownChart()
-            .UseValueFormatter(value =>Money.FormatMoney(value, currency))
+        var servicesBreakdown = new BreakdownChartExt()
+            .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Expand()
             .FullSize();
 
@@ -113,7 +114,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the resource groups table
-        var resourceGroupBreakdown = new BreakdownChart()
+        var resourceGroupBreakdown = new BreakdownChartExt()
             .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Width(60);
 
@@ -125,7 +126,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the locations table
-        var locationsBreakdown = new BreakdownChart()
+        var locationsBreakdown = new BreakdownChartExt()
             .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Width(60);
 
@@ -492,6 +493,33 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         AnsiConsole.Write(tree);
 
+        return Task.CompletedTask;
+    }
+    
+    public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
+    {
+        var table = new Table();
+        table.Border(TableBorder.Rounded);
+        table.AddColumn("Region");
+        table.AddColumn("Geography");
+        table.AddColumn("Display Name");
+        table.AddColumn("Location");
+        table.AddColumn("Sustainability");
+        table.AddColumn("Compliance");
+            
+        foreach (var region in regions.OrderBy(a=>a.continent).ThenBy(a=>a.geographyId))
+        {
+            table.AddRow(
+                new Markup(region.continent), 
+                new Markup(region.geographyId), 
+                new Markup((region.isOpen ? "[green]" : "[red]")+region.displayName+"[/]\n[dim]("+region.id+")[/]"),
+                new Markup(region.location),
+                new Markup(string.Join(", ", region.sustainabilityIds)),
+                new Markup(string.Join(", ", region.complianceIds.OrderBy(a=>a))));
+        }
+
+        AnsiConsole.Write(table);
+        
         return Task.CompletedTask;
     }
 }

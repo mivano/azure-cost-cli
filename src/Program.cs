@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
@@ -16,9 +17,17 @@ registrations.AddHttpClient("CostApi", client =>
 {
   client.BaseAddress = new Uri("https://management.azure.com/");
   client.DefaultRequestHeaders.Add("Accept", "application/json");
-}).AddPolicyHandler(AzureCostApiRetriever.GetRetryAfterPolicy());
+}).AddPolicyHandler(PollyPolicyExtensions.GetRetryAfterPolicy());
+
+registrations.AddHttpClient("RegionsApi", client =>
+{
+  client.BaseAddress = new Uri("https://datacenters.microsoft.com/");
+  client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).AddPolicyHandler(PollyPolicyExtensions.GetRetryAfterPolicy());
+
 
 registrations.AddTransient<ICostRetriever, AzureCostApiRetriever>();
+registrations.AddTransient<IRegionsRetriever, AzureRegionsRetriever>();
 
 var registrar = new TypeRegistrar(registrations);
 
@@ -61,6 +70,9 @@ app.Configure(config =>
   
   config.AddCommand<BudgetsCommand>("budgets")
     .WithDescription("Get the available budgets.");
+  
+  config.AddCommand<RegionsCommand>("regions")
+    .WithDescription("Get the available Azure regions.");
   
   config.ValidateExamples();
 });

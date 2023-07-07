@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,7 +6,6 @@ using System.Text.Json.Serialization;
 using Azure.Core;
 using Azure.Identity;
 using AzureCostCli.Commands;
-using Polly;
 using Spectre.Console;
 using Spectre.Console.Json;
 
@@ -43,43 +41,7 @@ public class AzureCostApiRetriever : ICostRetriever
         _client = httpClientFactory.CreateClient("CostApi");
     }
 
-    public static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy()
-    {
-        // Define WaitAndRetry policy
-        var waitAndRetryPolicy = Policy.HandleResult<HttpResponseMessage>(msg => 
-                msg.StatusCode == HttpStatusCode.TooManyRequests)
-            .WaitAndRetryAsync(
-                retryCount: 3,
-                sleepDurationProvider: (_, response, _) => {
-                    var headers = response.Result?.Headers;
-                    if (headers != null)
-                    {
-                        foreach (var header in headers)
-                        {
-                            if (header.Key.ToLower().Contains("retry-after") && header.Value != null)
-                            {
-                                if (int.TryParse(header.Value.First(), out int seconds))
-                                {
-                                    return TimeSpan.FromSeconds(seconds);
-                                }
-                            }
-                        }
-                    }
-                    // If no header with a retry-after value is found, fall back to 2 seconds.
-                    return TimeSpan.FromSeconds(2);
-                },
-                onRetryAsync: (msg, time, retries, context) => Task.CompletedTask
-            );
-
-        // Define Timeout policy        
-        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(60));
-
-        // Wrap WaitAndRetry with Timeout
-        var resilientPolicy = Policy.WrapAsync(timeoutPolicy, waitAndRetryPolicy);
-
-        return resilientPolicy;
-
-    }
+  
 
     private async Task RetrieveToken(bool includeDebugOutput)
     {
