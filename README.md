@@ -492,7 +492,7 @@ az account list --query "[].id" -o tsv | ForEach-Object {
 }
 ```
 
-Or this snippet by @EEN421 to get the cost by resource for each subscription and append it to a single CSV file.
+Or this snippet by [@EEN421](https://github.com/EEN421) to get the cost by resource for each subscription and append it to a single CSV file.
 
 ```powershell
 #Connect to Azure
