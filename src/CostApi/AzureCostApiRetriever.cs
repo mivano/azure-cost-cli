@@ -702,12 +702,12 @@ public class AzureCostApiRetriever : ICostRetriever
                 new
                 {
                     type = "Dimension",
-                    name = "ServiceName"
+                    name = "MeterCategory"
                 },
                 new
                 {
                     type = "Dimension",
-                    name = "ServiceTier"
+                    name = "MeterSubcategory"
                 },
                 new
                 {
