@@ -1,5 +1,6 @@
 using System.Dynamic;
 using System.Globalization;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -32,6 +33,11 @@ public class CsvOutputFormatter : BaseOutputFormatter
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
     {
         return ExportToCsv(settings.SkipHeader, anomalies);
+    }
+
+    public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
+    {
+        return ExportToCsv(settings.SkipHeader, regions);
     }
 
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)

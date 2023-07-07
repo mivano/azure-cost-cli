@@ -74,7 +74,7 @@ internal sealed class BreakdownTags : Renderable
 
         if (ShowTagValues)
         {
-            return string.Format(culture, "{0} [dim]{1}[/]",
+            return string.Format(culture, "{0} {1}",
                 item.Label.EscapeMarkup(),
                 formatter(item.Value, culture));
         }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 using DevLab.JmesPath;
 using Spectre.Console;
@@ -75,6 +76,14 @@ public class JsonOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
+
+    public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
+    {
+        WriteJson(settings, regions);
+
+        return Task.CompletedTask;
+    }
+    
 
     private static void WriteJson(CostSettings settings, object items)
     {
