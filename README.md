@@ -472,6 +472,49 @@ azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown >
 
 Excluded in the above sample, but it will also include mermaidjs diagrams as well.
 
+## Iterate over multiple subscriptions
+
+Since the tool operates on a single subscription only, you will need to loop over multiple subscriptions yourself. You can do this by using the `az account list` command and then using the `--subscription` parameter to switch between subscriptions.
+
+```bash
+az account list --query "[].id" -o tsv | while read -r id; do
+    echo "Subscription: $id"
+    azure-cost accumulatedCost -o markdown -s $id
+done
+```
+
+Or using Powershell
+
+```powershell
+az account list --query "[].id" -o tsv | ForEach-Object {
+    Write-Host "Subscription: $_"
+    azure-cost accumulatedCost -o markdown -s $_
+}
+```
+
+Or this snippet by @EEN421 to get the cost by resource for each subscription and append it to a single CSV file.
+
+```powershell
+#Connect to Azure
+Connect-AzAccount -UseDeviceAuthentication -Tenant xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx
+
+#Pull list of Subscriptions
+$ids = Get-AzSubscription -TenantId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx| Select-Object id,name
+$firstid = $ids | Select-Object -first 1
+$remainingids = $ids | Select-Object -skip 1
+
+#Create CSV for first subscription with header
+$firstoutput = azure-cost costByResource -s $firstid.id -t Custom --from 2023-05-01 --to 2023-05-31 -o csv
+Add-Content ".\report.csv" $firstoutput
+
+#Loop through remaining subscriptions and append to CSV
+Foreach ($id in $remainingids) {
+$output = azure-cost costByResource -s($id.id) -t Custom --from 2023-05-01 --to 2023-05-31 -o csv --skipHeader
+Add-Content ".\report.csv" $output
+}
+```
+
+Using the `--skipHeader` parameter is important here, otherwise you will get a header for each subscription which will mess up the output file as it will append the data to the same file.
 
 ## Let's Connect!
 

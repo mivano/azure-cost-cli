@@ -45,18 +45,23 @@ public class AzureCostApiRetriever : ICostRetriever
 
     public static IAsyncPolicy<HttpResponseMessage> GetRetryAfterPolicy()
     {
-        return Policy.HandleResult<HttpResponseMessage>(msg => msg.StatusCode == HttpStatusCode.TooManyRequests)
+        // Define WaitAndRetry policy
+        var waitAndRetryPolicy = Policy.HandleResult<HttpResponseMessage>(msg => 
+                msg.StatusCode == HttpStatusCode.TooManyRequests)
             .WaitAndRetryAsync(
                 retryCount: 3,
                 sleepDurationProvider: (_, response, _) => {
-                    var headers = response.Result.Headers;
-                    foreach (var header in headers)
+                    var headers = response.Result?.Headers;
+                    if (headers != null)
                     {
-                        if (header.Key.ToLower().Contains("retry-after") && header.Value != null)
+                        foreach (var header in headers)
                         {
-                            if (int.TryParse(header.Value.First(), out int seconds))
+                            if (header.Key.ToLower().Contains("retry-after") && header.Value != null)
                             {
-                                return TimeSpan.FromSeconds(seconds);
+                                if (int.TryParse(header.Value.First(), out int seconds))
+                                {
+                                    return TimeSpan.FromSeconds(seconds);
+                                }
                             }
                         }
                     }
@@ -65,6 +70,14 @@ public class AzureCostApiRetriever : ICostRetriever
                 },
                 onRetryAsync: (msg, time, retries, context) => Task.CompletedTask
             );
+
+        // Define Timeout policy        
+        var timeoutPolicy = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(60));
+
+        // Wrap WaitAndRetry with Timeout
+        var resilientPolicy = Policy.WrapAsync(timeoutPolicy, waitAndRetryPolicy);
+
+        return resilientPolicy;
 
     }
 
