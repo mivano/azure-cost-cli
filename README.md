@@ -516,6 +516,10 @@ Add-Content ".\report.csv" $output
 
 Using the `--skipHeader` parameter is important here, otherwise you will get a header for each subscription which will mess up the output file as it will append the data to the same file.
 
+## Is there cost involved?
+
+No, the calls to the Azure Cost APIs are [free](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/automation-faq#am-i-charged-for-using-the-cost-details-api), although there are some [rate limits](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/get-small-usage-datasets-on-demand#latency-and-rate-limits) in place. Avoid pulling data too often as it will only be refreshed every [4 hours](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/get-small-usage-datasets-on-demand#request-schedule).
+
 ## Let's Connect!
 
 I appreciate every star ⭐ that my projects receive, and your support means a lot to me! If you find my projects useful or enjoyable, please consider giving them a star.
