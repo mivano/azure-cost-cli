@@ -146,10 +146,10 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         subTable.AddRow(new Rows(
                 new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
                 new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
-                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded)
+                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded),
+                new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)
             )
-            , new Rows(accumulatedCostChart,
-                new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)));
+            , new Rows(accumulatedCostChart));
 
         subTable.Columns[0].Padding(2, 2).Centered();
         subTable.Columns[1].Padding(2, 2).Centered();
@@ -157,8 +157,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         rootTable.AddRow(subTable);
 
         AnsiConsole.Write(rootTable);
-
-
+        
         return Task.CompletedTask;
     }
 
