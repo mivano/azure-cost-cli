@@ -1,8 +1,11 @@
 using System.Globalization;
+using System.Text.Json;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters.SpectreConsole;
 using Spectre.Console;
-using Spectre.Console.Rendering;
+using Spectre.Console.Json;
 using Columns = Spectre.Console.Columns;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
@@ -53,7 +56,6 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         // Create a table
         var table = new Table();
-        //table.Title = new TableTitle("Azure Costs");
         table.Border(TableBorder.None);
         table.ShowHeaders = false;
 
@@ -63,12 +65,12 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
 
         // Add some rows
-        table.AddRow("[green bold]" + todayTitle + ":[/]", $"{costToday:N2} {currency}");
-        table.AddRow("[green bold]" + yesterdayTitle + ":[/]", $"{costYesterday:N2} {currency}");
-        table.AddRow("[blue bold]Since start of " + todaysDate.ToString("MMM") + ":[/]",
-            $"{costSinceStartOfCurrentMonth:N2} {currency}");
-        table.AddRow("[yellow bold]Last 7 days:[/]", $"{costLastSevenDays:N2} {currency}");
-        table.AddRow("[yellow bold]Last 30 days:[/]", $"{costLastThirtyDays:N2} {currency}");
+        table.AddRow(new Markup("[green bold]" + todayTitle + ":[/]"),new Money(costToday,currency));
+        table.AddRow(new Markup("[green bold]" + yesterdayTitle + ":[/]"), new Money(costYesterday, currency));
+        table.AddRow(new Markup("[blue bold]Since start of " + todaysDate.ToString("MMM") + ":[/]"),
+            new Money(costSinceStartOfCurrentMonth, currency));
+        table.AddRow(new Markup("[yellow bold]Last 7 days:[/]"), new Money(costLastSevenDays, currency));
+        table.AddRow(new Markup("[yellow bold]Last 30 days:[/]"), new Money(costLastThirtyDays,currency));
 
         var accumulatedCostChart = new BarChart()
             .Width(60)
@@ -99,8 +101,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the services table
-        var servicesBreakdown = new BreakdownChart()
-            .UseValueFormatter(value => $"{value:N2} {currency}")
+        var servicesBreakdown = new BreakdownChartExt()
+            .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Expand()
             .FullSize();
 
@@ -112,8 +114,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the resource groups table
-        var resourceGroupBreakdown = new BreakdownChart()
-            .UseValueFormatter(value => $"{value:N2} {currency}")
+        var resourceGroupBreakdown = new BreakdownChartExt()
+            .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Width(60);
 
         counter = 2;
@@ -124,8 +126,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the locations table
-        var locationsBreakdown = new BreakdownChart()
-            .UseValueFormatter(value => $"{value:N2} {currency}")
+        var locationsBreakdown = new BreakdownChartExt()
+            .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Width(60);
 
         counter = 2;
@@ -144,10 +146,10 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         subTable.AddRow(new Rows(
                 new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
                 new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
-                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded)
+                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded),
+                new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)
             )
-            , new Rows(accumulatedCostChart,
-                new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)));
+            , new Rows(accumulatedCostChart));
 
         subTable.Columns[0].Padding(2, 2).Centered();
         subTable.Columns[1].Padding(2, 2).Centered();
@@ -155,60 +157,97 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         rootTable.AddRow(subTable);
 
         AnsiConsole.Write(rootTable);
-
-
+        
         return Task.CompletedTask;
     }
 
     public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
     {
-        var tree = new Tree("Cost by resources");
-
-        foreach (var resource in resources.OrderByDescending(a => a.Cost))
+        
+        // When we have meter details, we output the tree, otherwise we output a table
+        if (settings.ExcludeMeterDetails == false)
         {
-            var table = new Table()
-                .RoundedBorder()
-                .AddColumn("Resource")
-                .AddColumn("Resource Type")
-                .AddColumn("Location")
-                .AddColumn("Resource group name")
-                .AddColumn("Tags")
-                .AddColumn("Cost", column => column.RightAligned());
 
-            table.AddRow(new Markup(resource.ResourceId.Split('/').Last()),
-                new Markup(resource.ResourceType),
-                new Markup(resource.ResourceLocation),
-                new Markup(resource.ResourceGroupName),
-                new Text(string.Join(",", resource.Tags)),
-                settings.UseUSD
-                    ? new Markup($"{resource.CostUSD:N2} USD")
-                    : new Markup($"{resource.Cost:N2} {resource.Currency}"));
-
-            var treeNode = tree.AddNode(table);
-
-            var subTable = new Table()
-                .Expand()
-                .AddColumn("Service name")
-                .AddColumn("Service tier")
-                .AddColumn("Meter")
-                .AddColumn("Cost", column => column.RightAligned());
-
-            foreach (var metered in resources
-                         .Where(a => a.ResourceId == resource.ResourceId)
-                         .OrderByDescending(a => a.Cost))
+            var tree = new Tree("Cost by resources");
+            tree.Guide(TreeGuide.Line);
+            
+            foreach (var resource in resources.OrderByDescending(a => a.Cost))
             {
-                subTable.AddRow(new Markup(metered.ServiceName),
-                    new Markup(metered.ServiceTier),
-                    new Markup(metered.Meter),
+                var table = new Table()
+                    .Border(TableBorder.SimpleHeavy)
+                    .AddColumn("Resource")
+                    .AddColumn("Resource Type")
+                    .AddColumn("Location")
+                    .AddColumn("Resource group name")
+                    .AddColumn("Tags")
+                    .AddColumn("Cost", column => column.RightAligned());
+
+                table.AddRow(new Markup("[bold]"+resource.ResourceId.Split('/').Last().EscapeMarkup()+"[/]"),
+                    new Markup(resource.ResourceType.EscapeMarkup()),
+                    new Markup(resource.ResourceLocation.EscapeMarkup()),
+                    new Markup(resource.ResourceGroupName.EscapeMarkup()),
+                    resource.Tags.Any()?new JsonText(JsonSerializer.Serialize( resource.Tags)):new Markup(""),
                     settings.UseUSD
-                        ? new Markup($"{metered.CostUSD:N2} USD")
-                        : new Markup($"{metered.Cost:N2} {metered.Currency}"));
+                        ? new Money(resource.CostUSD, "USD")
+                        : new Money(resource.Cost,resource.Currency));
+
+                var treeNode = tree.AddNode(table);
+
+
+                var subTable = new Table()
+                    .Expand()
+                    .Border(TableBorder.Simple)
+                    .AddColumn("Service name")
+                    .AddColumn("Service tier")
+                    .AddColumn("Meter")
+                    .AddColumn("Cost", column => column.RightAligned());
+
+                foreach (var metered in resources
+                             .Where(a => a.ResourceId == resource.ResourceId)
+                             .OrderByDescending(a => a.Cost))
+                {
+                    subTable.AddRow(new Markup(metered.ServiceName.EscapeMarkup()),
+                        new Markup(metered.ServiceTier.EscapeMarkup()),
+                        new Markup(metered.Meter.EscapeMarkup()),
+                        settings.UseUSD
+                            ? new Money(metered.CostUSD, "USD")
+                            : new Money(metered.Cost, metered.Currency));
+                }
+
+                treeNode.AddNode(subTable);
+
             }
 
-            treeNode.AddNode(subTable);
+            AnsiConsole.Write(tree);
         }
+        else
+        {
+            var table = new Table()
+                             .RoundedBorder().Expand()
+                             .AddColumn("Resource")
+                             .AddColumn("Resource Type")
+                             .AddColumn("Location")
+                             .AddColumn("Resource group name")
+                             .AddColumn("Tags")
+                             .AddColumn("Cost", column => column.Width(15).RightAligned());
+            
+            foreach (var resource in resources.OrderByDescending(a => a.Cost))
+            {
+                
+                table.AddRow(new Markup("[bold]"+resource.ResourceId.Split('/').Last().EscapeMarkup()+"[/]"),
+                    new Markup(resource.ResourceType.EscapeMarkup()),
+                    new Markup(resource.ResourceLocation.EscapeMarkup()),
+                    new Markup(resource.ResourceGroupName.EscapeMarkup()),
+                    resource.Tags.Any()?new JsonText(JsonSerializer.Serialize( resource.Tags)):new Markup(""),
+                    settings.UseUSD
+                        ? new Money(resource.CostUSD, "USD")
+                        : new Money(resource.Cost,resource.Currency));
 
-        AnsiConsole.Write(tree);
+               
+            }
+            
+            AnsiConsole.Write(table);
+        }
 
         return Task.CompletedTask;
     }
@@ -263,6 +302,9 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         t.AddColumn("").Collapse();
         t.AddColumn("").RightAligned().Collapse();
         t.AddColumn("").Expand();
+        
+        t.Columns[1].Width = 15;
+        t.Columns[1].Alignment = Justify.Right;
 
 // Keep track of the unique items and their assigned colors
         var colorMap = new Dictionary<string, Color>();
@@ -334,12 +376,10 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             // Calculate width as a proportion of the maximum daily cost
             // Here we assume a maximum character width of 50, adjust this as per your requirement
             c.Width = (int)Math.Round((dailyCost / maxDailyCost) * 50);
-
-            var cost = settings.UseUSD
-                ? dailyCost.ToString("F2") + " USD"
-                : dailyCost.ToString("F2") + " " + day.First().Currency;
-
-            t.AddRow(new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), new Markup("[dim]" + cost + "[/]"),
+        
+            t.AddRow(
+                new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), 
+                new Money(dailyCost, settings.UseUSD?"USD":day.First().Currency, null, Justify.Left),
                 c);
         }
 
@@ -454,155 +494,32 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
-}
-
-/*
-Some of the SpectreConsole code is internal, so copied here for reuse.
- 
-The following license applies to this code:
-
-MIT License
-
-Copyright (c) 2020 Patrik Svensson, Phil Scott, Nils Andresen
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
-internal sealed class BreakdownTags : Renderable
-{
-    private readonly List<IBreakdownChartItem> _data;
-
-    public int? Width { get; set; }
-    public CultureInfo? Culture { get; set; }
-    public bool ShowTagValues { get; set; } = true;
-    public Func<double, CultureInfo, string>? ValueFormatter { get; set; }
-
-    public BreakdownTags(List<IBreakdownChartItem> data)
+    
+    public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
     {
-        _data = data ?? throw new ArgumentNullException(nameof(data));
-    }
-
-    protected override Measurement Measure(RenderOptions options, int maxWidth)
-    {
-        var width = Math.Min(Width ?? maxWidth, maxWidth);
-        return new Measurement(width, width);
-    }
-
-    protected override IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
-    {
-        var culture = Culture ?? CultureInfo.InvariantCulture;
-
-        var panels = new List<Panel>();
-        foreach (var item in _data)
+        var table = new Table();
+        table.Border(TableBorder.Rounded);
+        table.AddColumn("Region");
+        table.AddColumn("Geography");
+        table.AddColumn("Display Name");
+        table.AddColumn("Location");
+        table.AddColumn("Sustainability");
+        table.AddColumn("Compliance");
+            
+        foreach (var region in regions.OrderBy(a=>a.continent).ThenBy(a=>a.geographyId))
         {
-            var panel = new Panel(GetTag(item, culture));
-            //panel.Inline = true;
-            panel.Padding = new Padding(0, 0, 2, 0);
-            panel.NoBorder();
-
-            panels.Add(panel);
+            table.AddRow(
+                new Markup(region.continent), 
+                new Markup(region.geographyId), 
+                new Markup((region.isOpen ? "[green]" : "[red]")+region.displayName+"[/]\n[dim]("+region.id+")[/]"),
+                new Markup(region.location),
+                new Markup(string.Join(", ", region.sustainabilityIds)),
+                new Markup(string.Join(", ", region.complianceIds.OrderBy(a=>a))));
         }
 
-        foreach (var segment in ((IRenderable)new Columns(panels).Padding(0, 0)).Render(options, maxWidth))
-        {
-            yield return segment;
-        }
-    }
-
-    private string GetTag(IBreakdownChartItem item, CultureInfo culture)
-    {
-        return string.Format(
-            culture, "[{0}]■[/] {1}",
-            item.Color.ToMarkup() ?? "default",
-            FormatValue(item, culture)).Trim();
-    }
-
-    private string FormatValue(IBreakdownChartItem item, CultureInfo culture)
-    {
-        var formatter = ValueFormatter ?? DefaultFormatter;
-
-        if (ShowTagValues)
-        {
-            return string.Format(culture, "{0} [dim]{1}[/]",
-                item.Label.EscapeMarkup(),
-                formatter(item.Value, culture));
-        }
-
-        return item.Label.EscapeMarkup();
-    }
-
-    private static string DefaultFormatter(double value, CultureInfo culture)
-    {
-        return value.ToString(culture);
+        AnsiConsole.Write(table);
+        
+        return Task.CompletedTask;
     }
 }
 
-internal sealed class BreakdownBar : Renderable
-{
-    private readonly List<IBreakdownChartItem> _data;
-
-    public int? Width { get; set; }
-
-    public BreakdownBar(List<IBreakdownChartItem> data)
-    {
-        _data = data ?? throw new ArgumentNullException(nameof(data));
-    }
-
-    protected override Measurement Measure(RenderOptions options, int maxWidth)
-    {
-        var width = Math.Min(Width ?? maxWidth, maxWidth);
-        return new Measurement(width, width);
-    }
-
-    protected override IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
-    {
-        var width = Math.Min(Width ?? maxWidth, maxWidth);
-
-        // Chart
-        var maxValue = _data.Sum(i => i.Value);
-        var items = _data.ToArray();
-        var bars = Ratio.Distribute(width,
-            items.Select(i => Math.Max(0, (int)(width * (i.Value / maxValue)))).ToArray());
-
-        for (var index = 0; index < items.Length; index++)
-        {
-            yield return new Segment(new string('█', bars[index]), new Style(items[index].Color));
-        }
-
-        yield return Segment.LineBreak;
-    }
-}
-
-internal static class Ratio
-{
-    public static List<int> Distribute(int total, IList<int> ratios, IList<int>? minimums = null)
-    {
-        if (minimums != null)
-        {
-            ratios = ratios.Zip(minimums, (a, b) => (ratio: a, min: b)).Select(a => a.min > 0 ? a.ratio : 0).ToList();
-        }
-
-        var totalRatio = ratios.Sum();
-
-        var totalRemaining = total;
-        var distributedTotal = new List<int>();
-
-        minimums ??= ratios.Select(_ => 0).ToList();
-
-        foreach (var (ratio, minimum) in ratios.Zip(minimums, (a, b) => (a, b)))
-        {
-            var distributed = (totalRatio > 0)
-                ? Math.Max(minimum, (int)Math.Ceiling(ratio * totalRemaining / (double)totalRatio))
-                : totalRemaining;
-
-            distributedTotal.Add(distributed);
-            totalRatio -= ratio;
-            totalRemaining -= distributed;
-        }
-
-        return distributedTotal;
-    }
-}

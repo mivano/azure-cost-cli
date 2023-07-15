@@ -74,6 +74,7 @@ OPTIONS:
         --useUSD          Force the use of USD for the currency. Defaults to false to use the currency returned by the API        
         --skipHeader      Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false 
         --filter          Filter the output by the specified properties. Defaults to no filtering and can be multiple values.
+    -m, --metric           ActualCost    The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)    
 
 COMMANDS:
     accumulatedCost    Show the accumulated cost details
@@ -81,6 +82,7 @@ COMMANDS:
     dailyCosts         Show the daily cost by a given dimension
     detectAnomalies    Detect anomalies and trends  
     budgets            Get the available budgets   
+    regions            Get the available Azure regions 
 
 ```
 
@@ -149,6 +151,18 @@ This will retrieve the cost of the subscription by resource. This will fetch the
 azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o json
 ```
 
+If you are only interested in the cost of the resources, you can exclude the meter details using the `--exclude-meter-details` parameter.
+
+```bash
+azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 --exclude-meter-details
+```
+
+Do keep in mind that with the `--metric` you can either request the ActualCost or the AmortizedCost cost, but not both at the same time. The default is ActualCost.
+
+A resource can be in multiple resource locations, like Intercontinental and West Europe. When you use `--exclude-meter-details`, the resource will be listed once and the locations will be combined.
+
+You can parse out the resource name, group name and subscription id from the ResourceId field. The format is `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`.
+
 ### Daily Costs
 
 The daily overview fetches the cost of the subscription for each day in the specified period. It will show the total cost of the day and the cost per dimension. The dimension is the resource group by default, but you can specify a different one using the `--dimension` parameter. 
@@ -207,6 +221,16 @@ This will retrieve the available budgets for the subscription. It will show the 
 ```bash
 azure-cost budgets -s 574385a9-08e9-49fe-91a2-27660d92b8f5 
 ```
+
+### Regions
+
+Retrieve a list of available regions. Besides the location and supported compliances, it will also show the available sustainability information.
+
+```bash
+azure-cost regions
+```
+
+> Not all the formatters are supported for this command. Let me know if there is a need.
 
 ## Filter
 
@@ -459,6 +483,53 @@ azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown >
 
 Excluded in the above sample, but it will also include mermaidjs diagrams as well.
 
+## Iterate over multiple subscriptions
+
+Since the tool operates on a single subscription only, you will need to loop over multiple subscriptions yourself. You can do this by using the `az account list` command and then using the `--subscription` parameter to switch between subscriptions.
+
+```bash
+az account list --query "[].id" -o tsv | while read -r id; do
+    echo "Subscription: $id"
+    azure-cost accumulatedCost -o markdown -s $id
+done
+```
+
+Or using Powershell
+
+```powershell
+az account list --query "[].id" -o tsv | ForEach-Object {
+    Write-Host "Subscription: $_"
+    azure-cost accumulatedCost -o markdown -s $_
+}
+```
+
+Or this snippet by [@EEN421](https://github.com/EEN421) to get the cost by resource for each subscription and append it to a single CSV file.
+
+```powershell
+#Connect to Azure
+Connect-AzAccount -UseDeviceAuthentication -Tenant xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx
+
+#Pull list of Subscriptions
+$ids = Get-AzSubscription -TenantId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx| Select-Object id,name
+$firstid = $ids | Select-Object -first 1
+$remainingids = $ids | Select-Object -skip 1
+
+#Create CSV for first subscription with header
+$firstoutput = azure-cost costByResource -s $firstid.id -t Custom --from 2023-05-01 --to 2023-05-31 -o csv
+Add-Content ".\report.csv" $firstoutput
+
+#Loop through remaining subscriptions and append to CSV
+Foreach ($id in $remainingids) {
+$output = azure-cost costByResource -s($id.id) -t Custom --from 2023-05-01 --to 2023-05-31 -o csv --skipHeader
+Add-Content ".\report.csv" $output
+}
+```
+
+Using the `--skipHeader` parameter is important here, otherwise you will get a header for each subscription which will mess up the output file as it will append the data to the same file.
+
+## Is there cost involved?
+
+No, the calls to the Azure Cost APIs are [free](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/automation-faq#am-i-charged-for-using-the-cost-details-api), although there are some [rate limits](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/get-small-usage-datasets-on-demand#latency-and-rate-limits) in place. Avoid pulling data too often as it will only be refreshed every [4 hours](https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/get-small-usage-datasets-on-demand#request-schedule).
 
 ## Let's Connect!
 

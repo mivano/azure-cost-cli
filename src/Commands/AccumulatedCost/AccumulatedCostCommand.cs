@@ -84,65 +84,92 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             }
         }
 
-        // Fetch the subscription details
-        var subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+        AccumulatedCostDetails accumulatedCost = null;
         
-        // Fetch the costs from the Azure Cost Management API
-        var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId, 
-            settings.Filter,
-            settings.Timeframe,
-            settings.From, settings.To);
-       
-        List<CostItem> forecastedCosts = new List<CostItem>();
+        await AnsiConsole.Status()
+            .StartAsync("Fetching cost data...", async ctx =>
+            {
+
+                ctx.Status = "Fetching subscription details...";
+                // Fetch the subscription details
+                var subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+
+                ctx.Status = "Fetching cost data...";
+                // Fetch the costs from the Azure Cost Management API
+                var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId,
+                    settings.Filter,
+                    settings.Metric,
+                    settings.Timeframe,
+                    settings.From, settings.To);
+
+                List<CostItem> forecastedCosts = new List<CostItem>();
+
+                // Check if the 'settings.To' date is equal to or greater than today's date
+                DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
+                DateOnly forecastStartDate;
+
+                switch (settings.Timeframe)
+                {
+                    case TimeframeType.BillingMonthToDate:
+                    case TimeframeType.MonthToDate:
+                        forecastStartDate =
+                            DateOnly.FromDateTime(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
+                        break;
+                    case TimeframeType.TheLastBillingMonth:
+                    case TimeframeType.TheLastMonth:
+                        forecastStartDate =
+                            DateOnly.FromDateTime(
+                                new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1));
+                        break;
+                    case TimeframeType.WeekToDate:
+                        forecastStartDate =
+                            DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek));
+                        break;
+                    default:
+                        // Custom Timeframe
+                        forecastStartDate = settings.To >= today ? today : default;
+                        break;
+                }
+
+                if (forecastStartDate != default)
+                {
+                    DateOnly forecastEndDate = new DateOnly(settings.To.Year, settings.To.Month,
+                        DateTime.DaysInMonth(settings.To.Year, settings.To.Month));
+
+                    ctx.Status = "Fetching forecasted cost data...";
+                    forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
+                        settings.Filter,
+                        settings.Metric,
+                        TimeframeType.Custom,
+                        forecastStartDate,
+                        forecastEndDate)).ToList();
+                }
+
+                ctx.Status = "Fetching cost data by service name...";
+                var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
+                    subscriptionId, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                
+                ctx.Status = "Fetching cost data by location...";
+                var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
+                    settings.Filter,
+                    settings.Metric,
+                    settings.Timeframe, settings.From, settings.To);
+                
+                ctx.Status= "Fetching cost data by resource group...";
+                var byResourceGroupCosts = await _costRetriever.RetrieveCostByResourceGroup(settings.Debug,
+                    subscriptionId,
+                    settings.Filter,
+                    settings.Metric,
+                    settings.Timeframe, settings.From, settings.To);
+
+                accumulatedCost = new AccumulatedCostDetails(subscription, costs, forecastedCosts, byServiceNameCosts,
+                    byLocationCosts, byResourceGroupCosts);
+
+            });
         
-        // Check if the 'settings.To' date is equal to or greater than today's date
-        DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-        DateOnly forecastStartDate;
-
-        switch (settings.Timeframe)
-        {
-            case TimeframeType.BillingMonthToDate:
-            case TimeframeType.MonthToDate:
-                forecastStartDate = DateOnly.FromDateTime(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
-                break;
-            case TimeframeType.TheLastBillingMonth:
-            case TimeframeType.TheLastMonth:
-                forecastStartDate = DateOnly.FromDateTime(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1));
-                break;
-            case TimeframeType.WeekToDate:
-                forecastStartDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek));
-                break;
-            default:
-                // Custom Timeframe
-                forecastStartDate = settings.To >= today ? today : default;
-                break;
-        }
-
-        if (forecastStartDate != default)
-        {
-            DateOnly forecastEndDate = new DateOnly(settings.To.Year, settings.To.Month,
-                DateTime.DaysInMonth(settings.To.Year, settings.To.Month));
-
-            forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
-                settings.Filter,
-                TimeframeType.Custom,
-                forecastStartDate,
-                forecastEndDate)).ToList();
-        }
-        
-        var byServiceNameCosts =  await _costRetriever.RetrieveCostByServiceName(settings.Debug,
-            subscriptionId,settings.Filter, settings.Timeframe, settings.From, settings.To);
-        var byLocationCosts =  await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
-            settings.Filter,
-            settings.Timeframe, settings.From, settings.To);
-        var byResourceGroupCosts =  await _costRetriever.RetrieveCostByResourceGroup(settings.Debug, subscriptionId,
-            settings.Filter,
-            settings.Timeframe, settings.From, settings.To);
-
-      
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteAccumulatedCost(settings, new AccumulatedCostDetails(subscription, costs, forecastedCosts, byServiceNameCosts, byLocationCosts, byResourceGroupCosts));
+            .WriteAccumulatedCost(settings,accumulatedCost);
 
         return 0;
     }

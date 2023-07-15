@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -7,7 +6,6 @@ using System.Text.Json.Serialization;
 using Azure.Core;
 using Azure.Identity;
 using AzureCostCli.Commands;
-using Polly;
 using Spectre.Console;
 using Spectre.Console.Json;
 
@@ -17,7 +15,7 @@ public class AzureCostApiRetriever : ICostRetriever
 {
     private readonly HttpClient _client;
     private bool _tokenRetrieved;
-  
+ 
     public enum DimensionNames
     {
         PublisherType,
@@ -43,7 +41,7 @@ public class AzureCostApiRetriever : ICostRetriever
         _client = httpClientFactory.CreateClient("CostApi");
     }
 
-   
+  
 
     private async Task RetrieveToken(bool includeDebugOutput)
     {
@@ -148,7 +146,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
-        string[] filter,
+        string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -159,7 +157,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -218,7 +216,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, TimeframeType timeFrame, DateOnly from, DateOnly to)
+        Guid subscriptionId, string[] filter,MetricType metric, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
@@ -226,7 +224,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -291,7 +289,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
-        string[] filter,
+        string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -300,7 +298,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -365,7 +363,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter,
+        Guid subscriptionId, string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -374,7 +372,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -444,7 +442,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, string dimension,
+        Guid subscriptionId, string[] filter, MetricType metric, string dimension,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -453,7 +451,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -546,7 +544,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId,
-        string[] filter,
+        string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = new Uri(
@@ -555,7 +553,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -622,16 +620,103 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, TimeframeType timeFrame, DateOnly from,
+        Guid subscriptionId, string[] filter, MetricType metric, bool excludeMeterDetails, TimeframeType timeFrame, DateOnly from,
         DateOnly to)
     {
         var uri = new Uri(
             $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
             UriKind.Relative);
 
+        object grouping;
+        if (excludeMeterDetails==false)
+            grouping = new[]
+            {
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceId"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceType"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceLocation"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ChargeType"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceGroupName"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "PublisherType"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "MeterCategory"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "MeterSubcategory"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "Meter"
+                }
+            };
+        else
+        {
+            grouping = new[]
+            {
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceId"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceType"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceLocation"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ChargeType"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "ResourceGroupName"
+                },
+                new
+                {
+                    type = "Dimension",
+                    name = "PublisherType"
+                }
+            };
+        }
+        
         var payload = new
         {
-            type = "ActualCost",
+            type = metric.ToString(),
             timeframe = timeFrame.ToString(),
             timePeriod = timeFrame == TimeframeType.Custom
                 ? new
@@ -658,54 +743,7 @@ public class AzureCostApiRetriever : ICostRetriever
                 },
                 include = new[] { "Tags" },
                 filter = GenerateFilters(filter),
-                grouping = new[]
-                {
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ResourceId"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ResourceType"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ResourceLocation"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ChargeType"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ResourceGroupName"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "PublisherType"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ServiceName"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "ServiceTier"
-                    },
-                    new
-                    {
-                        type = "Dimension",
-                        name = "Meter"
-                    }
-                },
+                grouping = grouping,
             }
         };
         var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
@@ -723,12 +761,14 @@ public class AzureCostApiRetriever : ICostRetriever
             string chargeType = row[5].GetString();
             string resourceGroupName = row[6].GetString();
             string publisherType = row[7].GetString();
-            string serviceName = row[8].GetString();
-            string serviceTier = row[9].GetString();
-            string meter = row[10].GetString();
-           
-            // Assuming row[11] contains the tags array
-            var tagsArray = row[11].EnumerateArray().ToArray();
+          
+            string serviceName = excludeMeterDetails?null:row[8].GetString();
+            string serviceTier = excludeMeterDetails?null:row[9].GetString();
+            string meter = excludeMeterDetails?null:row[10].GetString();
+      
+            int tagsColumn = excludeMeterDetails?8:11;
+            // Assuming row[tagsColumn] contains the tags array
+            var tagsArray = row[tagsColumn].EnumerateArray().ToArray();
 
             Dictionary<string, string> tags = new Dictionary<string, string>();
 
@@ -743,14 +783,30 @@ public class AzureCostApiRetriever : ICostRetriever
                 }
             }
             
-            string currency = row[12].GetString();
+            int currencyColumn = excludeMeterDetails?9:12;
+            string currency = row[currencyColumn].GetString();
 
-            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, subscriptionId, resourceLocation,
+            CostResourceItem item = new CostResourceItem(cost, costUSD, resourceId, resourceType, resourceLocation,
                 chargeType, resourceGroupName, publisherType, serviceName, serviceTier, meter, tags, currency);
 
             items.Add(item);
         }
 
+        if (excludeMeterDetails)
+        {
+            // As we do not care about the meter details, we still have the possibility of resources with the same, but having multiple locations like Intercontinental, Unknown and Unassigned
+            // We need to aggregate these resources together and show the total cost for the resource, the resource locations need to be combined as well. So it can become West Europe, Intercontinental
+            
+            var aggregatedItems = new List<CostResourceItem>();
+            var groupedItems = items.GroupBy(x => x.ResourceId);
+            foreach (var groupedItem in groupedItems)
+            {
+                var aggregatedItem = new CostResourceItem(groupedItem.Sum(x => x.Cost), groupedItem.Sum(x => x.CostUSD), groupedItem.Key, groupedItem.First().ResourceType, string.Join(", ", groupedItem.Select(x => x.ResourceLocation)), groupedItem.First().ChargeType, groupedItem.First().ResourceGroupName, groupedItem.First().PublisherType, null, null, null, groupedItem.First().Tags, groupedItem.First().Currency);
+                aggregatedItems.Add(aggregatedItem);
+            }
+            
+            return aggregatedItems;
+        }
         return items;
     }
 

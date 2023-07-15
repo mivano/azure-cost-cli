@@ -1,4 +1,5 @@
 using System.Globalization;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -72,23 +73,26 @@ public class TextOutputFormatter : BaseOutputFormatter
             if (settings.UseUSD)
             {
                 Console.WriteLine(
-                    $"{resource.ResourceId.Split('/').Last()} - {resource.ResourceType} - {resource.ResourceLocation} - {resource.ResourceGroupName} - {resource.CostUSD:N2} USD");
+                    $"{resource.ResourceId.Split('/').Last()} \t {resource.ResourceType} \t {resource.ResourceLocation} \t {resource.ResourceGroupName} \t {resource.CostUSD:N2} USD");
 
             }
             else
             {
-
                 Console.WriteLine(
-                    $"{resource.ResourceId.Split('/').Last()} - {resource.ResourceType} - {resource.ResourceLocation} - {resource.ResourceGroupName} - {resource.Cost:N2} {resource.Currency}");
+                    $"{resource.ResourceId.Split('/').Last()} \t {resource.ResourceType} \t {resource.ResourceLocation} \t {resource.ResourceGroupName} \t {resource.Cost:N2} {resource.Currency}");
             }
-            
-            foreach (var metered in resources
-                         .Where(a=>a.ResourceId == resource.ResourceId)
-                         .OrderByDescending(a=>a.Cost))
+
+            if (settings.ExcludeMeterDetails == false)
             {
-                Console.WriteLine($"  {metered.ServiceName} - {metered.ServiceTier} - {metered.Meter} - {(settings.UseUSD ? metered.CostUSD :  metered.Cost):N2} {metered.Currency}");
+                foreach (var metered in resources
+                             .Where(a => a.ResourceId == resource.ResourceId)
+                             .OrderByDescending(a => a.Cost))
+                {
+                    Console.WriteLine(
+                        $"  + {metered.ServiceName} \t {metered.ServiceTier} \t {metered.Meter} \t {(settings.UseUSD ? metered.CostUSD : metered.Cost):N2} {metered.Currency}");
+                }
             }
-            
+
         }
       
         return Task.CompletedTask;
@@ -200,5 +204,10 @@ public class TextOutputFormatter : BaseOutputFormatter
 
 
         return Task.CompletedTask;
+    }
+
+    public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
+    {
+        throw new NotImplementedException();
     }
 }

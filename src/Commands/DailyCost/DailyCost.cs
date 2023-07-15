@@ -15,7 +15,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
     public DailyCostCommand(ICostRetriever costRetriever)
     {
         _costRetriever = costRetriever;
-        
+
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -54,8 +54,8 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
-        
-      
+
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -65,13 +65,14 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
             try
             {
                 if (settings.Debug)
-                    AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
-                
+                    AnsiConsole.WriteLine(
+                        "No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
+
                 subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
-                
+
                 if (settings.Debug)
                     AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
-                
+
                 settings.Subscription = subscriptionId;
             }
             catch (Exception e)
@@ -81,18 +82,26 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
                 return -1;
             }
         }
-        
-        // Fetch the costs from the Azure Cost Management API
-        var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId, 
-            settings.Filter,
-            settings.Dimension,
-            settings.Timeframe,
-            settings.From, settings.To);
-        
+
+        IEnumerable<CostDailyItem> dailyCost = new List<CostDailyItem>();
+
+        await AnsiConsole.Status()
+            .StartAsync("Fetching daily cost data...", async ctx =>
+            {
+                // Fetch the costs from the Azure Cost Management API
+
+                dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId,
+                    settings.Filter,
+                    settings.Metric,
+                    settings.Dimension,
+                    settings.Timeframe,
+                    settings.From, settings.To);
+            });
+
         // Write the output
         await _outputFormatters[settings.Output]
             .WriteDailyCost(settings, dailyCost);
 
-        return 0;
+        return 0; // Omitted
     }
 }

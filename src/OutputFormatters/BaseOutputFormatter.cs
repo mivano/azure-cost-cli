@@ -1,3 +1,4 @@
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.CostApi;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
@@ -12,6 +13,7 @@ public abstract class BaseOutputFormatter
 
     public abstract Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts);
     public abstract Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies);
+    public abstract Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions);
 }
 
 public record AccumulatedCostDetails( 

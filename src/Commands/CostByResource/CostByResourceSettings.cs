@@ -5,6 +5,8 @@ namespace AzureCostCli.Commands.ShowCommand;
 
 public class CostByResourceSettings : CostSettings
 {
-   
-    
+    [CommandOption("--exclude-meter-details")]
+    [Description("Exclude meter details from the output.")]
+    [DefaultValue(false)]
+    public bool ExcludeMeterDetails { get; set; }
 }
