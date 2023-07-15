@@ -84,6 +84,13 @@ app.Configure(config =>
   {
     add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
     add.SetDescription("Use the Azure Price catalog");
+    add.HideBranch();
+  });
+  
+  config.AddBranch<WhatIfSettings>("what-if", add =>
+  {
+    add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
+    add.SetDescription("Run what-if scenarios");
   });
   
   config.AddCommand<RegionsCommand>("regions")
