@@ -2,6 +2,7 @@
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.Prices;
+using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
@@ -26,8 +27,16 @@ registrations.AddHttpClient("PriceApi", client =>
   client.DefaultRequestHeaders.Add("Accept", "application/json");
 }).AddPolicyHandler(PollyExtensions.GetRetryAfterPolicy());
 
+registrations.AddHttpClient("RegionsApi", client =>
+{
+  client.BaseAddress = new Uri("https://datacenters.microsoft.com/");
+  client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).AddPolicyHandler(PollyPolicyExtensions.GetRetryAfterPolicy());
+
+
 registrations.AddTransient<ICostRetriever, AzureCostApiRetriever>();
 registrations.AddTransient<IPriceRetriever, AzurePriceRetriever>();
+registrations.AddTransient<IRegionsRetriever, AzureRegionsRetriever>();
 
 var registrar = new TypeRegistrar(registrations);
 
@@ -76,6 +85,10 @@ app.Configure(config =>
     add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
     add.SetDescription("Use the Azure Price catalog");
   });
+  
+  config.AddCommand<RegionsCommand>("regions")
+    .WithDescription("Get the available Azure regions.");
+
   
   config.ValidateExamples();
 });
