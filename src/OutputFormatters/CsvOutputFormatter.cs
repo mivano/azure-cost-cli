@@ -40,6 +40,36 @@ public class CsvOutputFormatter : BaseOutputFormatter
         return ExportToCsv(settings.SkipHeader, regions);
     }
 
+    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    {
+        // Flatten the hierarchy to a single list, including the tag and value
+        var resourcesWithTagAndValue = new List<dynamic>();
+        foreach (var (tag, value) in byTags)
+        {
+            foreach (var (tagValue, resources) in value)
+            {
+                foreach (var resource in resources)
+                {
+                    dynamic expando = new ExpandoObject();
+                    expando.Tag = tag;
+                    expando.Value = tagValue;
+                    expando.ResourceId = resource.ResourceId;
+                    expando.ResourceType = resource.ResourceType;
+                    expando.ResourceGroup = resource.ResourceGroupName;
+                    expando.ResourceLocation = resource.ResourceLocation;
+                    expando.Cost = resource.Cost;
+                    expando.Currency = resource.Currency;
+                    expando.CostUsd = resource.CostUSD;
+                    
+                    resourcesWithTagAndValue.Add(expando);
+                }
+            }
+        }
+      
+        
+        return ExportToCsv(settings.SkipHeader, resourcesWithTagAndValue);
+    }
+
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {
         var config = new CsvConfiguration(CultureInfo.CurrentCulture)

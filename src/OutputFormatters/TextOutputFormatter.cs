@@ -210,4 +210,9 @@ public class TextOutputFormatter : BaseOutputFormatter
     {
         throw new NotImplementedException();
     }
+
+    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    {
+        throw new NotImplementedException();
+    }
 }

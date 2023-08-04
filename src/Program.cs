@@ -64,6 +64,9 @@ app.Configure(config =>
   
   config.AddCommand<CostByResourceCommand>("costByResource")
     .WithDescription("Show the cost details by resource.");
+
+  config.AddCommand<CostByTagCommand>("costByTag")
+    .WithDescription("Show the cost details by tag.");
   
   config.AddCommand<DetectAnomalyCommand>("detectAnomalies")
     .WithDescription("Detect anomalies and trends.");
