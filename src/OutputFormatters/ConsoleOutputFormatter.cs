@@ -521,5 +521,10 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         
         return Task.CompletedTask;
     }
+
+    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    {
+        throw new NotImplementedException();
+    }
 }
 
