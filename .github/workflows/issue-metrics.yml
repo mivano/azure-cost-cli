@@ -8,7 +8,9 @@ jobs:
   build:
     name: issue metrics
     runs-on: ubuntu-latest
-
+    permissions:
+      actions: read
+      issues: write
     steps:
 
     - name: Get dates for last month
