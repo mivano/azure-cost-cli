@@ -524,7 +524,63 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
     public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
     {
-        throw new NotImplementedException();
+        // When no tags are found, output no results and stop
+        if (byTags.Count == 0)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.WriteLine("No resources found with one of the tags in the list: "+ string.Join(',',settings.Tags));
+            return Task.CompletedTask;
+        }
+
+        var tree = new Tree("[green bold]Cost by Tag[/] for [bold]"+settings.Subscription+"[/] between [bold]"+settings.From+"[/] and [bold]"+settings.To+"[/]");
+        AnsiConsole.WriteLine();
+        
+        
+        foreach (var tag in byTags)
+        {
+            var n = tree.AddNode($"[dim]key[/]: [bold]{tag.Key}[/]");
+            
+            foreach (var tagValue in tag.Value)
+            {
+                var subNode = n.AddNode($"[dim]value[/]: [bold]{tagValue.Key}[/]");
+                var table = new Table();
+                table.Border(TableBorder.Rounded);
+                table.AddColumn("Name");
+                table.AddColumn("Resource Group");
+                table.AddColumn("Type");
+                table.AddColumn("Location");
+                table.AddColumn("Cost");
+                
+                foreach (var costResourceItem in tagValue.Value.OrderByDescending(a=>a.Cost))
+                {
+                    table.AddRow(
+                        new Markup(costResourceItem.GetResourceName()),
+                        new Markup(costResourceItem.ResourceGroupName),
+                        new Markup(costResourceItem.ResourceType),
+                        new Markup(costResourceItem.ResourceLocation),
+                        settings.UseUSD ? new Money( costResourceItem.CostUSD, "USD") :
+                            new Money(costResourceItem.Cost, costResourceItem.Currency)
+                        );
+                }
+                
+                // End with a total row
+                table.AddRow(
+                    new Markup(""),
+                    new Markup(""),
+                    new Markup(""),
+                    new Markup("[bold]Total[/]"),
+                    settings.UseUSD ? new Money(tagValue.Value.Sum(a=>a.CostUSD),"USD") :
+                        new Money(tagValue.Value.Sum(a=>a.Cost), tagValue.Value.First().Currency)
+                    );
+                
+                subNode.AddNode(table);
+            }
+           
+        }
+        
+        AnsiConsole.Write(tree);
+        
+        return Task.CompletedTask;
     }
 }
 
