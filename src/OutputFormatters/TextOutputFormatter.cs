@@ -200,9 +200,7 @@ public class TextOutputFormatter : BaseOutputFormatter
 
             Console.WriteLine();
         }
-
-
-
+        
         return Task.CompletedTask;
     }
 
