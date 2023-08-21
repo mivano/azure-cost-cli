@@ -27,7 +27,7 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="Azure.Identity" Version="1.9.0" />
+      <PackageReference Include="Azure.Identity" Version="1.10.0" />
       <PackageReference Include="CsvHelper" Version="30.0.1" />
       <PackageReference Include="JmesPath.Net" Version="1.0.308" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
