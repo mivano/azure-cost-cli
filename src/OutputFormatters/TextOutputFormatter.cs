@@ -1,5 +1,12 @@
 using System.Globalization;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -212,5 +219,19 @@ public class TextOutputFormatter : BaseOutputFormatter
     public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
     {
         throw new NotImplementedException();
+    }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        string statusIcon = result.IsThresholdExceeded ? "[X]" : "[✓]";
+        string subCommand = result.SubCommand;
+        string actualValue = result.ActualValue.GetValueOrDefault().ToString("N2");
+        string thresholdValue = result.ThresholdValue.GetValueOrDefault().ToString("N2");
+        string additionalInfo = result.AdditionalInfo;
+
+        Console.WriteLine($"{statusIcon}\tName\tValue\tThreshold\tMessage");
+        Console.WriteLine($"{statusIcon}\t{subCommand}\t{actualValue}\t{thresholdValue}\t{additionalInfo}");
+
+        return Task.CompletedTask;
     }
 }

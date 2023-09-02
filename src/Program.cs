@@ -1,8 +1,14 @@
 ﻿using System.ComponentModel;
 using AzureCostCli.Commands;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.ShowCommand;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
@@ -77,6 +83,18 @@ app.Configure(config =>
   
   config.AddCommand<RegionsCommand>("regions")
     .WithDescription("Get the available Azure regions.");
+  
+  config.AddBranch<ThresholdSettings>("threshold", add =>
+  {
+    add.AddCommand<DailyChangeThresholdCommand>("daily-change").WithDescription("Analyzes the difference between today's and yesterday's costs to check if a defined threshold is exceeded.");
+    add.AddCommand<WeeklyAverageThresholdCommand>("weekly-average").WithDescription("Compares today's cost against the average cost of the past week to identify significant deviations.");
+    add.AddCommand<ForecastDeviationThresholdCommand>("forecast-deviation").WithDescription("Assesses the deviation between today's actual cost and the forecasted cost for the period to identify unexpected cost surges.");
+    add.AddCommand<ServiceSpikeThresholdCommand>("service-spike").WithDescription("Monitors cost spikes in individual Azure services by comparing today's costs against an aggregated previous period.");
+    add.SetDescription("Monitors and analyzes Azure cost metrics to identify deviations, trends, and potential issues based on specified thresholds.");
+    add.AddExample(new[] { "threshold", "weekly-average", "--fixed-amount", "100" });
+    add.AddExample(new[] { "threshold", "daily-change","--percentage", "10" });
+  });
+
   
   config.ValidateExamples();
 });

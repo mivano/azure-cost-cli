@@ -1,6 +1,13 @@
 using System.Dynamic;
 using System.Globalization;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -69,6 +76,12 @@ public class CsvOutputFormatter : BaseOutputFormatter
         
         return ExportToCsv(settings.SkipHeader, resourcesWithTagAndValue);
     }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        return ExportToCsv(settings.SkipHeader, new []{result});
+    }
+    
 
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {
