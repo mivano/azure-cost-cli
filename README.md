@@ -59,7 +59,7 @@ EXAMPLES:
     azure-cost dailyCosts --dimension MeterCategory
     azure-cost budgets -s 00000000-0000-0000-0000-000000000000
     azure-cost detectAnomalies --dimension ResourceId --recent-activity-days 4
-
+    azure-cost costByTag --tag cost-center
 
 OPTIONS:
     -h, --help            Prints help information
@@ -79,6 +79,7 @@ OPTIONS:
 COMMANDS:
     accumulatedCost    Show the accumulated cost details
     costByResource     Show the cost details by resource
+    costByTag          Show the cost details by the provided tag key(s)
     dailyCosts         Show the daily cost by a given dimension
     detectAnomalies    Detect anomalies and trends  
     budgets            Get the available budgets   
@@ -162,6 +163,18 @@ Do keep in mind that with the `--metric` you can either request the ActualCost o
 A resource can be in multiple resource locations, like Intercontinental and West Europe. When you use `--exclude-meter-details`, the resource will be listed once and the locations will be combined.
 
 You can parse out the resource name, group name and subscription id from the ResourceId field. The format is `/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/{resourceProviderNamespace}/{resourceType}/{resourceName}`.
+
+### Cost By Tag
+
+This will retrieve the cost of the subscription by the provided tag key(s). So if you tag your resources with, e.g. a `cost-center` or a `creator`, you can retrieve the cost of the subscription by those tags. You can specify multiple tags by using the `--tag` parameter multiple times. 
+
+```bash
+azure-cost costByTag  --tag cost-center --tag creator
+```
+
+The csv, json(c) and console output will render the results, either hierarchically or flattened in the case of the csv export.
+
+If you require more formatters, let me know!
 
 ### Daily Costs
 

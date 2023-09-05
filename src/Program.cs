@@ -60,6 +60,7 @@ app.Configure(config =>
   config.AddExample(new[] { "dailyCosts", "--dimension", "MeterCategory" });
   config.AddExample(new[] { "budgets", "-s", "00000000-0000-0000-0000-000000000000" });
   config.AddExample(new[] { "detectAnomalies", "--dimension", "ResourceId", "--recent-activity-days", "4" });
+  config.AddExample(new[] { "costByTag", "--tag", "cost-center" });
   
 #if DEBUG
   config.PropagateExceptions();
@@ -73,6 +74,9 @@ app.Configure(config =>
   
   config.AddCommand<CostByResourceCommand>("costByResource")
     .WithDescription("Show the cost details by resource.");
+
+  config.AddCommand<CostByTagCommand>("costByTag")
+    .WithDescription("Show the cost details by the provided tag key(s).");
   
   config.AddCommand<DetectAnomalyCommand>("detectAnomalies")
     .WithDescription("Detect anomalies and trends.");

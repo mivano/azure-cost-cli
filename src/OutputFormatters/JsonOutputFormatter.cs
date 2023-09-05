@@ -83,7 +83,14 @@ public class JsonOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
-    
+
+    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    {
+        WriteJson(settings, byTags);
+
+        return Task.CompletedTask;
+    }
+
 
     private static void WriteJson(CostSettings settings, object items)
     {

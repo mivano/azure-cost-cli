@@ -200,13 +200,16 @@ public class TextOutputFormatter : BaseOutputFormatter
 
             Console.WriteLine();
         }
-
-
-
+        
         return Task.CompletedTask;
     }
 
     public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
     {
         throw new NotImplementedException();
     }
