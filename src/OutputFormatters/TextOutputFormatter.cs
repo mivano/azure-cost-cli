@@ -229,7 +229,7 @@ public class TextOutputFormatter : BaseOutputFormatter
         string thresholdValue = result.ThresholdValue.GetValueOrDefault().ToString("N2");
         string additionalInfo = result.AdditionalInfo;
 
-        Console.WriteLine($"{statusIcon}\tName\tValue\tThreshold\tMessage");
+        Console.WriteLine($"Status\tName\tValue\tThreshold\tMessage");
         Console.WriteLine($"{statusIcon}\t{subCommand}\t{actualValue}\t{thresholdValue}\t{additionalInfo}");
 
         return Task.CompletedTask;

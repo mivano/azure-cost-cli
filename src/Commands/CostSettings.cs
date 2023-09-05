@@ -3,7 +3,7 @@ using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands;
 
-public class CostSettings : LogCommandSettings
+public class CostSettings : LogCommandSettings, ICostSettings
 {
     [CommandOption("-s|--subscription")]
     [Description("The subscription id to use. Will try to fetch the active id if not specified.")]

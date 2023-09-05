@@ -30,12 +30,12 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand
                 ctx.Status = "Fetching previous service cost data...";
                 var (previousFrom, previousTo) = GetPreviousPeriodDates(settings.Timeframe, settings.From, settings.To);
                 // Fetch aggregated costs by service name for the previous period
-                var previousCostByServices = await _costRetriever.RetrieveCostByServiceName(settings.Debug, subscriptionId, settings.Filter, settings.Metric, settings.Timeframe, previousFrom, previousTo);
+                var previousCostByServices = await _costRetriever.RetrieveCostByServiceName(settings.Debug, subscriptionId, settings.Filter, settings.Metric, TimeframeType.Custom, previousFrom, previousTo);
             
                 ctx.Status = "Checking for service spikes...";
 
                 // Call to CheckServiceSpike function
-                var serviceSpikeResult = CheckServiceSpike(currentCostByServices, previousCostByServices, settings.FixedAmount, settings.Percentage);
+                result = CheckServiceSpike(currentCostByServices, previousCostByServices, settings.FixedAmount, settings.Percentage);
 
             });
 
@@ -59,7 +59,7 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand
                         "service-spike",
                         true,
                         currentServiceCost.Cost,
-                        percentageThreshold,
+                        previousServiceCost.Cost,
                         $"Cost spike detected in service: {currentServiceCost.ItemName}. The cost change is {changePercentage:F2}%, which exceeds the percentage threshold of {percentageThreshold.Value}%."
                     );
                 }

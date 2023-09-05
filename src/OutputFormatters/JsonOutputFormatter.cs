@@ -106,7 +106,7 @@ public class JsonOutputFormatter : BaseOutputFormatter
     }
     
 
-    private static void WriteJson(CostSettings settings, object items)
+    private static void WriteJson(ICostSettings settings, object items)
     {
 
         var options = new JsonSerializerOptions { WriteIndented = true };
