@@ -27,7 +27,7 @@ jobs:
         working-directory: ./src
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - uses: actions/setup-dotnet@v3
       with:
