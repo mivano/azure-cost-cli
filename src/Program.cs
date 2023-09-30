@@ -4,6 +4,7 @@ using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.Prices;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.ShowCommand;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
@@ -93,7 +94,8 @@ app.Configure(config =>
   
   config.AddBranch<WhatIfSettings>("what-if", add =>
   {
-    add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
+   // add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
+    add.AddCommand<RegionWhatIfCommand>("region").WithDescription("Run what-if scenarios to check price difference if the resources would have run in a different region.");
     add.SetDescription("Run what-if scenarios");
   });
   

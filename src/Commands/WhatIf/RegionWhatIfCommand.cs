@@ -7,7 +7,8 @@ using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.WhatIf;
 
-public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
+// Run what-if scenarios to check price difference if the resources would have run in a different region
+public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
 {
     private readonly IPriceRetriever _priceRetriever;
     private readonly ICostRetriever _costRetriever;
@@ -19,7 +20,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
 
     private TimeSpan _cacheLifetime = TimeSpan.FromHours(1); // Cache lifetime can be adjusted as needed
 
-    public DevTestWhatIfCommand(IPriceRetriever priceRetriever, ICostRetriever costRetriever)
+    public RegionWhatIfCommand(IPriceRetriever priceRetriever, ICostRetriever costRetriever)
     {
         _priceRetriever = priceRetriever;
         _costRetriever = costRetriever;
@@ -82,29 +83,26 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
                 ctx.Status = "Running What-If analysis...";
 
                 List<Task> tasks = new List<Task>();
-                
+              
                 foreach (var resource in resources)
                 {
-                    tasks.Add(Task.Run(async () =>
+                    if (resource.ResourceType == "microsoft.compute/virtualmachines" && resource.ServiceName == "Virtual Machines")
                     {
-                        var serviceName = resource.ServiceName;
-                        var location = resource.ResourceLocation;
-                        var currency = resource.Currency;
+                        string skuName = resource.Meter;
 
-                        // Skip if any required parameter is missing
-                        if (string.IsNullOrWhiteSpace(serviceName) || string.IsNullOrWhiteSpace(location)) return;
-
-                        var devTestPrice = await GetDevTestPrice(serviceName, location, currency);
-
-                        if (devTestPrice.HasValue) // && devTestPrice < resource.Cost)
+                       var items = await FetchPricesForAllRegions(skuName);
+                        
+                        foreach (var item in items.OrderBy(a=>a.Price))
                         {
-                            Console.WriteLine($"Resource ID {resource.ResourceId} could have saved {resource.Cost - devTestPrice} {currency} with DevTest pricing.");
+                            AnsiConsole.MarkupLine($"[bold]{resource.GetResourceName()}[/] in [bold]{item.Region}[/] would cost [bold]{item.Price}[/] per hour");
                         }
-                    }));
+
+                       
+                    }
                 }
 
                 // Wait for all tasks to complete
-                await Task.WhenAll(tasks);
+               // await Task.WhenAll(tasks);
                 
             });
 
@@ -112,54 +110,22 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         return 0;
     }
 
-    private async Task<double?> GetDevTestPrice(string serviceName, string location, string currency)
+    private async Task<IEnumerable<RegionPrice>> FetchPricesForAllRegions(string skuName)
     {
-        // Use the service name, location, and currency as the cache key
-        string cacheKey = $"{serviceName}:{location}:{currency}";
+        string filter = $"serviceName eq 'Virtual Machines' and skuName eq '{skuName}' and type eq 'Consumption'";
+        IEnumerable<PriceRecord> prices = await _priceRetriever.GetAzurePricesAsync(filter);
 
-        // Check if the cache entry exists and if it's not expired
-        if (_cache.TryGetValue(cacheKey, out CacheEntry cacheEntry) && cacheEntry.Expiry > DateTime.Now)
+        var items = new List<RegionPrice>();
+        foreach (var price in prices)
         {
-            return cacheEntry.Price;
+           items.Add(new RegionPrice(price.ArmRegionName, price.RetailPrice));
         }
 
-        // Get or create a new lock for this cache key
-        SemaphoreSlim mylock = _locks.GetOrAdd(cacheKey, k => new SemaphoreSlim(1, 1));
-
-        // Use the semaphore to ensure only one thread at a time can update a given cache entry
-        await mylock.WaitAsync();
-
-        try
-        {
-            // Check the cache again, in case another thread updated the entry while this thread was waiting for the lock
-            if (_cache.TryGetValue(cacheKey, out cacheEntry) && cacheEntry.Expiry > DateTime.Now)
-            {
-                return cacheEntry.Price;
-            }
-
-            // If the price is not in the cache or it's expired, get it from the API
-            string filter =
-                $"currencyCode='{currency}'&$filter=priceType eq 'DevTestConsumption' and Location eq '{location}' and serviceName eq '{serviceName}'";
-            IEnumerable<PriceRecord> devTestPrices = await _priceRetriever.GetAzurePricesAsync(filter);
-            var devTestPriceRecord = devTestPrices.FirstOrDefault();
-            double? price = devTestPriceRecord?.RetailPrice;
-
-            // Store the price in the cache with an expiry time
-            _cache[cacheKey] = new CacheEntry { Price = price, Expiry = DateTime.Now.Add(_cacheLifetime) };
-
-            // Return the price, or null if there is no DevTest price
-            return price;
-        }
-        finally
-        {
-            mylock.Release();
-        }
+        return items;
     }
+
 }
 
+public record RegionPrice(string Region, double Price);
 
-public class CacheEntry
-{
-    public double? Price { get; set; }
-    public DateTime Expiry { get; set; }
-}
+

@@ -1,4 +1,4 @@
-namespace AzureCostCli.Commands.Prices;
+namespace AzureCostCli.Commands.WhatIf;
 
 public class WhatIfSettings:CostSettings
 {
