@@ -1,6 +1,13 @@
 using System.Globalization;
 using System.Text.Json;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.OutputFormatters.SpectreConsole;
@@ -19,7 +26,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         var todayTitle = "Today";
         var yesterdayTitle = "Yesterday";
 
-        if (todaysDate > accumulatedCostDetails.Costs.Max(a => a.Date))
+        if (accumulatedCostDetails.Costs.Any() && todaysDate > accumulatedCostDetails.Costs.Max(a => a.Date))
         {
             todaysDate = accumulatedCostDetails.Costs.Max(a => a.Date);
             todayTitle = todaysDate.ToString("d");
@@ -582,5 +589,32 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         
         return Task.CompletedTask;
     }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        
+var table = new Table();
+        table.Border(TableBorder.None);
+        table.AddColumn("");
+        table.AddColumn("Name");
+        table.AddColumn("Value");
+        table.AddColumn("Threshold");
+        table.AddColumn("Message");
+        
+        table.AddRow(
+            
+            new Markup(!result.IsThresholdExceeded ? ":check_mark_button:" : ":cross_mark:"),
+            new Markup(result.SubCommand),
+            new Markup(result.ActualValue.GetValueOrDefault().ToString("N2")),
+            new Markup(result.ThresholdValue.GetValueOrDefault().ToString("N2")),
+            new Markup(result.AdditionalInfo)
+            );
+        
+        AnsiConsole.Write(table);
+        
+        return Task.CompletedTask;
+    }
+
+
 }
 

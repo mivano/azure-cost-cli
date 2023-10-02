@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands.ShowCommand;
+namespace AzureCostCli.Commands.DetectAnomaly;
 
 public class DetectAnomalySettings : CostSettings
 {

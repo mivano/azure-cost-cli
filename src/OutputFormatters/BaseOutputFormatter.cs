@@ -1,4 +1,11 @@
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
@@ -15,6 +22,7 @@ public abstract class BaseOutputFormatter
     public abstract Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies);
     public abstract Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions);
     public abstract Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags);
+    public abstract Task WriteThreshold(ThresholdSettings settings, ThresholdResult result);
 }
 
 public record AccumulatedCostDetails( 

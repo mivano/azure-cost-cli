@@ -1,7 +1,4 @@
-using System.ComponentModel;
-using Spectre.Console.Cli;
-
-namespace AzureCostCli.Commands.ShowCommand;
+namespace AzureCostCli.Commands.AccumulatedCost;
 
 public class AccumulatedCostSettings : CostSettings
 {

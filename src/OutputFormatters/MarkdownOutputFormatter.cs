@@ -1,6 +1,13 @@
 using System.Globalization;
 using System.Text;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -333,4 +340,25 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
     {
         throw new NotImplementedException();
     }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        string statusIcon = result.IsThresholdExceeded ? ":x:" : ":white_check_mark:";
+        string subCommand = result.SubCommand;
+        string actualValue = result.ActualValue.GetValueOrDefault().ToString("N2");
+        string thresholdValue = result.ThresholdValue.GetValueOrDefault().ToString("N2");
+        string additionalInfo = result.AdditionalInfo;
+
+        // Markdown table header
+        Console.WriteLine("| Status | Name | Value | Threshold | Message |");
+        Console.WriteLine("| ------ | ---- | ----- | --------- | ------- |");
+
+        // Markdown table row
+        Console.WriteLine($"| {statusIcon} | {subCommand} | {actualValue} | {thresholdValue} | {additionalInfo} |");
+
+        return Task.CompletedTask;
+    }
+
+
+
 }

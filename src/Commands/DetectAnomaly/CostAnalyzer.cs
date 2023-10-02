@@ -1,6 +1,6 @@
 using AzureCostCli.CostApi;
 
-namespace AzureCostCli.Commands.ShowCommand;
+namespace AzureCostCli.Commands.DetectAnomaly;
 
 public class CostAnalyzer
 {

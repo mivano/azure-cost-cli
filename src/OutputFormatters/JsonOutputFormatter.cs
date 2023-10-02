@@ -1,6 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.CostApi;
 using DevLab.JmesPath;
 using Spectre.Console;
@@ -91,8 +98,15 @@ public class JsonOutputFormatter : BaseOutputFormatter
         return Task.CompletedTask;
     }
 
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        WriteJson(settings, result);
 
-    private static void WriteJson(CostSettings settings, object items)
+        return Task.CompletedTask;
+    }
+    
+
+    private static void WriteJson(ICostSettings settings, object items)
     {
 
         var options = new JsonSerializerOptions { WriteIndented = true };

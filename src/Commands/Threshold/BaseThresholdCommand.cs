@@ -1,22 +1,18 @@
 using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.ShowCommand.OutputFormatters;
-using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands.DailyCost;
+namespace AzureCostCli.Commands.Threshold;
 
-public class DailyCostCommand : AsyncCommand<DailyCostSettings>
+public abstract class BaseThresholdCommand : AsyncCommand<ThresholdSettings> 
 {
-    private readonly ICostRetriever _costRetriever;
 
     private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
-
-    public DailyCostCommand(ICostRetriever costRetriever)
+    
+    protected BaseThresholdCommand()
     {
-        _costRetriever = costRetriever;
-
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -25,38 +21,16 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         _outputFormatters.Add(OutputFormat.Markdown, new MarkdownOutputFormatter());
         _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
+    
+    protected abstract Task<ThresholdResult> PerformThresholdCheck(CommandContext context, Guid subscriptionId,
+        ThresholdSettings settings);
 
-    public override ValidationResult Validate(CommandContext context, DailyCostSettings settings)
-    {
-        // Validate if the timeframe is set to Custom, then the from and to dates must be specified and the from date must be before the to date
-        if (settings.Timeframe == TimeframeType.Custom)
-        {
-            if (settings.From == null)
-            {
-                return ValidationResult.Error("The from date must be specified when the timeframe is set to Custom.");
-            }
-
-            if (settings.To == null)
-            {
-                return ValidationResult.Error("The to date must be specified when the timeframe is set to Custom.");
-            }
-
-            if (settings.From > settings.To)
-            {
-                return ValidationResult.Error("The from date must be before the to date.");
-            }
-        }
-
-        return ValidationResult.Success();
-    }
-
-    public override async Task<int> ExecuteAsync(CommandContext context, DailyCostSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, ThresholdSettings settings)
     {
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
-
-
+        
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -83,26 +57,14 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
                 return -1;
             }
         }
-
-        IEnumerable<CostDailyItem> dailyCost = new List<CostDailyItem>();
-
-        await AnsiConsole.Status()
-            .StartAsync("Fetching daily cost data...", async ctx =>
-            {
-                // Fetch the costs from the Azure Cost Management API
-
-                dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId,
-                    settings.Filter,
-                    settings.Metric,
-                    settings.Dimension,
-                    settings.Timeframe,
-                    settings.From, settings.To);
-            });
-
+        
+        ThresholdResult result = await PerformThresholdCheck(context, subscriptionId, settings);
+        
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteDailyCost(settings, dailyCost);
+            .WriteThreshold(settings, result);
 
-        return 0; // Omitted
+        // Output and fail logic
+        return result.IsThresholdExceeded && settings.FailOnError ? -1 : 0;
     }
 }
