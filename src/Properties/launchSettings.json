@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "azure-cost-cli": {
+      "commandName": "Project",
+      "commandLineArgs": "accumulatedCost -s d2e12f3e-8634-4e75-9a5e-34fd227a0ab8"
+    }
+  }
+}

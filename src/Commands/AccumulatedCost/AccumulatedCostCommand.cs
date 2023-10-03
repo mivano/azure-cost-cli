@@ -11,6 +11,8 @@ namespace AzureCostCli.Commands.ShowCommand;
 public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 {
     private readonly ICostRetriever _costRetriever;
+    private ScopeSelector _scopeSelector;
+
 
     private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
 
@@ -53,11 +55,16 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings)
     {
+        _scopeSelector = new ScopeSelector(settings);
+
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
-        
-      
+
+        var selectedScope = _scopeSelector.GetSelectedScope();
+
+
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -163,7 +170,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                     settings.Timeframe, settings.From, settings.To);
 
                 accumulatedCost = new AccumulatedCostDetails(subscription, costs, forecastedCosts, byServiceNameCosts,
-                    byLocationCosts, byResourceGroupCosts);
+                    byLocationCosts, null);
 
             });
         

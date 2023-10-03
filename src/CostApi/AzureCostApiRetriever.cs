@@ -48,7 +48,7 @@ public class AzureCostApiRetriever : ICostRetriever
         if (_tokenRetrieved)
             return;
 
-        // Get the token by using the DefaultAzureCredential
+        // Get the token by using the DefaultAzureCredential, but try the AzureCliCredential first
         var tokenCredential = new ChainedTokenCredential(
             new AzureCliCredential(),
             new DefaultAzureCredential());
