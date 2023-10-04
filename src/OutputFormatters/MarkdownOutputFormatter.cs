@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -330,6 +331,11 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
     }
 
     public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
     {
         throw new NotImplementedException();
     }

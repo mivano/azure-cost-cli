@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using DevLab.JmesPath;
 using Spectre.Console;
@@ -91,8 +92,21 @@ public class JsonOutputFormatter : BaseOutputFormatter
         return Task.CompletedTask;
     }
 
+    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+    {
+        // We need to convert the dictionary to a list of objects with the properties of the CostResourceItem and then having a list of regions with their name and price
+        var output = pricesByRegion.Select(a => new
+        {
+            UsageDetails = a.Key,
+            Regions = a.Value
+        });
+        WriteJson(settings, output);
+        
+        return Task.CompletedTask;
+    }
+    
 
-    private static void WriteJson(CostSettings settings, object items)
+    private static void WriteJson(ICostSettings settings, object items)
     {
 
         var options = new JsonSerializerOptions { WriteIndented = true };

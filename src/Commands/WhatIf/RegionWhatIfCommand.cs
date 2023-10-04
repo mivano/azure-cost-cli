@@ -64,68 +64,128 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         }
 
         // Fetch the costs from the Azure Cost Management API
-        IEnumerable<CostResourceItem> resources = new List<CostResourceItem>();
+        IEnumerable<UsageDetails> resources;
 
-
+        Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion = new();
 
         await AnsiConsole.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
-                resources = await _costRetriever.RetrieveCostForResources(
+                resources = await _costRetriever.RetrieveUsageDetails(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
-                    settings.Metric,
-                    false,
+                    subscriptionId,
+                    "",
                     settings.Timeframe,
                     settings.From,
                     settings.To);
 
+                // We need to group the resources by resource id AND product as we get for the same resource multiple items for each day
+                // However, we do need to make sure we sum the quantity and cost
+                resources = resources
+                    .Where(a=>a.properties is { consumedService: "Microsoft.Compute", meterDetails.meterCategory: "Virtual Machines" } )
+                    .GroupBy(a => a.properties.resourceId)
+                    .Select(a => new UsageDetails
+                    {
+                        id = a.Key,
+                        name = a.First().name,
+                        type = a.First().type,
+                        kind = a.First().kind,
+                        tags = a.First().tags,
+                        properties = new UsageProperties
+                        {
+                            meterDetails = new MeterDetails
+                            {
+                                meterCategory = a.First().properties.meterDetails.meterCategory,
+                                unitOfMeasure = a.First().properties.meterDetails.unitOfMeasure,
+                                meterName = a.First().properties.meterDetails.meterName,
+                                meterSubCategory = a.First().properties.meterDetails.meterSubCategory,
+                            },
+                            quantity = a.Sum(b => b.properties.quantity),
+                            consumedService = a.First().properties.consumedService,
+                            cost = a.Sum(b => b.properties.cost),
+                            meterId = a.First().properties.meterId,
+                            resourceGroup = a.First().properties.resourceGroup,
+                            frequency = a.First().properties.frequency,
+                            product = a.First().properties.product,
+                            additionalInfo = a.First().properties.additionalInfo,
+                            billingCurrency = a.First().properties.billingCurrency,
+                            billingProfileId = a.First().properties.billingProfileId,
+                            offerId= a.First().properties.offerId,
+                            chargeType = a.First().properties.chargeType,
+                            resourceLocation = a.First().properties.resourceLocation,
+                            resourceId = a.First().properties.resourceId,
+                            resourceName = a.First().properties.resourceName,
+                            billingProfileName = a.First().properties.billingProfileName,
+                            unitPrice = a.First().properties.unitPrice,
+                            effectivePrice = a.First().properties.effectivePrice,
+                            billingPeriodStartDate = a.First().properties.billingPeriodStartDate,
+                            billingPeriodEndDate = a.First().properties.billingPeriodEndDate,
+                            publisherType = a.First().properties.publisherType,
+                            isAzureCreditEligible = a.First().properties.isAzureCreditEligible,
+                            subscriptionName = a.First().properties.subscriptionName,
+                            subscriptionId = a.First().properties.subscriptionId,
+                        }
+                    });
+                
                 ctx.Status = "Running What-If analysis...";
 
                 List<Task> tasks = new List<Task>();
               
                 foreach (var resource in resources)
                 {
-                    if (resource.ResourceType == "microsoft.compute/virtualmachines" && resource.ServiceName == "Virtual Machines")
-                    {
-                        string skuName = resource.Meter;
-
-                       var items = await FetchPricesForAllRegions(skuName);
+                 
+                        string skuName = resource.properties.meterDetails.meterName;
+                        ctx.Status = "Fetching prices for " + skuName;
                         
-                        foreach (var item in items.OrderBy(a=>a.Price))
-                        {
-                            AnsiConsole.MarkupLine($"[bold]{resource.GetResourceName()}[/] in [bold]{item.Region}[/] would cost [bold]{item.Price}[/] per hour");
-                        }
-
+                       var items = await FetchPricesForAllRegions(skuName, resource.properties.meterId, resource.properties.billingCurrency);
+                        
+                       pricesByRegion.Add(resource, items.ToList());
                        
-                    }
+                    
                 }
-
-                // Wait for all tasks to complete
-               // await Task.WhenAll(tasks);
+                
                 
             });
 
+        // Write the output
+        await _outputFormatters[settings.Output]
+            .WritePricesPerRegion(settings, pricesByRegion);
 
         return 0;
     }
 
-    private async Task<IEnumerable<RegionPrice>> FetchPricesForAllRegions(string skuName)
+private Dictionary<string, IEnumerable<PriceRecord>> _priceCache = new();
+
+private async Task<IEnumerable<PriceRecord>> FetchPricesForAllRegions(string skuName, string meterId, string currency = "USD")
+{
+    // Cachekey
+    var cacheKey = skuName + ":"+meterId+":"+currency;
+    
+    // Check if prices for the given SKU name exist in the cache
+    if (_priceCache.TryGetValue(cacheKey, out var regions))
     {
-        string filter = $"serviceName eq 'Virtual Machines' and skuName eq '{skuName}' and type eq 'Consumption'";
-        IEnumerable<PriceRecord> prices = await _priceRetriever.GetAzurePricesAsync(filter);
-
-        var items = new List<RegionPrice>();
-        foreach (var price in prices)
-        {
-           items.Add(new RegionPrice(price.ArmRegionName, price.RetailPrice));
-        }
-
-        return items;
+        return regions;
     }
+
+    string filter = $"serviceName eq 'Virtual Machines' and skuName eq '{skuName}' and type eq 'Consumption'";
+    IEnumerable<PriceRecord> prices = await _priceRetriever.GetAzurePricesAsync(currency, filter);
+
+    // find the item by meterId and use that to determine the actual product name
+    // if we do not do that, we end up with both windows and linux machines
+    var actualItem = prices.FirstOrDefault(a => a.MeterId == meterId);
+
+    if (actualItem is not null)
+        prices = prices.Where(a => a.ProductName == actualItem.ProductName);
+
+    // Store the fetched prices in the cache
+    _priceCache[cacheKey] = prices;
+
+    return prices;
+}
+
 
 }
 
-public record RegionPrice(string Region, double Price);
+
 
 

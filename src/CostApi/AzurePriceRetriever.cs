@@ -12,15 +12,15 @@ public class AzurePriceRetriever : IPriceRetriever
         _client = httpClientFactory.CreateClient("PriceApi");
     }
 
-    public async Task<IEnumerable<PriceRecord>> GetAzurePricesAsync(string? filter = null)
+    public async Task<IEnumerable<PriceRecord>> GetAzurePricesAsync(string currencyCode = "USD", string? filter = null)
     {
         var prices = new List<PriceRecord>();
-        var url = "https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview";
+        string? url = "https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview&currencyCode='" + currencyCode + "'";
 
         // Append the filter to the URL if it's provided
         if (!string.IsNullOrWhiteSpace(filter))
         {
-            url += "&" + filter;
+            url += "&$filter=" + filter;
         }
         
         var options = new JsonSerializerOptions
@@ -77,6 +77,21 @@ public class PriceRecord
     public string ArmSkuName { get; set; }
     public List<SavingsPlan> SavingsPlan { get; set; }
     public string ReservationTerm { get; set; } // Only present in some records
+
+    public string Sku
+    {
+        get
+        {
+            var sku = $"{SkuId}/{MeterId}";
+
+            if (ServiceName is "Virtual Machines" or "Azure App Service") {
+                sku = $"{ProductId}/{ArmSkuName}/{MeterId}";
+            }
+            
+             return sku;
+        }
+    }
+
 }
 
 public class SavingsPlan
@@ -93,5 +108,5 @@ public class SavingsPlan
         public List<PriceRecord> Items { get; set; }
 
         [JsonPropertyName("NextPageLink")]
-        public string NextPageLink { get; set; }
+        public string? NextPageLink { get; set; }
     }

@@ -139,7 +139,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
 
             // If the price is not in the cache or it's expired, get it from the API
             string filter =
-                $"currencyCode='{currency}'&$filter=priceType eq 'DevTestConsumption' and Location eq '{location}' and serviceName eq '{serviceName}'";
+                $"priceType eq 'DevTestConsumption' and Location eq '{location}' and serviceName eq '{serviceName}'";
             IEnumerable<PriceRecord> devTestPrices = await _priceRetriever.GetAzurePricesAsync(filter);
             var devTestPriceRecord = devTestPrices.FirstOrDefault();
             double? price = devTestPriceRecord?.RetailPrice;

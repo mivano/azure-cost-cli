@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.OutputFormatters.SpectreConsole;
@@ -379,7 +380,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         
             t.AddRow(
                 new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), 
-                new Money(dailyCost, settings.UseUSD?"USD":day.First().Currency, null, Justify.Left),
+                new Money(dailyCost, settings.UseUSD?"USD":day.First().Currency, 2, null, Justify.Left),
                 c);
         }
 
@@ -582,5 +583,70 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         
         return Task.CompletedTask;
     }
+
+    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+    {
+        // Loop through each resource in the pricesByRegion dictionary
+        // Output the name of the resource, and then a table with the prices per region
+        // Highlight the current region in the table
+        
+        var tree = new Tree("[green bold]Prices per region[/] for [bold]"+settings.Subscription+"[/] between [bold]"+settings.From+"[/] and [bold]"+settings.To+"[/]");
+       
+        
+        foreach (var (resource, prices) in pricesByRegion)
+        {
+            var n = tree.AddNode($"[dim]Resource[/]: [bold]{resource.properties.resourceName}[/]");
+
+            n.AddNode($"[dim]Group[/]: [bold]{resource.properties.resourceGroup}[/]");
+            n.AddNode($"[dim]Product[/]: [bold]{resource.properties.product}[/]");
+            n.AddNode($"[dim]Total quantity[/]: [bold]{resource.properties.quantity}[/] {resource.properties.meterDetails.unitOfMeasure}");
+            n.AddNode($"[dim]Current cost[/]: [bold]{ Money.FormatMoney(resource.properties.quantity*resource.properties.effectivePrice, resource.properties.billingCurrency)}[/]");
+            
+            var resourceTable = new Table();
+            resourceTable.Border(TableBorder.Rounded);
+            resourceTable.AddColumn("Region");
+            resourceTable.AddColumn("Retail Price");
+            resourceTable.AddColumn("Cost");
+            resourceTable.AddColumn("Deviation"); // The percentage higher or lower from the current region
+            resourceTable.AddColumn("1 Year Savings Plan");
+            resourceTable.AddColumn("1 Year Deviation");
+            resourceTable.AddColumn("3 Years Savings Plan");
+            resourceTable.AddColumn("3 Years Deviation");
+            
+            foreach (var price in prices.OrderBy(a=>a.RetailPrice))
+            {
+                // Calculate the deviation, so compared to the current region of the resource, determine how much higher or lower the price is in percentage
+                // This allows us to compare the different regions to the one currently in use. 
+                var deviation = (price.RetailPrice - prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) / prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100;
+                var oneYearSavingsPlan =price.SavingsPlan?.FirstOrDefault(a=>a.Term == "1 Year");
+                var threeYearSavingsPlan =price.SavingsPlan?.FirstOrDefault(a=>a.Term == "3 Years");
+                
+                // Also add the deviations for the savings plans
+                var oneYearSavingsPlanDeviation = oneYearSavingsPlan != null ? (oneYearSavingsPlan.RetailPrice - prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) / prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100 : 0;
+                var threeYearSavingsPlanDeviation = threeYearSavingsPlan != null ? (threeYearSavingsPlan.RetailPrice - prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) / prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100 : 0;
+                
+                resourceTable.AddRow(
+                    new Markup(price.Location == resource.properties.resourceLocation ? $"[bold green]{price.Location}[/]" : price.Location),
+                    new Money(price.RetailPrice, price.CurrencyCode, 6),
+                    new Money(price.RetailPrice * resource.properties.quantity, price.CurrencyCode),
+                    deviation > 0 ? new Markup($"[red]{deviation:N2}%[/]") : new Markup($"[green]{deviation:N2}%[/]"),
+                    oneYearSavingsPlan != null ? new Money(oneYearSavingsPlan.RetailPrice, price.CurrencyCode, 6) : new Markup(""),
+                    oneYearSavingsPlan != null ? (oneYearSavingsPlanDeviation >0 ? new Markup($"[red]{oneYearSavingsPlanDeviation:N2}%[/]"):new Markup($"[green]{oneYearSavingsPlanDeviation:N2}%[/]")) : new Markup(""),
+                    threeYearSavingsPlan != null ? new Money(threeYearSavingsPlan.RetailPrice, price.CurrencyCode, 6) : new Markup(""),
+                    threeYearSavingsPlan != null ? (threeYearSavingsPlanDeviation> 0 ? new Markup($"[red]{threeYearSavingsPlanDeviation:N2}%[/]"):new Markup($"[green]{threeYearSavingsPlanDeviation:N2}%[/]")) : new Markup("")
+                    );
+            }
+
+            n.AddNode(resourceTable);
+        }   
+        
+        AnsiConsole.Write(tree);
+        
+        
+        
+        return Task.CompletedTask;
+    }
+
+  
 }
 

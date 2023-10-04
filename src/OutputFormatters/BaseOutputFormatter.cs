@@ -1,4 +1,5 @@
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 
 namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
@@ -15,6 +16,7 @@ public abstract class BaseOutputFormatter
     public abstract Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies);
     public abstract Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions);
     public abstract Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags);
+    public abstract Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails,List<PriceRecord>> pricesByRegion);
 }
 
 public record AccumulatedCostDetails( 
