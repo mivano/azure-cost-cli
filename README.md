@@ -84,6 +84,7 @@ COMMANDS:
     detectAnomalies    Detect anomalies and trends  
     budgets            Get the available budgets   
     regions            Get the available Azure regions 
+    what-if            Run what-if scenarios   
 
 ```
 
@@ -244,6 +245,88 @@ azure-cost regions
 ```
 
 > Not all the formatters are supported for this command. Let me know if there is a need.
+
+### What-if scenarios
+
+This command allows you to run what-if scenarios. It will show the cost of the subscription if you would make changes to either usage or rates. 
+
+#### Regions
+
+The what-if regions command compares your virtual machines in the given subscription with prices of the same virtual machine in different regions. It will show the current cost and the cost if you would move the virtual machine to a different region. 
+
+```bash
+azure-cost what-if regions
+```
+
+A typical output to the console might be like this:
+
+```bash
+Prices per region for a914b3f4-fe8b-4e94-a0d3-2938540d59c6 between 01/09/2023 and 05/10/2023
+└── Resource: idlemachinetest
+    ├── Group: TEST-IDLE-MACHINE
+    ├── Product: Virtual Machines BS Series - B2ms - EU West
+    ├── Total quantity: 244 (100 Hours)
+    ├── Current cost: 21,93 EUR
+    └── ╭──────────────────┬─────────────────────────┬─────────────────────────┬───────────┬─────────────────────────┬──────────────────┬────────────────────────┬───────────────────╮
+        │ Region           │ Retail Price            │ Cost                    │ Deviation │ 1 Year Savings Plan     │ 1 Year Deviation │ 3 Years Savings Plan   │ 3 Years Deviation │
+        ├──────────────────┼─────────────────────────┼─────────────────────────┼───────────┼─────────────────────────┼──────────────────┼────────────────────────┼───────────────────┤
+        │ US West 2        │            0,079151 EUR │               19,31 EUR │ -13,33%   │            0,053308 EUR │ -41,63%          │           0,035666 EUR │ -60,95%           │
+        │ US East 2        │            0,079151 EUR │               19,31 EUR │ -13,33%   │            0,062664 EUR │ -31,39%          │           0,042291 EUR │ -53,69%           │
+        │ US West 3        │            0,079151 EUR │               19,31 EUR │ -13,33%   │            0,062664 EUR │ -31,39%          │           0,042291 EUR │ -53,69%           │
+        │ US East          │            0,079151 EUR │               19,31 EUR │ -13,33%   │            0,053308 EUR │ -41,63%          │           0,035666 EUR │ -60,95%           │
+        │ US North Central │            0,079151 EUR │               19,31 EUR │ -13,33%   │            0,053308 EUR │ -41,63%          │           0,035666 EUR │ -60,95%           │
+        │ SE Central       │            0,082196 EUR │               20,06 EUR │ -10,00%   │            0,062773 EUR │ -31,27%          │           0,043186 EUR │ -52,71%           │
+        │ IN West Jio      │            0,085240 EUR │               20,80 EUR │ -6,67%    │            0,057563 EUR │ -36,97%          │           0,037557 EUR │ -58,88%           │
+        │ IN Central Jio   │            0,085240 EUR │               20,80 EUR │ -6,67%    │            0,057563 EUR │ -36,97%          │           0,037557 EUR │ -58,88%           │
+        │ IN Central       │            0,085240 EUR │               20,80 EUR │ -6,67%    │            0,057580 EUR │ -36,95%          │           0,037548 EUR │ -58,89%           │
+        │ EU North         │            0,086572 EUR │               21,12 EUR │ -5,21%    │            0,066106 EUR │ -27,62%          │           0,045476 EUR │ -50,21%           │
+        │ CA East          │            0,088284 EUR │               21,54 EUR │ -3,33%    │            0,059645 EUR │ -34,69%          │           0,039922 EUR │ -56,29%           │
+        │ CA Central       │            0,088284 EUR │               21,54 EUR │ -3,33%    │            0,059645 EUR │ -34,69%          │           0,039922 EUR │ -56,29%           │
+        │ UK West          │            0,089426 EUR │               21,82 EUR │ -2,08%    │            0,070798 EUR │ -22,48%          │           0,047780 EUR │ -47,68%           │
+        │ UK South         │            0,089806 EUR │               21,91 EUR │ -1,67%    │            0,068028 EUR │ -25,51%          │           0,047651 EUR │ -47,82%           │
+        │ FR Central       │            0,089806 EUR │               21,91 EUR │ -1,67%    │            0,068028 EUR │ -25,51%          │           0,047651 EUR │ -47,82%           │
+        │ IT North         │            0,091329 EUR │               22,28 EUR │ 0,00%     │                         │                  │                        │                   │
+        │ DE West Central  │            0,091329 EUR │               22,28 EUR │ 0,00%     │            0,070734 EUR │ -22,55%          │           0,048724 EUR │ -46,65%           │
+        │ EU West          │            0,091329 EUR │               22,28 EUR │ 0,00%     │            0,070725 EUR │ -22,56%          │           0,048733 EUR │ -46,64%           │
+        │ US Gov Virginia  │            0,092851 EUR │               22,66 EUR │ 1,67%     │                         │                  │                        │                   │
+        │ US Gov AZ        │            0,092851 EUR │               22,66 EUR │ 1,67%     │                         │                  │                        │                   │
+        │ US West          │            0,094373 EUR │               23,03 EUR │ 3,33%     │            0,074498 EUR │ -18,43%          │           0,049140 EUR │ -46,19%           │
+        │ US Central       │            0,094944 EUR │               23,17 EUR │ 3,96%     │            0,075167 EUR │ -17,70%          │           0,050728 EUR │ -44,46%           │
+        │ US South Central │            0,094944 EUR │               23,17 EUR │ 3,96%     │            0,075167 EUR │ -17,70%          │           0,050728 EUR │ -44,46%           │
+        │ US West Central  │            0,094944 EUR │               23,17 EUR │ 3,96%     │            0,075167 EUR │ -17,70%          │           0,050728 EUR │ -44,46%           │
+        │ AE North         │            0,094944 EUR │               23,17 EUR │ 3,96%     │            0,072546 EUR │ -20,57%          │           0,049874 EUR │ -45,39%           │
+        │ QA Central       │            0,095134 EUR │               23,21 EUR │ 4,17%     │            0,072682 EUR │ -20,42%          │           0,049974 EUR │ -45,28%           │
+        │ IL Central       │            0,095134 EUR │               23,21 EUR │ 4,17%     │            0,064691 EUR │ -29,17%          │           0,043762 EUR │ -52,08%           │
+        │ KR South         │            0,098939 EUR │               24,14 EUR │ 8,33%     │            0,078330 EUR │ -14,23%          │           0,052863 EUR │ -42,12%           │
+        │ KR Central       │            0,098939 EUR │               24,14 EUR │ 8,33%     │            0,064202 EUR │ -29,70%          │           0,045413 EUR │ -50,28%           │
+        │ CH North         │            0,100461 EUR │               24,51 EUR │ 10,00%    │            0,079535 EUR │ -12,91%          │           0,053677 EUR │ -41,23%           │
+        │ AU Central       │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,073484 EUR │ -19,54%          │           0,050945 EUR │ -44,22%           │
+        │ AU Central 2     │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,073484 EUR │ -19,54%          │           0,050945 EUR │ -44,22%           │
+        │ AU Southeast     │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,079837 EUR │ -12,58%          │           0,053880 EUR │ -41,00%           │
+        │ NO East          │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,079837 EUR │ -12,58%          │           0,053880 EUR │ -41,00%           │
+        │ PL Central       │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,078092 EUR │ -14,49%          │           0,053809 EUR │ -41,08%           │
+        │ AP Southeast     │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,068048 EUR │ -25,49%          │           0,044623 EUR │ -51,14%           │
+        │ AU East          │            0,100842 EUR │               24,61 EUR │ 10,42%    │            0,073484 EUR │ -19,54%          │           0,050945 EUR │ -44,22%           │
+        │ ZA North         │            0,102745 EUR │               25,07 EUR │ 12,50%    │            0,078435 EUR │ -14,12%          │           0,053941 EUR │ -40,94%           │
+        │ JA East          │            0,103696 EUR │               25,30 EUR │ 13,54%    │            0,076071 EUR │ -16,71%          │           0,053435 EUR │ -41,49%           │
+        │ SE South         │            0,106550 EUR │               26,00 EUR │ 16,67%    │            0,084356 EUR │ -7,64%           │           0,056930 EUR │ -37,66%           │
+        │ AP East          │            0,111307 EUR │               27,16 EUR │ 21,87%    │            0,075076 EUR │ -17,80%          │           0,049264 EUR │ -46,06%           │
+        │ US Gov TX        │            0,111782 EUR │               27,27 EUR │ 22,39%    │                         │                  │                        │                   │
+        │ IN South         │            0,112258 EUR │               27,39 EUR │ 22,92%    │            0,088875 EUR │ -2,69%           │           0,059979 EUR │ -34,33%           │
+        │ IN West          │            0,113209 EUR │               27,62 EUR │ 23,96%    │            0,089628 EUR │ -1,86%           │           0,060488 EUR │ -33,77%           │
+        │ JA West          │            0,114161 EUR │               27,86 EUR │ 25,00%    │            0,090381 EUR │ -1,04%           │           0,060996 EUR │ -33,21%           │
+        │ DE North         │            0,118917 EUR │               29,02 EUR │ 30,21%    │            0,094147 EUR │ 3,09%            │           0,063538 EUR │ -30,43%           │
+        │ AE Central       │            0,118917 EUR │               29,02 EUR │ 30,21%    │            0,094147 EUR │ 3,09%            │           0,063538 EUR │ -30,43%           │
+        │ BR South         │            0,127479 EUR │               31,10 EUR │ 39,58%    │            0,078540 EUR │ -14,00%          │           0,057786 EUR │ -36,73%           │
+        │ FR South         │            0,128431 EUR │               31,34 EUR │ 40,62%    │            0,101679 EUR │ 11,33%           │           0,068621 EUR │ -24,86%           │
+        │ ZA West          │            0,129025 EUR │               31,48 EUR │ 41,27%    │            0,102149 EUR │ 11,85%           │           0,068938 EUR │ -24,52%           │
+        │ NO West          │            0,130333 EUR │               31,80 EUR │ 42,71%    │            0,103185 EUR │ 12,98%           │           0,069637 EUR │ -23,75%           │
+        │ CH West          │            0,131037 EUR │               31,97 EUR │ 43,48%    │            0,103742 EUR │ 13,59%           │           0,070013 EUR │ -23,34%           │
+        │ BR Southeast     │            0,166484 EUR │               40,62 EUR │ 82,29%    │            0,131806 EUR │ 44,32%           │           0,088953 EUR │ -2,60%            │
+        ╰──────────────────┴─────────────────────────┴─────────────────────────┴───────────┴─────────────────────────┴──────────────────┴────────────────────────┴───────────────────╯
+```
+
+You can also output to csv or json for further processing. It uses the `usageDetails` endpoint, which provided different type of data than the `query` endpoint.
 
 ## Filter
 

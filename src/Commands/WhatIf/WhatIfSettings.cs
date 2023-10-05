@@ -1,18 +1,16 @@
 using System.ComponentModel;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands;
+namespace AzureCostCli.Commands.WhatIf;
 
-public interface ICostSettings
+public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
 {
-    bool SkipHeader { get; set; }
-    OutputFormat Output { get; set; } 
-    string Query { get; set; }
-}
-
-public class CostSettings : LogCommandSettings, ICostSettings
-{
-    [CommandOption("-s|--subscription")]
+    [CommandOption("--debug")]
+    [Description("Increase logging verbosity to show all debug logs.")]
+    [DefaultValue(false)]
+    public bool Debug { get; set; }
+    
+   [CommandOption("-s|--subscription")]
     [Description("The subscription id to use. Will try to fetch the active id if not specified.")]
     public Guid Subscription { get; set; }
 
@@ -59,10 +57,4 @@ public class CostSettings : LogCommandSettings, ICostSettings
     [Description("The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)")]
     [DefaultValue(MetricType.ActualCost)]
     public MetricType Metric { get; set; } = MetricType.ActualCost;
-}
-
-public enum MetricType
-{
-    ActualCost,
-    AmortizedCost
 }

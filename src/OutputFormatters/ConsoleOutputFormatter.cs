@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.OutputFormatters.SpectreConsole;
@@ -65,12 +66,12 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
 
         // Add some rows
-        table.AddRow(new Markup("[green bold]" + todayTitle + ":[/]"),new Money(costToday,currency));
+        table.AddRow(new Markup("[green bold]" + todayTitle + ":[/]"), new Money(costToday, currency));
         table.AddRow(new Markup("[green bold]" + yesterdayTitle + ":[/]"), new Money(costYesterday, currency));
         table.AddRow(new Markup("[blue bold]Since start of " + todaysDate.ToString("MMM") + ":[/]"),
             new Money(costSinceStartOfCurrentMonth, currency));
         table.AddRow(new Markup("[yellow bold]Last 7 days:[/]"), new Money(costLastSevenDays, currency));
-        table.AddRow(new Markup("[yellow bold]Last 30 days:[/]"), new Money(costLastThirtyDays,currency));
+        table.AddRow(new Markup("[yellow bold]Last 30 days:[/]"), new Money(costLastThirtyDays, currency));
 
         var accumulatedCostChart = new BarChart()
             .Width(60)
@@ -157,20 +158,18 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         rootTable.AddRow(subTable);
 
         AnsiConsole.Write(rootTable);
-        
+
         return Task.CompletedTask;
     }
 
     public override Task WriteCostByResource(CostByResourceSettings settings, IEnumerable<CostResourceItem> resources)
     {
-        
         // When we have meter details, we output the tree, otherwise we output a table
         if (settings.ExcludeMeterDetails == false)
         {
-
             var tree = new Tree("Cost by resources");
             tree.Guide(TreeGuide.Line);
-            
+
             foreach (var resource in resources.OrderByDescending(a => a.Cost))
             {
                 var table = new Table()
@@ -182,14 +181,14 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                     .AddColumn("Tags")
                     .AddColumn("Cost", column => column.RightAligned());
 
-                table.AddRow(new Markup("[bold]"+resource.ResourceId.Split('/').Last().EscapeMarkup()+"[/]"),
+                table.AddRow(new Markup("[bold]" + resource.ResourceId.Split('/').Last().EscapeMarkup() + "[/]"),
                     new Markup(resource.ResourceType.EscapeMarkup()),
                     new Markup(resource.ResourceLocation.EscapeMarkup()),
                     new Markup(resource.ResourceGroupName.EscapeMarkup()),
-                    resource.Tags.Any()?new JsonText(JsonSerializer.Serialize( resource.Tags)):new Markup(""),
+                    resource.Tags.Any() ? new JsonText(JsonSerializer.Serialize(resource.Tags)) : new Markup(""),
                     settings.UseUSD
                         ? new Money(resource.CostUSD, "USD")
-                        : new Money(resource.Cost,resource.Currency));
+                        : new Money(resource.Cost, resource.Currency));
 
                 var treeNode = tree.AddNode(table);
 
@@ -215,7 +214,6 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 }
 
                 treeNode.AddNode(subTable);
-
             }
 
             AnsiConsole.Write(tree);
@@ -223,29 +221,26 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         else
         {
             var table = new Table()
-                             .RoundedBorder().Expand()
-                             .AddColumn("Resource")
-                             .AddColumn("Resource Type")
-                             .AddColumn("Location")
-                             .AddColumn("Resource group name")
-                             .AddColumn("Tags")
-                             .AddColumn("Cost", column => column.Width(15).RightAligned());
-            
+                .RoundedBorder().Expand()
+                .AddColumn("Resource")
+                .AddColumn("Resource Type")
+                .AddColumn("Location")
+                .AddColumn("Resource group name")
+                .AddColumn("Tags")
+                .AddColumn("Cost", column => column.Width(15).RightAligned());
+
             foreach (var resource in resources.OrderByDescending(a => a.Cost))
             {
-                
-                table.AddRow(new Markup("[bold]"+resource.ResourceId.Split('/').Last().EscapeMarkup()+"[/]"),
+                table.AddRow(new Markup("[bold]" + resource.ResourceId.Split('/').Last().EscapeMarkup() + "[/]"),
                     new Markup(resource.ResourceType.EscapeMarkup()),
                     new Markup(resource.ResourceLocation.EscapeMarkup()),
                     new Markup(resource.ResourceGroupName.EscapeMarkup()),
-                    resource.Tags.Any()?new JsonText(JsonSerializer.Serialize( resource.Tags)):new Markup(""),
+                    resource.Tags.Any() ? new JsonText(JsonSerializer.Serialize(resource.Tags)) : new Markup(""),
                     settings.UseUSD
                         ? new Money(resource.CostUSD, "USD")
-                        : new Money(resource.Cost,resource.Currency));
-
-               
+                        : new Money(resource.Cost, resource.Currency));
             }
-            
+
             AnsiConsole.Write(table);
         }
 
@@ -293,6 +288,13 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
+        
+        if (dailyCosts.Any()==false)
+        {
+            AnsiConsole.MarkupLine("[red]No data found[/]");
+            return Task.CompletedTask;
+        }
+        
         const string othersLabel = "(others)";
 
         var t = new Table();
@@ -302,7 +304,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         t.AddColumn("").Collapse();
         t.AddColumn("").RightAligned().Collapse();
         t.AddColumn("").Expand();
-        
+
         t.Columns[1].Width = 15;
         t.Columns[1].Alignment = Justify.Right;
 
@@ -322,7 +324,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             .Select(g => g.Name)
             .ToList();
 
-// Calculate the maximum daily cost
+        // Calculate the maximum daily cost
         var maxDailyCost = dailyCosts.GroupBy(a => a.Date)
             .Max(group =>
                 group.Sum(item => topItems.Contains(item.Name) ? (settings.UseUSD ? item.CostUsd : item.Cost) : 0));
@@ -376,10 +378,10 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             // Calculate width as a proportion of the maximum daily cost
             // Here we assume a maximum character width of 50, adjust this as per your requirement
             c.Width = (int)Math.Round((dailyCost / maxDailyCost) * 50);
-        
+
             t.AddRow(
-                new Markup(day.Key.ToString(CultureInfo.CurrentCulture)), 
-                new Money(dailyCost, settings.UseUSD?"USD":day.First().Currency, null, Justify.Left),
+                new Markup(day.Key.ToString(CultureInfo.CurrentCulture)),
+                new Money(dailyCost, settings.UseUSD ? "USD" : day.First().Currency, 2, null, Justify.Left),
                 c);
         }
 
@@ -455,35 +457,41 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                     switch (anomaly.Key)
                     {
                         case AnomalyType.NewCost:
-                           subNode= n.AddNode(new Markup(
+                            subNode = n.AddNode(new Markup(
                                 $":money_bag: [bold]New cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                         case AnomalyType.RemovedCost:
-                            subNode=n.AddNode(new Markup(
+                            subNode = n.AddNode(new Markup(
                                 $":money_with_wings: [bold]Removed cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                         case AnomalyType.SteadyGrowth:
-                            subNode=n.AddNode(new Markup(
+                            subNode = n.AddNode(new Markup(
                                 $":chart_increasing: [bold]Steady growth in cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                         case AnomalyType.SignificantChange:
-                            subNode= n.AddNode(new Markup(
+                            subNode = n.AddNode(new Markup(
                                 $":bar_chart: [bold]Significant change in cost detected[/] on [dim]{a.DetectionDate}[/]: [red]{a.CostDifference:N2}[/]"));
                             break;
                     }
-                    
+
                     if (subNode != null)
                     {
                         // Only show the relevant data for the anomaly, so from now until the detection date + a couple of days
-                        var relevantDays = a.Data.Where(c => c.Date >= a.DetectionDate.AddDays(-3) && c.Date <= a.DetectionDate.AddDays(3));
+                        var relevantDays = a.Data.Where(c =>
+                            c.Date >= a.DetectionDate.AddDays(-3) && c.Date <= a.DetectionDate.AddDays(3));
                         var chart = new BarChart();
                         chart.Width = 50;
-                        
-                        foreach (var costData in relevantDays.OrderByDescending(c=>c.Date))
+
+                        foreach (var costData in relevantDays.OrderByDescending(c => c.Date))
                         {
-                            chart.AddItem(costData.Date == a.DetectionDate ? $"[bold]{costData.Date.ToString(CultureInfo.CurrentCulture)}[/]": $"[dim]{costData.Date.ToString(CultureInfo.CurrentCulture)}[/]", Math.Round(costData.Cost,2), costData.Date == a.DetectionDate ? Color.Red : Color.Green);
+                            chart.AddItem(
+                                costData.Date == a.DetectionDate
+                                    ? $"[bold]{costData.Date.ToString(CultureInfo.CurrentCulture)}[/]"
+                                    : $"[dim]{costData.Date.ToString(CultureInfo.CurrentCulture)}[/]",
+                                Math.Round(costData.Cost, 2),
+                                costData.Date == a.DetectionDate ? Color.Red : Color.Green);
                         }
-                       
+
                         subNode.AddNode(chart);
                     }
                 }
@@ -494,7 +502,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
-    
+
     public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
     {
         var table = new Table();
@@ -505,41 +513,45 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         table.AddColumn("Location");
         table.AddColumn("Sustainability");
         table.AddColumn("Compliance");
-            
-        foreach (var region in regions.OrderBy(a=>a.continent).ThenBy(a=>a.geographyId))
+
+        foreach (var region in regions.OrderBy(a => a.continent).ThenBy(a => a.geographyId))
         {
             table.AddRow(
-                new Markup(region.continent), 
-                new Markup(region.geographyId), 
-                new Markup((region.isOpen ? "[green]" : "[red]")+region.displayName+"[/]\n[dim]("+region.id+")[/]"),
+                new Markup(region.continent),
+                new Markup(region.geographyId),
+                new Markup((region.isOpen ? "[green]" : "[red]") + region.displayName + "[/]\n[dim](" + region.id +
+                           ")[/]"),
                 new Markup(region.location),
                 new Markup(string.Join(", ", region.sustainabilityIds)),
-                new Markup(string.Join(", ", region.complianceIds.OrderBy(a=>a))));
+                new Markup(string.Join(", ", region.complianceIds.OrderBy(a => a))));
         }
 
         AnsiConsole.Write(table);
-        
+
         return Task.CompletedTask;
     }
 
-    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    public override Task WriteCostByTag(CostByTagSettings settings,
+        Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
     {
         // When no tags are found, output no results and stop
         if (byTags.Count == 0)
         {
             AnsiConsole.WriteLine();
-            AnsiConsole.WriteLine("No resources found with one of the tags in the list: "+ string.Join(',',settings.Tags));
+            AnsiConsole.WriteLine("No resources found with one of the tags in the list: " +
+                                  string.Join(',', settings.Tags));
             return Task.CompletedTask;
         }
 
-        var tree = new Tree("[green bold]Cost by Tag[/] for [bold]"+settings.Subscription+"[/] between [bold]"+settings.From+"[/] and [bold]"+settings.To+"[/]");
+        var tree = new Tree("[green bold]Cost by Tag[/] for [bold]" + settings.Subscription + "[/] between [bold]" +
+                            settings.From + "[/] and [bold]" + settings.To + "[/]");
         AnsiConsole.WriteLine();
-        
-        
+
+
         foreach (var tag in byTags)
         {
             var n = tree.AddNode($"[dim]key[/]: [bold]{tag.Key}[/]");
-            
+
             foreach (var tagValue in tag.Value)
             {
                 var subNode = n.AddNode($"[dim]value[/]: [bold]{tagValue.Key}[/]");
@@ -550,37 +562,128 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 table.AddColumn("Type");
                 table.AddColumn("Location");
                 table.AddColumn("Cost");
-                
-                foreach (var costResourceItem in tagValue.Value.OrderByDescending(a=>a.Cost))
+
+                foreach (var costResourceItem in tagValue.Value.OrderByDescending(a => a.Cost))
                 {
                     table.AddRow(
                         new Markup(costResourceItem.GetResourceName()),
                         new Markup(costResourceItem.ResourceGroupName),
                         new Markup(costResourceItem.ResourceType),
                         new Markup(costResourceItem.ResourceLocation),
-                        settings.UseUSD ? new Money( costResourceItem.CostUSD, "USD") :
-                            new Money(costResourceItem.Cost, costResourceItem.Currency)
-                        );
+                        settings.UseUSD
+                            ? new Money(costResourceItem.CostUSD, "USD")
+                            : new Money(costResourceItem.Cost, costResourceItem.Currency)
+                    );
                 }
-                
+
                 // End with a total row
                 table.AddRow(
                     new Markup(""),
                     new Markup(""),
                     new Markup(""),
                     new Markup("[bold]Total[/]"),
-                    settings.UseUSD ? new Money(tagValue.Value.Sum(a=>a.CostUSD),"USD") :
-                        new Money(tagValue.Value.Sum(a=>a.Cost), tagValue.Value.First().Currency)
-                    );
-                
+                    settings.UseUSD
+                        ? new Money(tagValue.Value.Sum(a => a.CostUSD), "USD")
+                        : new Money(tagValue.Value.Sum(a => a.Cost), tagValue.Value.First().Currency)
+                );
+
                 subNode.AddNode(table);
             }
-           
         }
-        
+
         AnsiConsole.Write(tree);
-        
+
+        return Task.CompletedTask;
+    }
+
+    public override Task WritePricesPerRegion(WhatIfSettings settings,
+        Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+    {
+        // Loop through each resource in the pricesByRegion dictionary
+        // Output the name of the resource, and then a table with the prices per region
+        // Highlight the current region in the table
+
+        var tree = new Tree("[green bold]Prices per region[/] for [bold]" + settings.Subscription +
+                            "[/] between [bold]" + settings.From + "[/] and [bold]" + settings.To + "[/]");
+
+
+        foreach (var (resource, prices) in pricesByRegion)
+        {
+            var n = tree.AddNode($"[dim]Resource[/]: [bold]{resource.properties.resourceName}[/]");
+
+            n.AddNode($"[dim]Group[/]: [bold]{resource.properties.resourceGroup}[/]");
+            n.AddNode($"[dim]Product[/]: [bold]{resource.properties.product}[/]");
+            n.AddNode(
+                $"[dim]Total quantity[/]: [bold]{resource.properties.quantity}[/] ({resource.properties.meterDetails.unitOfMeasure})");
+            n.AddNode(
+                $"[dim]Current cost[/]: [bold]{Money.FormatMoney(resource.properties.quantity * resource.properties.effectivePrice, resource.properties.billingCurrency)}[/]");
+
+            var resourceTable = new Table();
+            resourceTable.Border(TableBorder.Rounded);
+            resourceTable.AddColumn("Region");
+            resourceTable.AddColumn("Retail Price");
+            resourceTable.AddColumn("Cost");
+            resourceTable.AddColumn("Deviation"); // The percentage higher or lower from the current region
+            resourceTable.AddColumn("1 Year Savings Plan");
+            resourceTable.AddColumn("1 Year Deviation");
+            resourceTable.AddColumn("3 Years Savings Plan");
+            resourceTable.AddColumn("3 Years Deviation");
+
+            foreach (var price in prices.OrderBy(a => a.RetailPrice))
+            {
+                // Calculate the deviation, so compared to the current region of the resource, determine how much higher or lower the price is in percentage
+                // This allows us to compare the different regions to the one currently in use. 
+                var deviation =
+                    (price.RetailPrice - prices.First(a => a.Location == resource.properties.resourceLocation)
+                        .RetailPrice) / prices.First(a => a.Location == resource.properties.resourceLocation)
+                        .RetailPrice * 100;
+                var oneYearSavingsPlan = price.SavingsPlan?.FirstOrDefault(a => a.Term == "1 Year");
+                var threeYearSavingsPlan = price.SavingsPlan?.FirstOrDefault(a => a.Term == "3 Years");
+
+                // Also add the deviations for the savings plans
+                var oneYearSavingsPlanDeviation = oneYearSavingsPlan != null
+                    ? (oneYearSavingsPlan.RetailPrice -
+                       prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) /
+                    prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100
+                    : 0;
+                var threeYearSavingsPlanDeviation = threeYearSavingsPlan != null
+                    ? (threeYearSavingsPlan.RetailPrice -
+                       prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) /
+                    prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100
+                    : 0;
+
+                resourceTable.AddRow(
+                    new Markup(price.Location == resource.properties.resourceLocation
+                        ? $"[bold green]{price.Location}[/]"
+                        : price.Location),
+                    new Money(price.RetailPrice, price.CurrencyCode, 6),
+                    new Money(price.RetailPrice * resource.properties.quantity, price.CurrencyCode),
+                    deviation > 0 ? new Markup($"[red]{deviation:N2}%[/]") : new Markup($"[green]{deviation:N2}%[/]"),
+                    oneYearSavingsPlan != null
+                        ? new Money(oneYearSavingsPlan.RetailPrice, price.CurrencyCode, 6)
+                        : new Markup(""),
+                    oneYearSavingsPlan != null
+                        ? (oneYearSavingsPlanDeviation > 0
+                            ? new Markup($"[red]{oneYearSavingsPlanDeviation:N2}%[/]")
+                            : new Markup($"[green]{oneYearSavingsPlanDeviation:N2}%[/]"))
+                        : new Markup(""),
+                    threeYearSavingsPlan != null
+                        ? new Money(threeYearSavingsPlan.RetailPrice, price.CurrencyCode, 6)
+                        : new Markup(""),
+                    threeYearSavingsPlan != null
+                        ? (threeYearSavingsPlanDeviation > 0
+                            ? new Markup($"[red]{threeYearSavingsPlanDeviation:N2}%[/]")
+                            : new Markup($"[green]{threeYearSavingsPlanDeviation:N2}%[/]"))
+                        : new Markup("")
+                );
+            }
+
+            n.AddNode(resourceTable);
+        }
+
+        AnsiConsole.Write(tree);
+
+
         return Task.CompletedTask;
     }
 }
-
