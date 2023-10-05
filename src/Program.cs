@@ -85,17 +85,18 @@ app.Configure(config =>
   config.AddCommand<BudgetsCommand>("budgets")
     .WithDescription("Get the available budgets.");
   
-  config.AddBranch<PricesSettings>("prices", add =>
-  {
-    add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
-    add.SetDescription("Use the Azure Price catalog");
-    add.HideBranch();
-  });
+  // Disable for now
+  // config.AddBranch<PricesSettings>("prices", add =>
+  // {
+  //   add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
+  //   add.SetDescription("Use the Azure Price catalog");
+  //   add.HideBranch();
+  // });
   
   config.AddBranch<WhatIfSettings>("what-if", add =>
   {
    // add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
-    add.AddCommand<RegionWhatIfCommand>("region").WithDescription("Run what-if scenarios to check price difference if the resources would have run in a different region.");
+    add.AddCommand<RegionWhatIfCommand>("region").WithDescription("Run what-if scenarios to check price differences if the resources would have run in a different region. Only applies to VMs.");
     add.SetDescription("Run what-if scenarios");
   });
   

@@ -29,8 +29,7 @@ public interface ICostRetriever
     Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Guid subscriptionId);
 
     Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
-        Guid subscriptionId, string filter, TimeframeType timeFrame, DateOnly from,
-        DateOnly to);
+        Guid subscriptionId, string filter, DateOnly from,        DateOnly to);
     Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Guid subscriptionId, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
 }
 
