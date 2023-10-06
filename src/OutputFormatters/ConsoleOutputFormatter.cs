@@ -610,11 +610,12 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         foreach (var (resource, prices) in pricesByRegion)
         {
             var n = tree.AddNode($"[dim]Resource[/]: [bold]{resource.properties.resourceName}[/]");
-
+            var currentPriceRegion = prices.First(a => a.Location == resource.properties.resourceLocation);
+            
             n.AddNode($"[dim]Group[/]: [bold]{resource.properties.resourceGroup}[/]");
             n.AddNode($"[dim]Product[/]: [bold]{resource.properties.product}[/]");
             n.AddNode(
-                $"[dim]Total quantity[/]: [bold]{resource.properties.quantity}[/] ({resource.properties.meterDetails.unitOfMeasure})");
+                $"[dim]Total quantity[/]: [bold]{resource.properties.quantity}[/] ([dim]UoM[/] {currentPriceRegion.UnitOfMeasure})");
             n.AddNode(
                 $"[dim]Current cost[/]: [bold]{Money.FormatMoney(resource.properties.quantity * resource.properties.effectivePrice, resource.properties.billingCurrency)}[/]");
 
@@ -634,8 +635,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 // Calculate the deviation, so compared to the current region of the resource, determine how much higher or lower the price is in percentage
                 // This allows us to compare the different regions to the one currently in use. 
                 var deviation =
-                    (price.RetailPrice - prices.First(a => a.Location == resource.properties.resourceLocation)
-                        .RetailPrice) / prices.First(a => a.Location == resource.properties.resourceLocation)
+                    (price.RetailPrice - currentPriceRegion
+                        .RetailPrice) / currentPriceRegion
                         .RetailPrice * 100;
                 var oneYearSavingsPlan = price.SavingsPlan?.FirstOrDefault(a => a.Term == "1 Year");
                 var threeYearSavingsPlan = price.SavingsPlan?.FirstOrDefault(a => a.Term == "3 Years");
@@ -643,13 +644,13 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 // Also add the deviations for the savings plans
                 var oneYearSavingsPlanDeviation = oneYearSavingsPlan != null
                     ? (oneYearSavingsPlan.RetailPrice -
-                       prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) /
-                    prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100
+                       currentPriceRegion.RetailPrice) /
+                    currentPriceRegion.RetailPrice * 100
                     : 0;
                 var threeYearSavingsPlanDeviation = threeYearSavingsPlan != null
                     ? (threeYearSavingsPlan.RetailPrice -
-                       prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice) /
-                    prices.First(a => a.Location == resource.properties.resourceLocation).RetailPrice * 100
+                       currentPriceRegion.RetailPrice) /
+                    currentPriceRegion.RetailPrice * 100
                     : 0;
 
                 resourceTable.AddRow(
