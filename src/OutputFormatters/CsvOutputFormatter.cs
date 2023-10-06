@@ -1,6 +1,7 @@
 using System.Dynamic;
 using System.Globalization;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using CsvHelper;
 using CsvHelper.Configuration;
@@ -69,6 +70,44 @@ public class CsvOutputFormatter : BaseOutputFormatter
         
         return ExportToCsv(settings.SkipHeader, resourcesWithTagAndValue);
     }
+
+ public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+{
+    // Flatten the dictionary to a single list
+    // We need to end up with the properties of the CostResourceItem and then each column for each region in the pricesByRegion
+
+    // Get the list of regions
+    var regions = pricesByRegion.Select(a => a.Value.Select(b => b.Location)).SelectMany(a => a).Distinct().OrderBy(a => a).ToList();
+
+    // Create the list of properties for the CSV
+    var properties = typeof(UsageDetails).GetProperties().Select(a => a.Name).ToList();
+    properties.AddRange(regions);
+
+    // Create the list of objects to be written to the CSV
+    var resources = new List<dynamic>();
+    foreach (var (resource, prices) in pricesByRegion)
+    {
+        dynamic expando = new ExpandoObject();
+        foreach (var property in typeof(UsageDetails).GetProperties())
+        {
+            ((IDictionary<string, object>)expando)[property.Name] = property.GetValue(resource);
+        }
+
+        foreach (var region in regions)
+        {
+            var price = prices.FirstOrDefault(a => a.Location == region);
+            ((IDictionary<string, object>)expando)[region] = price?.RetailPrice;
+        }
+
+        resources.Add(expando);
+    }
+
+    // Write the CSV
+    return ExportToCsv(settings.SkipHeader, resources);
+}
+
+
+    
 
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {

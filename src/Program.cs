@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel;
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.Prices;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.ShowCommand;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
@@ -17,7 +19,14 @@ registrations.AddHttpClient("CostApi", client =>
 {
   client.BaseAddress = new Uri("https://management.azure.com/");
   client.DefaultRequestHeaders.Add("Accept", "application/json");
-}).AddPolicyHandler(PollyPolicyExtensions.GetRetryAfterPolicy());
+}).AddPolicyHandler(PollyExtensions.GetRetryAfterPolicy());
+
+// And one for the price API
+registrations.AddHttpClient("PriceApi", client =>
+{
+  client.BaseAddress = new Uri("https://prices.azure.com/");
+  client.DefaultRequestHeaders.Add("Accept", "application/json");
+}).AddPolicyHandler(PollyExtensions.GetRetryAfterPolicy());
 
 registrations.AddHttpClient("RegionsApi", client =>
 {
@@ -27,6 +36,7 @@ registrations.AddHttpClient("RegionsApi", client =>
 
 
 registrations.AddTransient<ICostRetriever, AzureCostApiRetriever>();
+registrations.AddTransient<IPriceRetriever, AzurePriceRetriever>();
 registrations.AddTransient<IRegionsRetriever, AzureRegionsRetriever>();
 
 var registrar = new TypeRegistrar(registrations);
@@ -75,8 +85,24 @@ app.Configure(config =>
   config.AddCommand<BudgetsCommand>("budgets")
     .WithDescription("Get the available budgets.");
   
+  // Disable for now
+  // config.AddBranch<PricesSettings>("prices", add =>
+  // {
+  //   add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
+  //   add.SetDescription("Use the Azure Price catalog");
+  //   add.HideBranch();
+  // });
+  
+  config.AddBranch<WhatIfSettings>("what-if", add =>
+  {
+   // add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
+    add.AddCommand<RegionWhatIfCommand>("region").WithDescription("Run what-if scenarios to check price differences if the resources would have run in a different region. Only applies to VMs.");
+    add.SetDescription("Run what-if scenarios");
+  });
+  
   config.AddCommand<RegionsCommand>("regions")
     .WithDescription("Get the available Azure regions.");
+
   
   config.ValidateExamples();
 });

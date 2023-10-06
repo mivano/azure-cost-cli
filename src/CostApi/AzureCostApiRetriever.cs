@@ -280,8 +280,8 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Uri uri,
-        string[] filter, MetricType metric,
+    public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
+        string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var payload = new
@@ -351,7 +351,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Uri uri, string[] filter, MetricType metric,
+        Guid subscriptionId, string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var payload = new
@@ -675,7 +675,8 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, MetricType metric, bool excludeMeterDetails, TimeframeType timeFrame, DateOnly from,
+        Guid subscriptionId, string[] filter, MetricType metric, bool excludeMeterDetails, TimeframeType timeFrame,
+        DateOnly from,
         DateOnly to)
     {
         var uri = new Uri(
@@ -856,12 +857,48 @@ public class AzureCostApiRetriever : ICostRetriever
             var groupedItems = items.GroupBy(x => x.ResourceId);
             foreach (var groupedItem in groupedItems)
             {
-                var aggregatedItem = new CostResourceItem(groupedItem.Sum(x => x.Cost), groupedItem.Sum(x => x.CostUSD), groupedItem.Key, groupedItem.First().ResourceType, string.Join(", ", groupedItem.Select(x => x.ResourceLocation)), groupedItem.First().ChargeType, groupedItem.First().ResourceGroupName, groupedItem.First().PublisherType, null, null, null, groupedItem.First().Tags, groupedItem.First().Currency);
+                var aggregatedItem = new CostResourceItem(groupedItem.Sum(x => x.Cost), groupedItem.Sum(x => x.CostUSD),
+                    groupedItem.Key, groupedItem.First().ResourceType,
+                    string.Join(", ", groupedItem.Select(x => x.ResourceLocation)), groupedItem.First().ChargeType,
+                    groupedItem.First().ResourceGroupName, groupedItem.First().PublisherType, null, null, null,
+                    groupedItem.First().Tags, groupedItem.First().Currency);
                 aggregatedItems.Add(aggregatedItem);
             }
 
             return aggregatedItems;
         }
+
+        return items;
+    }
+
+    public async Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
+        Guid subscriptionId, string filter,  DateOnly from, DateOnly to)
+    {
+        var uri = new Uri(
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=5000",
+            UriKind.Relative);
+
+        filter = (!string.IsNullOrWhiteSpace(filter)
+            ?   filter + " AND "
+            : "") +"properties/usageStart ge '" + from.ToString("yyyy-MM-dd") + "' and properties/usageEnd le '" +
+                 to.ToString("yyyy-MM-dd") + "'";
+
+
+        uri = new Uri($"{uri}&$filter={filter}", UriKind.Relative);
+
+        var items = new List<UsageDetails>();
+
+        while (uri != null)
+        {
+            var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
+
+            UsageDetailsResponse payload = await response.Content.ReadFromJsonAsync<UsageDetailsResponse>() ??
+                                           new UsageDetailsResponse();
+
+            items.AddRange(payload.value);
+            uri = payload.nextLink != null ? new Uri(payload.nextLink, UriKind.Relative) : null;
+        }
+
         return items;
     }
 
@@ -944,4 +981,58 @@ public class AzureCostApiRetriever : ICostRetriever
 
         return budgetItems;
     }
+}
+
+public class UsageDetailsResponse
+{
+    public UsageDetails[] value { get; set; }
+    public string? nextLink { get; set; }
+}
+
+public class UsageDetails
+{
+    public string kind { get; set; }
+    public string id { get; set; }
+    public string name { get; set; }
+    public string type { get; set; }
+    public Dictionary<string, string> tags { get; set; }
+    public UsageProperties properties { get; set; }
+}
+
+public class UsageProperties
+{
+    public string billingPeriodStartDate { get; set; }
+    public string billingPeriodEndDate { get; set; }
+    public string billingProfileId { get; set; }
+    public string billingProfileName { get; set; }
+    public string subscriptionId { get; set; }
+    public string subscriptionName { get; set; }
+    public string date { get; set; }
+    public string product { get; set; }
+    public string meterId { get; set; }
+    public double quantity { get; set; }
+    public double effectivePrice { get; set; }
+    public double cost { get; set; }
+    public double unitPrice { get; set; }
+    public string billingCurrency { get; set; }
+    public string resourceLocation { get; set; }
+    public string consumedService { get; set; }
+    public string resourceId { get; set; }
+    public string resourceName { get; set; }
+    public string additionalInfo { get; set; }
+    public string resourceGroup { get; set; }
+    public string offerId { get; set; }
+    public bool isAzureCreditEligible { get; set; }
+    public string publisherType { get; set; }
+    public string chargeType { get; set; }
+    public string frequency { get; set; }
+    public MeterDetails meterDetails { get; set; }
+}
+
+public class MeterDetails
+{
+    public string meterName { get; set; }
+    public string meterCategory { get; set; }
+    public string meterSubCategory { get; set; }
+    public string unitOfMeasure { get; set; }
 }

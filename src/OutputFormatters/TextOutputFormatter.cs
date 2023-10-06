@@ -1,5 +1,6 @@
 using System.Globalization;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
@@ -213,4 +214,10 @@ public class TextOutputFormatter : BaseOutputFormatter
     {
         throw new NotImplementedException();
     }
+
+    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+    {
+        throw new NotImplementedException();
+    }
+    
 }
