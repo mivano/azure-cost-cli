@@ -1,6 +1,4 @@
 using System.ComponentModel;
-using System.Runtime;
-using Microsoft.VisualBasic;
 using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.ShowCommand;
