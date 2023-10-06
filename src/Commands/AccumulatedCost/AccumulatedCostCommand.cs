@@ -11,9 +11,7 @@ namespace AzureCostCli.Commands.ShowCommand;
 public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 {
     private readonly ICostRetriever _costRetriever;
-    private ScopeSelector _scopeSelector;
-
-
+    
     private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
 
     public AccumulatedCostCommand(ICostRetriever costRetriever)
@@ -55,20 +53,14 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings)
     {
-        _scopeSelector = new ScopeSelector(settings);
-
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
 
-        var selectedScope = _scopeSelector.GetSelectedScope();
-
-
-
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId == Guid.Empty && settings.GetScope() == Scope.Subscription)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -92,18 +84,27 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         }
 
         AccumulatedCostDetails accumulatedCost = null;
-        
+        var uri = settings.GetScopeUri();
+        Subscription subscription = null;
         await AnsiConsole.Status()
             .StartAsync("Fetching cost data...", async ctx =>
             {
-
-                ctx.Status = "Fetching subscription details...";
-                // Fetch the subscription details
-                var subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+                if (settings.GetScope() == Scope.Subscription)
+                {
+                    ctx.Status = "Fetching subscription details...";
+                    // Fetch the subscription details
+                    subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+                }
+                else if (settings.GetScope() == Scope.Enrollment)
+                {
+                    ctx.Status = "Fetching Enrollment details...";
+                    // Fetch the enrollment details //TODO
+                    subscription = new Subscription(string.Empty, string.Empty, new object[0], "Enrollment", "Enrollment", $"Enrollment {settings.Enrollmentaccount}", "Active", new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
+                }
 
                 ctx.Status = "Fetching cost data...";
                 // Fetch the costs from the Azure Cost Management API
-                var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId,
+                var costs = await _costRetriever.RetrieveCosts(settings.Debug, uri,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe,
@@ -144,7 +145,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                         DateTime.DaysInMonth(settings.To.Year, settings.To.Month));
 
                     ctx.Status = "Fetching forecasted cost data...";
-                    forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
+                    forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, uri,
                         settings.Filter,
                         settings.Metric,
                         TimeframeType.Custom,
@@ -152,25 +153,33 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                         forecastEndDate)).ToList();
                 }
 
+                IEnumerable<CostNamedItem> bySubscriptionCosts = null;
+                if (settings.GetScope() == Scope.Enrollment)
+                {
+                    ctx.Status = "Fetching cost data by subscription...";
+                    bySubscriptionCosts = await _costRetriever.RetrieveCostBySubscription(settings.Debug,
+                        uri, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                }
+
                 ctx.Status = "Fetching cost data by service name...";
                 var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
-                    subscriptionId, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                    uri, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
                 
                 ctx.Status = "Fetching cost data by location...";
-                var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
+                var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, uri,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe, settings.From, settings.To);
                 
                 ctx.Status= "Fetching cost data by resource group...";
                 var byResourceGroupCosts = await _costRetriever.RetrieveCostByResourceGroup(settings.Debug,
-                    subscriptionId,
+                    uri,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe, settings.From, settings.To);
 
-                accumulatedCost = new AccumulatedCostDetails(subscription, costs, forecastedCosts, byServiceNameCosts,
-                    byLocationCosts, null);
+                accumulatedCost = new AccumulatedCostDetails(subscription, null, costs, forecastedCosts, byServiceNameCosts,
+                    byLocationCosts, byResourceGroupCosts, bySubscriptionCosts);
 
             });
         

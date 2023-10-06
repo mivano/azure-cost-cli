@@ -9,6 +9,14 @@ public class CostSettings : LogCommandSettings
     [Description("The subscription id to use. Will try to fetch the active id if not specified.")]
     public Guid Subscription { get; set; }
 
+    [CommandOption("-e|--enrollmentaccount")]
+    [Description("The enrollmentaccount to use.")]
+    public int? Enrollmentaccount { get; set; }
+
+    [CommandOption("-b|--billingaccount")]
+    [Description("The billingaccount to use.")]
+    public int? BillingAccount { get; set; }
+
     [CommandOption("-o|--output")] 
     [Description("The output format to use. Defaults to Console (Console, Json, JsonC, Text, Markdown, Csv)")]
     public OutputFormat Output { get; set; } = OutputFormat.Console;

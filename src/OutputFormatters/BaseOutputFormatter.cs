@@ -18,9 +18,11 @@ public abstract class BaseOutputFormatter
 }
 
 public record AccumulatedCostDetails( 
-    Subscription Subscription,
+    Subscription? Subscription,
+    EnrollmentAccount? EnrollmentAccount,
     IEnumerable<CostItem> Costs,
     IEnumerable<CostItem> ForecastedCosts,
     IEnumerable<CostNamedItem> ByServiceNameCosts,
     IEnumerable<CostNamedItem> ByLocationCosts,
-    IEnumerable<CostNamedItem> ?ByResourceGroupCosts);
+    IEnumerable<CostNamedItem> ByResourceGroupCosts,
+    IEnumerable<CostNamedItem> BySubscriptionCosts);

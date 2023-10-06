@@ -114,15 +114,35 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the resource groups table
-        var resourceGroupBreakdown = new BreakdownChartExt()
+        BreakdownChartExt resourceGroupBreakdown = null;
+        if (settings.GetScope() == Scope.Subscription)
+        {
+            resourceGroupBreakdown = new BreakdownChartExt()
+                .UseValueFormatter(value => Money.FormatMoney(value, currency))
+                .Width(60);
+
+            counter = 2;
+            foreach (var rg in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(settings.UseUSD ? rg.CostUsd : rg.Cost, 2),
+                    Color.FromInt32(counter++));
+            }
+        }
+
+        BreakdownChartExt subscriptionBreakdown = null;
+        if (settings.GetScope() == Scope.Enrollment)
+        {
+            // Render the resource groups table
+            subscriptionBreakdown = new BreakdownChartExt()
             .UseValueFormatter(value => Money.FormatMoney(value, currency))
             .Width(60);
 
-        counter = 2;
-        foreach (var rg in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
-        {
-            resourceGroupBreakdown.AddItem(rg.ItemName, Math.Round(settings.UseUSD ? rg.CostUsd : rg.Cost, 2),
-                Color.FromInt32(counter++));
+            counter = 2;
+            foreach (var rg in accumulatedCostDetails.BySubscriptionCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                subscriptionBreakdown.AddItem(rg.ItemName, Math.Round(settings.UseUSD ? rg.CostUsd : rg.Cost, 2),
+                    Color.FromInt32(counter++));
+            }
         }
 
         // Render the locations table
@@ -143,14 +163,26 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         subTable.ShowHeaders = false;
         subTable.AddColumn("");
         subTable.AddColumn("");
-        subTable.AddRow(new Rows(
-                new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
-                new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
-                new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded),
-                new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)
-            )
-            , new Rows(accumulatedCostChart));
-
+        if (settings.GetScope() == Scope.Subscription)
+        {
+            subTable.AddRow(new Rows(
+                    new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
+                    new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
+                    new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded),
+                    new Panel(resourceGroupBreakdown).Header("By Resource Group").Expand().Border(BoxBorder.Rounded)
+                )
+                , new Rows(accumulatedCostChart));
+        }
+        else if (settings.GetScope() ==  Scope.Enrollment)
+        {
+            subTable.AddRow(new Rows(
+                    new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
+                    new Panel(servicesBreakdown).Header("By Service name").Expand().Border(BoxBorder.Rounded),
+                    new Panel(locationsBreakdown).Header("By Location").Expand().Border(BoxBorder.Rounded),
+                    new Panel(subscriptionBreakdown).Header("By Subscription").Expand().Border(BoxBorder.Rounded)
+                )
+                , new Rows(accumulatedCostChart));
+        }
         subTable.Columns[0].Padding(2, 2).Centered();
         subTable.Columns[1].Padding(2, 2).Centered();
 
