@@ -6,26 +6,26 @@ public interface ICostRetriever
 {
     Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId);
     
-    Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Uri uri,
+    Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Scope scope,
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
     Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
-        Uri uri, string[] filter, MetricType metric,TimeframeType timeFrame, DateOnly from, DateOnly to);
+        Scope scope, string[] filter, MetricType metric,TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Uri uri,
+    Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Scope scope,
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Uri uri,
+    Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Scope scope,
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostNamedItem>> RetrieveCostBySubscription(bool includeDebugOutput, Uri uri,
+    Task<IEnumerable<CostNamedItem>> RetrieveCostBySubscription(bool includeDebugOutput, Scope scope,
         string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Uri uri, 
+    Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Scope scope, 
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
     Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool settingsDebug, Guid subscriptionId, string[] filter, MetricType metric,
@@ -34,7 +34,8 @@ public interface ICostRetriever
 
     Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
         Guid subscriptionId, string filter, DateOnly from,        DateOnly to);
-    Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Guid subscriptionId, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
+    
+    Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Scope scope, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
 }
 
 

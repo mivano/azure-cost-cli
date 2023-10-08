@@ -38,7 +38,7 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -62,7 +62,7 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
         }
 
         // Fetch the details from the Azure Cost Management API
-        var budgets = await _costRetriever.RetrieveBudgets(settings.Debug, subscriptionId);
+        var budgets = await _costRetriever.RetrieveBudgets(settings.Debug, subscriptionId.Value);
 
         // Write the output
         await _outputFormatters[settings.Output]

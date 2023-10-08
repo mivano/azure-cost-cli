@@ -62,7 +62,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -93,7 +93,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         settings.To = DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
 
         // Fetch the costs from the Azure Cost Management API
-        var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId,
+        var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, settings.GetScope,
             settings.Filter,
             settings.Metric,
             settings.Dimension,

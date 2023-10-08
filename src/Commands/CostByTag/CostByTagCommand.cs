@@ -62,7 +62,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -94,7 +94,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
+                    subscriptionId.Value, settings.Filter,
                     settings.Metric,
                     true,
                     settings.Timeframe,
@@ -128,9 +128,8 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
             {
                 var resourceTags = new Dictionary<string, string>(resource.Tags, StringComparer.OrdinalIgnoreCase);
 
-                if (resourceTags.ContainsKey(tag))
+                if (resourceTags.TryGetValue(tag, out var tagValue))
                 {
-                    var tagValue = resourceTags[tag];
                     if (!resourcesByTag[tag].ContainsKey(tagValue))
                     {
                         resourcesByTag[tag][tagValue] = new List<CostResourceItem>();

@@ -115,8 +115,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         // Render the resource groups table
-        BreakdownChartExt resourceGroupBreakdown = null;
-        if (settings.GetScope() == Scope.Subscription)
+        BreakdownChartExt? resourceGroupBreakdown = null;
+        if (settings.GetScope.Name.Equals("Subscription", StringComparison.InvariantCultureIgnoreCase))
         {
             resourceGroupBreakdown = new BreakdownChartExt()
                 .UseValueFormatter(value => Money.FormatMoney(value, currency))
@@ -130,8 +130,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             }
         }
 
-        BreakdownChartExt subscriptionBreakdown = null;
-        if (settings.GetScope() == Scope.Enrollment)
+        BreakdownChartExt? subscriptionBreakdown = null;
+        if (settings.GetScope.Name.Equals("EnrollmentAccount", StringComparison.InvariantCultureIgnoreCase))
         {
             // Render the resource groups table
             subscriptionBreakdown = new BreakdownChartExt()
@@ -164,7 +164,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         subTable.ShowHeaders = false;
         subTable.AddColumn("");
         subTable.AddColumn("");
-        if (settings.GetScope() == Scope.Subscription)
+        
+        if (resourceGroupBreakdown!=null)
         {
             subTable.AddRow(new Rows(
                     new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),
@@ -174,7 +175,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 )
                 , new Rows(accumulatedCostChart));
         }
-        else if (settings.GetScope() ==  Scope.Enrollment)
+        else if (subscriptionBreakdown!=null)
         {
             subTable.AddRow(new Rows(
                     new Panel(table).Header("Azure Costs").Expand().Border(BoxBorder.Rounded),

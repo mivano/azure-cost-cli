@@ -62,7 +62,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -94,7 +94,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
+                    subscriptionId.Value, settings.Filter,
                     settings.Metric,
                     settings.ExcludeMeterDetails,
                     settings.Timeframe,

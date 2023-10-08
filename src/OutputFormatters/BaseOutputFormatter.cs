@@ -27,4 +27,4 @@ public record AccumulatedCostDetails(
     IEnumerable<CostNamedItem> ByServiceNameCosts,
     IEnumerable<CostNamedItem> ByLocationCosts,
     IEnumerable<CostNamedItem> ByResourceGroupCosts,
-    IEnumerable<CostNamedItem> BySubscriptionCosts);
+    IEnumerable<CostNamedItem>? BySubscriptionCosts);
