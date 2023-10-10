@@ -22,6 +22,12 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
     public override Task WriteAccumulatedCost(AccumulatedCostSettings settings,
         AccumulatedCostDetails accumulatedCostDetails)
     {
+        if (accumulatedCostDetails.Costs.Any()==false)
+        {
+            AnsiConsole.MarkupLine("[red]No data found[/]");
+            return Task.CompletedTask;
+        }
+        
         var todaysDate = DateOnly.FromDateTime(DateTime.UtcNow);
         var todayTitle = "Today";
         var yesterdayTitle = "Yesterday";

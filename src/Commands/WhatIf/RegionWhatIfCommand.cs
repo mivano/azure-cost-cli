@@ -35,7 +35,7 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
