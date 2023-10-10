@@ -72,7 +72,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
+                    settings.GetScope, settings.Filter,
                     settings.Metric,
                     false,
                     settings.Timeframe,

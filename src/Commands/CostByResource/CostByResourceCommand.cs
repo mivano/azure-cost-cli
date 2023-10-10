@@ -93,7 +93,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId.Value, settings.Filter,
+                    settings.GetScope, settings.Filter,
                     settings.Metric,
                     settings.ExcludeMeterDetails,
                     settings.Timeframe,

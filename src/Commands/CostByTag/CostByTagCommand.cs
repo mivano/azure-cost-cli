@@ -92,7 +92,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId.Value, settings.Filter,
+                    settings.GetScope, settings.Filter,
                     settings.Metric,
                     true,
                     settings.Timeframe,

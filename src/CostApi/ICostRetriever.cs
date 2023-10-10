@@ -28,12 +28,12 @@ public interface ICostRetriever
     Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Scope scope, 
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
-    Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool settingsDebug, Guid subscriptionId, string[] filter, MetricType metric,
+    Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool settingsDebug, Scope scope, string[] filter, MetricType metric,
         bool excludeMeterDetails,TimeframeType settingsTimeframe, DateOnly from, DateOnly to);
-    Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Guid subscriptionId);
+    Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Scope scope);
 
     Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
-        Guid subscriptionId, string filter, DateOnly from,        DateOnly to);
+        Scope scope, string filter, DateOnly from,        DateOnly to);
     
     Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Scope scope, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
 }

@@ -68,7 +68,7 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
             {
                 resources = await _costRetriever.RetrieveUsageDetails(
                     settings.Debug,
-                    subscriptionId,
+                    settings.GetScope,
                     "",
                     settings.From,
                     settings.To);

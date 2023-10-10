@@ -692,13 +692,11 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, MetricType metric, bool excludeMeterDetails, TimeframeType timeFrame,
+        Scope scope, string[] filter, MetricType metric, bool excludeMeterDetails, TimeframeType timeFrame,
         DateOnly from,
         DateOnly to)
     {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000",
-            UriKind.Relative);
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
 
         object grouping;
         if (excludeMeterDetails == false)
@@ -889,11 +887,9 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
-        Guid subscriptionId, string filter,  DateOnly from, DateOnly to)
+        Scope scope, string filter,  DateOnly from, DateOnly to)
     {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=5000",
-            UriKind.Relative);
+        var uri = DeterminePath(scope, "/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=5000");
 
         filter = (!string.IsNullOrWhiteSpace(filter)
             ?   filter + " AND "
@@ -919,11 +915,9 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool includeDebugOutput, Guid subscriptionId)
+    public async Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool includeDebugOutput, Scope scope)
     {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/budgets/?api-version=2021-10-01",
-            UriKind.Relative);
+        var uri = DeterminePath(scope, "/providers/Microsoft.Consumption/budgets/?api-version=2021-10-01");
 
         var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
 
