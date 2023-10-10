@@ -1,5 +1,5 @@
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.Prices;

@@ -64,7 +64,10 @@ EXAMPLES:
 OPTIONS:
     -h, --help            Prints help information
         --debug           Increase logging verbosity to show all debug logs  
-    -s, --subscription    The subscription id to use. Will try to fetch the active id if not specified.
+    -s, --subscription    The subscription id to use. Will try to fetch the active id if not specified 
+    -g, --resource-group  The resource group to scope the request to. Need to be used in combination with the subscription id 
+    -b, --billing-account The billing account id to use 
+    -e, --enrollment-account The enrollment account id to use    
     -o, --output          The output format to use. Defaults to Console (Console, Json, JsonC, Markdown, Text, Csv)
     -t, --timeframe       The timeframe to use for the costs. Defaults to BillingMonthToDate. When set to Custom, specify the from and to dates using the --from and --to options
         --from            The start date to use for the costs. Defaults to the first day of the previous month
@@ -87,6 +90,9 @@ COMMANDS:
     what-if            Run what-if scenarios   
 
 ```
+
+Starting from version `0.35`, you can select a different scope besides only subscription. Specify subscription id and resourcegroup name, billing account and/or enrollment account to scope the request to that level. 
+
 
 > When you do not specify a subscription id, it will fetch the actively selected one of the `az cli` instead. 
 

@@ -111,7 +111,9 @@ public class AzureCostApiRetriever : ICostRetriever
 
     private Uri DeterminePath(Scope scope, string path)
     {
-        return new Uri(new Uri(scope.ScopePath, UriKind.Relative), path);
+        // return the scope.ScopePath combined with the path
+        return new Uri(scope.ScopePath + path, UriKind.Relative);
+        
     }
 
     private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)

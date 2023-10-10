@@ -1,5 +1,11 @@
 using System.Globalization;
 using System.Text.Json;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -9,7 +15,7 @@ using Spectre.Console;
 using Spectre.Console.Json;
 using Columns = Spectre.Console.Columns;
 
-namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+namespace AzureCostCli.OutputFormatters;
 
 public class ConsoleOutputFormatter : BaseOutputFormatter
 {
@@ -116,7 +122,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         // Render the resource groups table
         BreakdownChartExt? resourceGroupBreakdown = null;
-        if (settings.GetScope.Name.Equals("Subscription", StringComparison.InvariantCultureIgnoreCase))
+        if (settings.GetScope.IsSubscriptionBased)
         {
             resourceGroupBreakdown = new BreakdownChartExt()
                 .UseValueFormatter(value => Money.FormatMoney(value, currency))
