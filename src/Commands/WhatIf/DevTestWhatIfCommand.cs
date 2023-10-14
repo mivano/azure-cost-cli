@@ -63,21 +63,68 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         }
 
         // Fetch the costs from the Azure Cost Management API
-        IEnumerable<CostResourceItem> resources = new List<CostResourceItem>();
+        IEnumerable<UsageDetails> resources;
 
 
-
+      
         await AnsiConsole.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
-                resources = await _costRetriever.RetrieveCostForResources(
+                resources = await _costRetriever.RetrieveUsageDetails(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
-                    settings.Metric,
-                    false,
-                    settings.Timeframe,
+                    subscriptionId,
+                    "",
                     settings.From,
                     settings.To);
+
+                // We need to group the resources by resource id AND product as we get for the same resource multiple items for each day
+                // However, we do need to make sure we sum the quantity and cost
+                resources = resources
+                 //   .Where(a => a.properties is
+                 //       { consumedService: "Microsoft.Compute", meterDetails.meterCategory: "Virtual Machines" })
+                    .GroupBy(a => a.properties.resourceId)
+                    .Select(a => new UsageDetails
+                    {
+                        id = a.Key,
+                        name = a.First().name,
+                        type = a.First().type,
+                        kind = a.First().kind,
+                        tags = a.First().tags,
+                        properties = new UsageProperties
+                        {
+                            meterDetails = new MeterDetails
+                            {
+                                meterCategory = a.First().properties.meterDetails.meterCategory,
+                                unitOfMeasure = a.First().properties.meterDetails.unitOfMeasure,
+                                meterName = a.First().properties.meterDetails.meterName,
+                                meterSubCategory = a.First().properties.meterDetails.meterSubCategory,
+                            },
+                            quantity = a.Sum(b => b.properties.quantity),
+                            consumedService = a.First().properties.consumedService,
+                            cost = a.Sum(b => b.properties.cost),
+                            meterId = a.First().properties.meterId,
+                            resourceGroup = a.First().properties.resourceGroup,
+                            frequency = a.First().properties.frequency,
+                            product = a.First().properties.product,
+                            additionalInfo = a.First().properties.additionalInfo,
+                            billingCurrency = a.First().properties.billingCurrency,
+                            billingProfileId = a.First().properties.billingProfileId,
+                            offerId = a.First().properties.offerId,
+                            chargeType = a.First().properties.chargeType,
+                            resourceLocation = a.First().properties.resourceLocation,
+                            resourceId = a.First().properties.resourceId,
+                            resourceName = a.First().properties.resourceName,
+                            billingProfileName = a.First().properties.billingProfileName,
+                            unitPrice = a.First().properties.unitPrice,
+                            effectivePrice = a.First().properties.effectivePrice,
+                            billingPeriodStartDate = a.First().properties.billingPeriodStartDate,
+                            billingPeriodEndDate = a.First().properties.billingPeriodEndDate,
+                            publisherType = a.First().properties.publisherType,
+                            isAzureCreditEligible = a.First().properties.isAzureCreditEligible,
+                            subscriptionName = a.First().properties.subscriptionName,
+                            subscriptionId = a.First().properties.subscriptionId,
+                        }
+                    });
 
                 ctx.Status = "Running What-If analysis...";
 
@@ -85,26 +132,25 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
                 
                 foreach (var resource in resources)
                 {
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        var serviceName = resource.ServiceName;
-                        var location = resource.ResourceLocation;
-                        var currency = resource.Currency;
+                    
+                        var meterId = resource.properties.meterId;
+                        var location = resource.properties.resourceLocation;
+                        var currency = resource.properties.billingCurrency;
 
                         // Skip if any required parameter is missing
-                        if (string.IsNullOrWhiteSpace(serviceName) || string.IsNullOrWhiteSpace(location)) return;
+                        if (string.IsNullOrWhiteSpace(meterId) || string.IsNullOrWhiteSpace(location)) return;
 
-                        var devTestPrice = await GetDevTestPrice(serviceName, location, currency);
+                        var devTestPrice = await GetDevTestPrice(meterId, location, currency);
 
                         if (devTestPrice.HasValue) // && devTestPrice < resource.Cost)
                         {
-                            Console.WriteLine($"Resource ID {resource.ResourceId} could have saved {resource.Cost - devTestPrice} {currency} with DevTest pricing.");
+                            Console.WriteLine($"Resource ID {resource.properties.resourceId} could have saved {resource.properties.cost - devTestPrice} {currency} with DevTest pricing.");
                         }
-                    }));
+                  
                 }
 
                 // Wait for all tasks to complete
-                await Task.WhenAll(tasks);
+               // await Task.WhenAll(tasks);
                 
             });
 
@@ -112,10 +158,10 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         return 0;
     }
 
-    private async Task<double?> GetDevTestPrice(string serviceName, string location, string currency)
+    private async Task<double?> GetDevTestPrice(string meterId, string location, string currency)
     {
         // Use the service name, location, and currency as the cache key
-        string cacheKey = $"{serviceName}:{location}:{currency}";
+        string cacheKey = $"{meterId}:{location}:{currency}";
 
         // Check if the cache entry exists and if it's not expired
         if (_cache.TryGetValue(cacheKey, out CacheEntry cacheEntry) && cacheEntry.Expiry > DateTime.Now)
@@ -139,8 +185,8 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
 
             // If the price is not in the cache or it's expired, get it from the API
             string filter =
-                $"priceType eq 'DevTestConsumption' and Location eq '{location}' and serviceName eq '{serviceName}'";
-            IEnumerable<PriceRecord> devTestPrices = await _priceRetriever.GetAzurePricesAsync(filter);
+                $"priceType eq 'DevTestConsumption' and Location eq '{location}' and meterId eq '{meterId}'";
+            IEnumerable<PriceRecord> devTestPrices = await _priceRetriever.GetAzurePricesAsync(currency, filter);
             var devTestPriceRecord = devTestPrices.FirstOrDefault();
             double? price = devTestPriceRecord?.RetailPrice;
 

@@ -95,7 +95,7 @@ app.Configure(config =>
   
   config.AddBranch<WhatIfSettings>("what-if", add =>
   {
-   // add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
+    add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios for DevTest subscriptions");
     add.AddCommand<RegionWhatIfCommand>("region").WithDescription("Run what-if scenarios to check price differences if the resources would have run in a different region. Only applies to VMs.");
     add.SetDescription("Run what-if scenarios");
   });
