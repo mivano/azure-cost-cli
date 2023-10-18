@@ -597,7 +597,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
     }
 
     public override Task WritePricesPerRegion(WhatIfSettings settings,
-        Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+        Dictionary<UsageDetail, List<PriceRecord>> pricesByRegion)
     {
         // Loop through each resource in the pricesByRegion dictionary
         // Output the name of the resource, and then a table with the prices per region
@@ -609,15 +609,17 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
         foreach (var (resource, prices) in pricesByRegion)
         {
-            var n = tree.AddNode($"[dim]Resource[/]: [bold]{resource.properties.resourceName}[/]");
-            var currentPriceRegion = prices.First(a => a.Location == resource.properties.resourceLocation);
+            var legacyResource = resource as LegacyUsageDetail;
             
-            n.AddNode($"[dim]Group[/]: [bold]{resource.properties.resourceGroup}[/]");
-            n.AddNode($"[dim]Product[/]: [bold]{resource.properties.product}[/]");
+            var n = tree.AddNode($"[dim]Resource[/]: [bold]{legacyResource.Properties.ResourceName}[/]");
+            var currentPriceRegion = prices.First(a => a.Location == legacyResource.Properties.ResourceLocation);
+            
+            n.AddNode($"[dim]Group[/]: [bold]{legacyResource.Properties.ResourceGroup}[/]");
+            n.AddNode($"[dim]Product[/]: [bold]{legacyResource.Properties.Product}[/]");
             n.AddNode(
-                $"[dim]Total quantity[/]: [bold]{resource.properties.quantity}[/] ([dim]UoM[/] {currentPriceRegion.UnitOfMeasure})");
+                $"[dim]Total quantity[/]: [bold]{legacyResource.Properties.Quantity}[/] ([dim]UoM[/] {currentPriceRegion.UnitOfMeasure})");
             n.AddNode(
-                $"[dim]Current cost[/]: [bold]{Money.FormatMoney(resource.properties.quantity * resource.properties.effectivePrice, resource.properties.billingCurrency)}[/]");
+                $"[dim]Current cost[/]: [bold]{Money.FormatMoney(Convert.ToDouble(legacyResource.Properties.Quantity * legacyResource.Properties.EffectivePrice), legacyResource.Properties.BillingCurrency)}[/]");
 
             var resourceTable = new Table();
             resourceTable.Border(TableBorder.Rounded);
@@ -654,11 +656,11 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                     : 0;
 
                 resourceTable.AddRow(
-                    new Markup(price.Location == resource.properties.resourceLocation
+                    new Markup(price.Location == legacyResource.Properties.ResourceLocation
                         ? $"[bold green]{price.Location}[/]"
                         : price.Location),
                     new Money(price.RetailPrice, price.CurrencyCode, 6),
-                    new Money(price.RetailPrice * resource.properties.quantity, price.CurrencyCode),
+                    new Money(Convert.ToDouble(price.RetailPrice * legacyResource.Properties.Quantity), price.CurrencyCode),
                     deviation > 0 ? new Markup($"[red]{deviation:N2}%[/]") : new Markup($"[green]{deviation:N2}%[/]"),
                     oneYearSavingsPlan != null
                         ? new Money(oneYearSavingsPlan.RetailPrice, price.CurrencyCode, 6)

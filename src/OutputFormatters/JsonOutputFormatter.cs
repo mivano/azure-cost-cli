@@ -92,7 +92,7 @@ public class JsonOutputFormatter : BaseOutputFormatter
         return Task.CompletedTask;
     }
 
-    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetail, List<PriceRecord>> pricesByRegion)
     {
         // We need to convert the dictionary to a list of objects with the properties of the CostResourceItem and then having a list of regions with their name and price
         var output = pricesByRegion.Select(a => new

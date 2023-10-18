@@ -63,10 +63,9 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         }
 
         // Fetch the costs from the Azure Cost Management API
-        IEnumerable<UsageDetails> resources;
+        IEnumerable<UsageDetail> resources;
 
 
-      
         await AnsiConsole.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
@@ -79,79 +78,79 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
 
                 // We need to group the resources by resource id AND product as we get for the same resource multiple items for each day
                 // However, we do need to make sure we sum the quantity and cost
-                resources = resources
-                 //   .Where(a => a.properties is
-                 //       { consumedService: "Microsoft.Compute", meterDetails.meterCategory: "Virtual Machines" })
-                    .GroupBy(a => a.properties.resourceId)
-                    .Select(a => new UsageDetails
+                resources = resources.OfType<LegacyUsageDetail>()
+                    //   .Where(a => a.properties is
+                    //       { consumedService: "Microsoft.Compute", meterDetails.meterCategory: "Virtual Machines" })
+                    .GroupBy(a => a.Properties.ResourceId)
+                    .Select(a => new LegacyUsageDetail
                     {
-                        id = a.Key,
-                        name = a.First().name,
-                        type = a.First().type,
-                        kind = a.First().kind,
-                        tags = a.First().tags,
-                        properties = new UsageProperties
+                        Id = a.Key,
+                        Name = a.First().Name,
+                        Type = a.First().Type,
+                        Kind = a.First().Kind,
+                        Tags = a.First().Tags,
+                        Properties = new LegacyUsageDetailProperties
                         {
-                            meterDetails = new MeterDetails
-                            {
-                                meterCategory = a.First().properties.meterDetails.meterCategory,
-                                unitOfMeasure = a.First().properties.meterDetails.unitOfMeasure,
-                                meterName = a.First().properties.meterDetails.meterName,
-                                meterSubCategory = a.First().properties.meterDetails.meterSubCategory,
-                            },
-                            quantity = a.Sum(b => b.properties.quantity),
-                            consumedService = a.First().properties.consumedService,
-                            cost = a.Sum(b => b.properties.cost),
-                            meterId = a.First().properties.meterId,
-                            resourceGroup = a.First().properties.resourceGroup,
-                            frequency = a.First().properties.frequency,
-                            product = a.First().properties.product,
-                            additionalInfo = a.First().properties.additionalInfo,
-                            billingCurrency = a.First().properties.billingCurrency,
-                            billingProfileId = a.First().properties.billingProfileId,
-                            offerId = a.First().properties.offerId,
-                            chargeType = a.First().properties.chargeType,
-                            resourceLocation = a.First().properties.resourceLocation,
-                            resourceId = a.First().properties.resourceId,
-                            resourceName = a.First().properties.resourceName,
-                            billingProfileName = a.First().properties.billingProfileName,
-                            unitPrice = a.First().properties.unitPrice,
-                            effectivePrice = a.First().properties.effectivePrice,
-                            billingPeriodStartDate = a.First().properties.billingPeriodStartDate,
-                            billingPeriodEndDate = a.First().properties.billingPeriodEndDate,
-                            publisherType = a.First().properties.publisherType,
-                            isAzureCreditEligible = a.First().properties.isAzureCreditEligible,
-                            subscriptionName = a.First().properties.subscriptionName,
-                            subscriptionId = a.First().properties.subscriptionId,
+                            MeterDetails = a.First().Properties.MeterDetails != null
+                                ? new MeterDetailsResponse()
+                                {
+                                    MeterCategory = a.First().Properties.MeterDetails.MeterCategory,
+                                    UnitOfMeasure = a.First().Properties.MeterDetails.UnitOfMeasure,
+                                    MeterName = a.First().Properties.MeterDetails.MeterName,
+                                    MeterSubCategory = a.First().Properties.MeterDetails.MeterSubCategory,
+                                }
+                                : null,
+                            Quantity = a.Sum(b => b.Properties.Quantity),
+                            ConsumedService = a.First().Properties.ConsumedService,
+                            Cost = a.Sum(b => b.Properties.Cost),
+                            MeterId = a.First().Properties.MeterId,
+                            ResourceGroup = a.First().Properties.ResourceGroup,
+                            Frequency = a.First().Properties.Frequency,
+                            Product = a.First().Properties.Product,
+                            AdditionalInfo = a.First().Properties.AdditionalInfo,
+                            BillingCurrency = a.First().Properties.BillingCurrency,
+                            BillingProfileId = a.First().Properties.BillingProfileId,
+                            OfferId = a.First().Properties.OfferId,
+                            ChargeType = a.First().Properties.ChargeType,
+                            ResourceLocation = a.First().Properties.ResourceLocation,
+                            ResourceId = a.First().Properties.ResourceId,
+                            ResourceName = a.First().Properties.ResourceName,
+                            BillingProfileName = a.First().Properties.BillingProfileName,
+                            UnitPrice = a.First().Properties.UnitPrice,
+                            EffectivePrice = a.First().Properties.EffectivePrice,
+                            BillingPeriodStartDate = a.First().Properties.BillingPeriodStartDate,
+                            BillingPeriodEndDate = a.First().Properties.BillingPeriodEndDate,
+                            PublisherType = a.First().Properties.PublisherType,
+                            IsAzureCreditEligible = a.First().Properties.IsAzureCreditEligible,
+                            SubscriptionName = a.First().Properties.SubscriptionName,
+                            SubscriptionId = a.First().Properties.SubscriptionId,
                         }
                     });
 
                 ctx.Status = "Running What-If analysis...";
 
                 List<Task> tasks = new List<Task>();
-                
-                foreach (var resource in resources)
+
+                foreach (var resource in resources.OfType<LegacyUsageDetail>())
                 {
-                    
-                        var meterId = resource.properties.meterId;
-                        var location = resource.properties.resourceLocation;
-                        var currency = resource.properties.billingCurrency;
+                    var meterId = resource.Properties.MeterId;
+                    var location = resource.Properties.ResourceLocation;
+                    var currency = resource.Properties.BillingCurrency;
 
-                        // Skip if any required parameter is missing
-                        if (string.IsNullOrWhiteSpace(meterId) || string.IsNullOrWhiteSpace(location)) return;
+                    // Skip if any required parameter is missing
+                    if (string.IsNullOrWhiteSpace(meterId) || string.IsNullOrWhiteSpace(location)) return;
 
-                        var devTestPrice = await GetDevTestPrice(meterId, location, currency);
+                    var devTestPrice = await GetDevTestPrice(meterId, location, currency);
 
-                        if (devTestPrice.HasValue) // && devTestPrice < resource.Cost)
-                        {
-                            Console.WriteLine($"Resource ID {resource.properties.resourceId} could have saved {resource.properties.cost - devTestPrice} {currency} with DevTest pricing.");
-                        }
-                  
+                    if (devTestPrice.HasValue) // && devTestPrice.Value < resource.properties.effectivePrice)
+                    {
+                        Console.WriteLine(
+                            $"Resource ID {resource.Properties.ResourceId} could have saved {resource.Properties.Cost - devTestPrice} {currency} with DevTest pricing.");
+                    }
                 }
 
                 // Wait for all tasks to complete
-               // await Task.WhenAll(tasks);
-                
+                // await Task.WhenAll(tasks);
             });
 
 
@@ -202,7 +201,6 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         }
     }
 }
-
 
 public class CacheEntry
 {

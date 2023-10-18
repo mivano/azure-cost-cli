@@ -335,7 +335,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         throw new NotImplementedException();
     }
 
-    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+    public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetail, List<PriceRecord>> pricesByRegion)
     {
         throw new NotImplementedException();
     }

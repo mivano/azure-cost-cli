@@ -815,11 +815,11 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
+    public async Task<IEnumerable<UsageDetail>> RetrieveUsageDetails(bool includeDebugOutput,
         Guid subscriptionId, string filter,  DateOnly from, DateOnly to)
     {
         var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=5000",
+            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=1000",
             UriKind.Relative);
 
         filter = (!string.IsNullOrWhiteSpace(filter)
@@ -830,17 +830,19 @@ public class AzureCostApiRetriever : ICostRetriever
 
         uri = new Uri($"{uri}&$filter={filter}", UriKind.Relative);
 
-        var items = new List<UsageDetails>();
+        var items = new List<UsageDetail>();
+ var options = new JsonSerializerOptions();
+            options.Converters.Add(new UsageDetailConverter());
 
         while (uri != null)
         {
             var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
-
-            UsageDetailsResponse payload = await response.Content.ReadFromJsonAsync<UsageDetailsResponse>() ??
+           
+            UsageDetailsResponse payload = await response.Content.ReadFromJsonAsync<UsageDetailsResponse>(options) ??
                                            new UsageDetailsResponse();
 
             items.AddRange(payload.value);
-            uri = payload.nextLink != null ? new Uri(payload.nextLink, UriKind.Relative) : null;
+            uri = payload.nextLink != null ? new Uri(payload.nextLink, UriKind.Absolute) : null;
         }
 
         return items;
@@ -927,56 +929,26 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 }
 
-public class UsageDetailsResponse
+public class UsageDetailConverter : JsonConverter<UsageDetail>
 {
-    public UsageDetails[] value { get; set; }
-    public string? nextLink { get; set; }
-}
+    public override UsageDetail Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using (var jsonDocument = JsonDocument.ParseValue(ref reader))
+        {
+            var kindProperty = jsonDocument.RootElement.GetProperty("kind");
+            if (kindProperty.GetString() == "modern")
+            {
+                return JsonSerializer.Deserialize<ModernUsageDetail>(jsonDocument.RootElement.GetRawText(), options);
+            }
+            else
+            {
+                return JsonSerializer.Deserialize<LegacyUsageDetail>(jsonDocument.RootElement.GetRawText(), options);
+            }
+        }
+    }
 
-public class UsageDetails
-{
-    public string kind { get; set; }
-    public string id { get; set; }
-    public string name { get; set; }
-    public string type { get; set; }
-    public Dictionary<string, string> tags { get; set; }
-    public UsageProperties properties { get; set; }
-}
-
-public class UsageProperties
-{
-    public string billingPeriodStartDate { get; set; }
-    public string billingPeriodEndDate { get; set; }
-    public string billingProfileId { get; set; }
-    public string billingProfileName { get; set; }
-    public string subscriptionId { get; set; }
-    public string subscriptionName { get; set; }
-    public string date { get; set; }
-    public string product { get; set; }
-    public string meterId { get; set; }
-    public double quantity { get; set; }
-    public double effectivePrice { get; set; }
-    public double cost { get; set; }
-    public double unitPrice { get; set; }
-    public string billingCurrency { get; set; }
-    public string resourceLocation { get; set; }
-    public string consumedService { get; set; }
-    public string resourceId { get; set; }
-    public string resourceName { get; set; }
-    public string additionalInfo { get; set; }
-    public string resourceGroup { get; set; }
-    public string offerId { get; set; }
-    public bool isAzureCreditEligible { get; set; }
-    public string publisherType { get; set; }
-    public string chargeType { get; set; }
-    public string frequency { get; set; }
-    public MeterDetails meterDetails { get; set; }
-}
-
-public class MeterDetails
-{
-    public string meterName { get; set; }
-    public string meterCategory { get; set; }
-    public string meterSubCategory { get; set; }
-    public string unitOfMeasure { get; set; }
+    public override void Write(Utf8JsonWriter writer, UsageDetail value, JsonSerializerOptions options)
+    {
+        throw new NotImplementedException();
+    }
 }

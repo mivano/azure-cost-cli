@@ -71,7 +71,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
         return ExportToCsv(settings.SkipHeader, resourcesWithTagAndValue);
     }
 
- public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
+ public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetail, List<PriceRecord>> pricesByRegion)
 {
     // Flatten the dictionary to a single list
     // We need to end up with the properties of the CostResourceItem and then each column for each region in the pricesByRegion
@@ -80,7 +80,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
     var regions = pricesByRegion.Select(a => a.Value.Select(b => b.Location)).SelectMany(a => a).Distinct().OrderBy(a => a).ToList();
 
     // Create the list of properties for the CSV
-    var properties = typeof(UsageDetails).GetProperties().Select(a => a.Name).ToList();
+    var properties = typeof(UsageDetail).GetProperties().Select(a => a.Name).ToList();
     properties.AddRange(regions);
 
     // Create the list of objects to be written to the CSV
@@ -88,7 +88,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
     foreach (var (resource, prices) in pricesByRegion)
     {
         dynamic expando = new ExpandoObject();
-        foreach (var property in typeof(UsageDetails).GetProperties())
+        foreach (var property in typeof(UsageDetail).GetProperties())
         {
             ((IDictionary<string, object>)expando)[property.Name] = property.GetValue(resource);
         }
