@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -38,7 +38,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -72,7 +72,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
+                    settings.GetScope, settings.Filter,
                     settings.Metric,
                     false,
                     settings.Timeframe,

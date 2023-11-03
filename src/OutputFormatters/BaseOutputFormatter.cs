@@ -1,8 +1,14 @@
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 
-namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+namespace AzureCostCli.OutputFormatters;
 
 public abstract class BaseOutputFormatter
 {
@@ -20,9 +26,11 @@ public abstract class BaseOutputFormatter
 }
 
 public record AccumulatedCostDetails( 
-    Subscription Subscription,
+    Subscription? Subscription,
+    EnrollmentAccount? EnrollmentAccount,
     IEnumerable<CostItem> Costs,
     IEnumerable<CostItem> ForecastedCosts,
     IEnumerable<CostNamedItem> ByServiceNameCosts,
     IEnumerable<CostNamedItem> ByLocationCosts,
-    IEnumerable<CostNamedItem> ByResourceGroupCosts);
+    IEnumerable<CostNamedItem> ByResourceGroupCosts,
+    IEnumerable<CostNamedItem>? BySubscriptionCosts);

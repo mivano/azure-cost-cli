@@ -10,9 +10,21 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
     [DefaultValue(false)]
     public bool Debug { get; set; }
     
-   [CommandOption("-s|--subscription")]
+    [CommandOption("-s|--subscription")]
     [Description("The subscription id to use. Will try to fetch the active id if not specified.")]
-    public Guid Subscription { get; set; }
+    public Guid? Subscription { get; set; }
+
+    [CommandOption("-g|--resource-group")]
+    [Description("The resource group to scope the request to. Need to be used in combination with the subscription id.")]
+    public string? ResourceGroup { get; set; }
+
+    [CommandOption("-b|--billing-account")]
+    [Description("The billing account id to use.")]
+    public int? BillingAccountId { get; set; }
+    
+    [CommandOption("-e|--enrollment-account")]
+    [Description("The enrollment account id to use.")]
+    public int? EnrollmentAccountId { get; set; }
 
     [CommandOption("-o|--output")] 
     [Description("The output format to use. Defaults to Console (Console, Json, JsonC, Text, Markdown, Csv)")]
@@ -57,4 +69,26 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
     [Description("The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)")]
     [DefaultValue(MetricType.ActualCost)]
     public MetricType Metric { get; set; } = MetricType.ActualCost;
+    
+    public Scope GetScope
+    {
+        get {
+            if ((Subscription==null || Subscription == Guid.Empty) && EnrollmentAccountId != null && BillingAccountId != null)
+            {
+                return Scope.EnrollmentAccount(BillingAccountId.Value, EnrollmentAccountId.Value);
+            }
+            else if (Subscription != null && !string.IsNullOrWhiteSpace(ResourceGroup))
+            {
+                return Scope.ResourceGroup(Subscription.Value, ResourceGroup);
+            }
+            else if (BillingAccountId.HasValue)
+            {
+                return Scope.BillingAccount(BillingAccountId.Value);
+            }
+            else // default to subscription
+            {
+                return Scope.Subscription(Subscription.GetValueOrDefault(Guid.Empty));
+            }
+        }
+    }
 }

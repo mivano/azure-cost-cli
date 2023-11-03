@@ -1,10 +1,16 @@
 using System.Globalization;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
-namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+namespace AzureCostCli.OutputFormatters;
 
 public class TextOutputFormatter : BaseOutputFormatter
 {
@@ -49,13 +55,26 @@ public class TextOutputFormatter : BaseOutputFormatter
             Console.WriteLine($"  {cost.ItemName}: {(settings.UseUSD ? cost.CostUsd :  cost.Cost):N2} {currency}");
         }
 
-        Console.WriteLine();
-        Console.WriteLine("By Resource Group:");
-        foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+        if (accumulatedCostDetails.BySubscriptionCosts != null)
         {
-            Console.WriteLine($"  {cost.ItemName}: {(settings.UseUSD ? cost.CostUsd :  cost.Cost):N2} {currency}");
+            Console.WriteLine();
+            Console.WriteLine("By Subscriptions:");
+            foreach (var cost in accumulatedCostDetails.BySubscriptionCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                Console.WriteLine($"  {cost.ItemName}: {(settings.UseUSD ? cost.CostUsd :  cost.Cost):N2} {currency}");
+            }
         }
-        
+
+        if (settings.GetScope.IsSubscriptionBased)
+        {
+            Console.WriteLine();
+            Console.WriteLine("By Resource Group:");
+            foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                Console.WriteLine($"  {cost.ItemName}: {(settings.UseUSD ? cost.CostUsd : cost.Cost):N2} {currency}");
+            }
+        }
+
         return Task.CompletedTask;
     }
 

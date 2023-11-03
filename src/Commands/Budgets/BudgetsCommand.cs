@@ -1,13 +1,11 @@
-using System.Diagnostics;
-using System.Text.Json;
-using AzureCostCli.Commands.ShowCommand;
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
+using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands.CostByResource;
+namespace AzureCostCli.Commands.Budgets;
 
 public class BudgetsCommand: AsyncCommand<BudgetsSettings>
 {
@@ -38,7 +36,7 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -62,7 +60,7 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
         }
 
         // Fetch the details from the Azure Cost Management API
-        var budgets = await _costRetriever.RetrieveBudgets(settings.Debug, subscriptionId);
+        var budgets = await _costRetriever.RetrieveBudgets(settings.Debug, settings.GetScope);
 
         // Write the output
         await _outputFormatters[settings.Output]

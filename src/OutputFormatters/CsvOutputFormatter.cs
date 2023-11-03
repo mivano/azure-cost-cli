@@ -1,5 +1,11 @@
 using System.Dynamic;
 using System.Globalization;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -7,7 +13,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 
-namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+namespace AzureCostCli.OutputFormatters;
 
 public class CsvOutputFormatter : BaseOutputFormatter
 {

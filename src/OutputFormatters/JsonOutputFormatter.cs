@@ -1,5 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AzureCostCli.Commands;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -7,7 +14,7 @@ using DevLab.JmesPath;
 using Spectre.Console;
 using Spectre.Console.Json;
 
-namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+namespace AzureCostCli.OutputFormatters;
 
 public class JsonOutputFormatter : BaseOutputFormatter
 {
