@@ -47,7 +47,7 @@ jobs:
         dotnet pack --configuration Release /p:PackageVersion=$TAG_NAME /p:Version=$TAG_NAME /p:AssemblyVersion=$TAG_NAME /p:FileVersion=$TAG_NAME --output nupkgs
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: packages
         path: src/nupkgs/*.nupkg
