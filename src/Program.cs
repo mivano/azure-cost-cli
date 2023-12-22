@@ -1,9 +1,13 @@
 ﻿using System.ComponentModel;
 using AzureCostCli.Commands;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Prices;
 using AzureCostCli.Commands.Regions;
-using AzureCostCli.Commands.ShowCommand;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;

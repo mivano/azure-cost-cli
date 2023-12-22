@@ -1,11 +1,17 @@
 using System.Globalization;
 using System.Text;
+using AzureCostCli.Commands.AccumulatedCost;
+using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
+using AzureCostCli.Commands.CostByTag;
+using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 
-namespace AzureCostCli.Commands.ShowCommand.OutputFormatters;
+namespace AzureCostCli.OutputFormatters;
 
 public class MarkdownOutputFormatter : BaseOutputFormatter
 {
@@ -106,7 +112,9 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         {
             Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd :cost.Cost):N2} {currency}|");
         }
-        
+
+      
+
         // Create a pie chart using mermaidjs
         Console.WriteLine();
         Console.WriteLine("```mermaid");
@@ -119,28 +127,58 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         }
         Console.WriteLine("```");
 
-        Console.WriteLine();
-        Console.WriteLine("## By Resource Group");
-        Console.WriteLine();
-        Console.WriteLine("|Resource Group|Amount|");
-        Console.WriteLine("|---|---:|");
-        foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+        if (accumulatedCostDetails.BySubscriptionCosts!=null &&settings.GetScope.Name.Equals("EnrollmentAccount", StringComparison.InvariantCultureIgnoreCase))
         {
-            Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd :cost.Cost):N2} {currency}|");
+            Console.WriteLine();
+            Console.WriteLine("## By Subscriptions");
+            Console.WriteLine();
+            Console.WriteLine("|Resource Group|Amount|");
+            Console.WriteLine("|---|---:|");
+            foreach (var cost in accumulatedCostDetails.BySubscriptionCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd :cost.Cost):N2} {currency}|");
+            }
+
+            // Generate a pie chart using mermaidjs
+            Console.WriteLine();
+            Console.WriteLine("```mermaid");
+            Console.WriteLine("pie");
+            Console.WriteLine("   title Cost by Subscription");
+            foreach (var cost in accumulatedCostDetails.BySubscriptionCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
+                Console.WriteLine($"   \"{name}\" : {(settings.UseUSD ? cost.CostUsd :cost.Cost).ToString("F2", culture)}");
+            }
+            Console.WriteLine("```");
         }
 
-        // Generate a pie chart using mermaidjs
-        Console.WriteLine();
-        Console.WriteLine("```mermaid");
-        Console.WriteLine("pie");
-        Console.WriteLine("   title Cost by resource group");
-        foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+        if (settings.GetScope.IsSubscriptionBased)
         {
-            var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
-            Console.WriteLine($"   \"{name}\" : {(settings.UseUSD ? cost.CostUsd :cost.Cost).ToString("F2", culture)}");
+            Console.WriteLine();
+            Console.WriteLine("## By Resource Group");
+            Console.WriteLine();
+            Console.WriteLine("|Resource Group|Amount|");
+            Console.WriteLine("|---|---:|");
+            foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                Console.WriteLine($"|{cost.ItemName}|{(settings.UseUSD ? cost.CostUsd : cost.Cost):N2} {currency}|");
+            }
+
+            // Generate a pie chart using mermaidjs
+            Console.WriteLine();
+            Console.WriteLine("```mermaid");
+            Console.WriteLine("pie");
+            Console.WriteLine("   title Cost by resource group");
+            foreach (var cost in accumulatedCostDetails.ByResourceGroupCosts.TrimList(threshold: settings.OthersCutoff))
+            {
+                var name = string.IsNullOrWhiteSpace(cost.ItemName) ? "(Unknown)" : cost.ItemName;
+                Console.WriteLine(
+                    $"   \"{name}\" : {(settings.UseUSD ? cost.CostUsd : cost.Cost).ToString("F2", culture)}");
+            }
+
+            Console.WriteLine("```");
         }
-        Console.WriteLine("```");
-        
+
         Console.WriteLine();
         Console.WriteLine($"<sup>Generated at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} for subscription with id `{accumulatedCostDetails.Subscription.subscriptionId}`</sup>");
 

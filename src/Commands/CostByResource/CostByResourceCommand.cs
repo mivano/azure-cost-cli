@@ -1,9 +1,8 @@
 using System.Diagnostics;
 using System.Text.Json;
-using AzureCostCli.Commands.ShowCommand;
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -62,7 +61,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -89,12 +88,12 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         // Fetch the costs from the Azure Cost Management API
         IEnumerable<CostResourceItem> resources = new List<CostResourceItem>();
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,
-                    subscriptionId, settings.Filter,
+                    settings.GetScope, settings.Filter,
                     settings.Metric,
                     settings.ExcludeMeterDetails,
                     settings.Timeframe,

@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -35,7 +35,7 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -63,12 +63,12 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         IEnumerable<UsageDetail> resources;
         Dictionary<UsageDetail, List<PriceRecord>> pricesByRegion = new();
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveUsageDetails(
                     settings.Debug,
-                    subscriptionId,
+                    settings.GetScope,
                     "",
                     settings.From,
                     settings.To);

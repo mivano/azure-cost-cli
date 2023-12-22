@@ -1,17 +1,15 @@
-using System.Diagnostics;
-using System.Text.Json;
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands.ShowCommand;
+namespace AzureCostCli.Commands.AccumulatedCost;
 
 public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 {
     private readonly ICostRetriever _costRetriever;
-
+    
     private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
 
     public AccumulatedCostCommand(ICostRetriever costRetriever)
@@ -56,12 +54,11 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
-        
-      
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.HasValue == false && (settings.GetScope.IsSubscriptionBased))
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -85,18 +82,29 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         }
 
         AccumulatedCostDetails accumulatedCost = null;
-        
-        await AnsiConsole.Status()
+
+        Subscription subscription = null;
+       
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data...", async ctx =>
             {
-
-                ctx.Status = "Fetching subscription details...";
-                // Fetch the subscription details
-                var subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId);
+                
+                if (settings.GetScope.IsSubscriptionBased)
+                {
+                    ctx.Status = "Fetching subscription details...";
+                    // Fetch the subscription details
+                    subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId.Value);
+                }
+                else 
+                {
+                    ctx.Status = "Fetching Enrollment details...";
+                    // Fetch the enrollment details //TODO
+                    subscription = new Subscription(string.Empty, string.Empty, Array.Empty<object>(), "Enrollment", "Enrollment", $"Enrollment {settings.EnrollmentAccountId}", "Active", new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
+                }
 
                 ctx.Status = "Fetching cost data...";
                 // Fetch the costs from the Azure Cost Management API
-                var costs = await _costRetriever.RetrieveCosts(settings.Debug, subscriptionId,
+                var costs = await _costRetriever.RetrieveCosts(settings.Debug, settings.GetScope,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe,
@@ -137,7 +145,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                         DateTime.DaysInMonth(settings.To.Year, settings.To.Month));
 
                     ctx.Status = "Fetching forecasted cost data...";
-                    forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, subscriptionId,
+                    forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, settings.GetScope,
                         settings.Filter,
                         settings.Metric,
                         TimeframeType.Custom,
@@ -145,25 +153,33 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                         forecastEndDate)).ToList();
                 }
 
+                IEnumerable<CostNamedItem> bySubscriptionCosts = null;
+                if (settings.GetScope.IsSubscriptionBased==false)
+                {
+                    ctx.Status = "Fetching cost data by subscription...";
+                    bySubscriptionCosts = await _costRetriever.RetrieveCostBySubscription(settings.Debug,
+                        settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                }
+
                 ctx.Status = "Fetching cost data by service name...";
                 var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
-                    subscriptionId, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                    settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
                 
                 ctx.Status = "Fetching cost data by location...";
-                var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, subscriptionId,
+                var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, settings.GetScope,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe, settings.From, settings.To);
                 
                 ctx.Status= "Fetching cost data by resource group...";
                 var byResourceGroupCosts = await _costRetriever.RetrieveCostByResourceGroup(settings.Debug,
-                    subscriptionId,
+                    settings.GetScope,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe, settings.From, settings.To);
 
-                accumulatedCost = new AccumulatedCostDetails(subscription, costs, forecastedCosts, byServiceNameCosts,
-                    byLocationCosts, byResourceGroupCosts);
+                accumulatedCost = new AccumulatedCostDetails(subscription, null, costs, forecastedCosts, byServiceNameCosts,
+                    byLocationCosts, byResourceGroupCosts, bySubscriptionCosts);
 
             });
         

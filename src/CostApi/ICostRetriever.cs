@@ -6,31 +6,36 @@ public interface ICostRetriever
 {
     Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId);
     
-    Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Guid subscriptionId,
+    Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Scope scope,
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
     Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
-        Guid subscriptionId, string[] filter, MetricType metric,TimeframeType timeFrame, DateOnly from, DateOnly to);
+        Scope scope, string[] filter, MetricType metric,TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Guid subscriptionId,
+    Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Scope scope,
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Guid subscriptionId,
+    Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput, Scope scope,
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
 
-    Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Guid subscriptionId, 
+    Task<IEnumerable<CostNamedItem>> RetrieveCostBySubscription(bool includeDebugOutput, Scope scope,
+        string[] filter, MetricType metric,
+        TimeframeType timeFrame, DateOnly from, DateOnly to);
+
+    Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Scope scope, 
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to);
-    Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool settingsDebug, Guid subscriptionId, string[] filter, MetricType metric,
+    Task<IEnumerable<CostResourceItem>> RetrieveCostForResources(bool settingsDebug, Scope scope, string[] filter, MetricType metric,
         bool excludeMeterDetails,TimeframeType settingsTimeframe, DateOnly from, DateOnly to);
-    Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Guid subscriptionId);
+    Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Scope scope);
 
     Task<IEnumerable<UsageDetail>> RetrieveUsageDetails(bool includeDebugOutput,
-        Guid subscriptionId, string filter, DateOnly from,        DateOnly to);
-    Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Guid subscriptionId, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
+        Scope scope, string filter, DateOnly from,        DateOnly to);
+    
+    Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Scope scope, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);
 }
 
 

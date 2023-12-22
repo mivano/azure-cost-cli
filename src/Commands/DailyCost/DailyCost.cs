@@ -1,10 +1,11 @@
-using AzureCostCli.Commands.ShowCommand.OutputFormatters;
+using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
+using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
-namespace AzureCostCli.Commands.ShowCommand;
+namespace AzureCostCli.Commands.DailyCost;
 
 public class DailyCostCommand : AsyncCommand<DailyCostSettings>
 {
@@ -59,7 +60,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId == Guid.Empty)
+        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
         {
             // Get the subscription ID from the Azure CLI
             try
@@ -85,12 +86,12 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
 
         IEnumerable<CostDailyItem> dailyCost = new List<CostDailyItem>();
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching daily cost data...", async ctx =>
             {
                 // Fetch the costs from the Azure Cost Management API
 
-                dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, subscriptionId,
+                dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, settings.GetScope,
                     settings.Filter,
                     settings.Metric,
                     settings.Dimension,
