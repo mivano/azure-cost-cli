@@ -63,7 +63,7 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         IEnumerable<UsageDetails> resources;
         Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion = new();
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveUsageDetails(

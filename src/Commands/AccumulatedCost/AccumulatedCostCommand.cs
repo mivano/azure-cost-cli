@@ -84,9 +84,11 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         AccumulatedCostDetails accumulatedCost = null;
 
         Subscription subscription = null;
-        await AnsiConsole.Status()
+       
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data...", async ctx =>
             {
+                
                 if (settings.GetScope.IsSubscriptionBased)
                 {
                     ctx.Status = "Fetching subscription details...";

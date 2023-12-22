@@ -87,7 +87,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
         // Fetch the costs from the Azure Cost Management API
         IEnumerable<CostResourceItem> resources = new List<CostResourceItem>();
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveCostForResources(

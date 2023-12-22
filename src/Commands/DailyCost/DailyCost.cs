@@ -86,7 +86,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
 
         IEnumerable<CostDailyItem> dailyCost = new List<CostDailyItem>();
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching daily cost data...", async ctx =>
             {
                 // Fetch the costs from the Azure Cost Management API

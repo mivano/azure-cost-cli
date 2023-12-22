@@ -67,7 +67,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
 
 
 
-        await AnsiConsole.Status()
+        await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
