@@ -42,7 +42,6 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
 
-
     private async Task RetrieveToken(bool includeDebugOutput)
     {
         if (_tokenRetrieved)
@@ -113,7 +112,6 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         // return the scope.ScopePath combined with the path
         return new Uri(scope.ScopePath + path, UriKind.Relative);
-        
     }
 
     private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
@@ -157,7 +155,7 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var filters = GenerateFilters(filter);
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
-        
+
         var payload = new
         {
             type = metric.ToString(),
@@ -217,13 +215,12 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-   
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
         Scope scope, string[] filter, MetricType metric, TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {        
+    {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
-        
+
         var payload = new
         {
             type = metric.ToString(),
@@ -291,7 +288,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Scope scope,
-        string[] filter,MetricType metric,
+        string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
@@ -363,7 +360,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Scope scope, string[] filter,MetricType metric,
+        Scope scope, string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
@@ -440,11 +437,11 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostBySubscription(bool includeDebugOutput,
-       Scope scope, string[] filter, MetricType metric,
+        Scope scope, string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
-        
+
         var payload = new
         {
             type = metric.ToString(),
@@ -515,6 +512,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         return items;
     }
+
 
     public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
         Scope scope, string[] filter, MetricType metric, string dimension,
@@ -620,7 +618,7 @@ public class AzureCostApiRetriever : ICostRetriever
     public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Scope scope,
         string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {      
+    {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000");
 
         var payload = new
@@ -886,29 +884,29 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-    public async Task<IEnumerable<UsageDetail>> RetrieveUsageDetails(bool includeDebugOutput,
-        Guid subscriptionId, string filter,  DateOnly from, DateOnly to)
+    public async Task<IEnumerable<UsageDetail>> RetrieveUsageDetails(bool includeDebugOutput, Scope scope,
+        string filter, DateOnly from, DateOnly to)
     {
-        var uri = new Uri(
-            $"/subscriptions/{subscriptionId}/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=1000",
-            UriKind.Relative);
+        var uri = DeterminePath(scope,
+            "/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=1000");
 
         filter = (!string.IsNullOrWhiteSpace(filter)
-            ?   filter + " AND "
-            : "") +"properties/usageStart ge '" + from.ToString("yyyy-MM-dd") + "' and properties/usageEnd le '" +
+                     ? filter + " AND "
+                     : "") + "properties/usageStart ge '" + from.ToString("yyyy-MM-dd") +
+                 "' and properties/usageEnd le '" +
                  to.ToString("yyyy-MM-dd") + "'";
 
 
         uri = new Uri($"{uri}&$filter={filter}", UriKind.Relative);
 
         var items = new List<UsageDetail>();
- var options = new JsonSerializerOptions();
-            options.Converters.Add(new UsageDetailConverter());
+        var options = new JsonSerializerOptions();
+        options.Converters.Add(new UsageDetailConverter());
 
         while (uri != null)
         {
             var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
-           
+
             UsageDetailsResponse payload = await response.Content.ReadFromJsonAsync<UsageDetailsResponse>(options) ??
                                            new UsageDetailsResponse();
 
