@@ -32,7 +32,7 @@ public interface ICostRetriever
         bool excludeMeterDetails,TimeframeType settingsTimeframe, DateOnly from, DateOnly to);
     Task<IEnumerable<BudgetItem>> RetrieveBudgets(bool settingsDebug, Scope scope);
 
-    Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
+    Task<IEnumerable<UsageDetail>> RetrieveUsageDetails(bool includeDebugOutput,
         Scope scope, string filter, DateOnly from,        DateOnly to);
     
     Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool settingsDebug, Scope scope, string[] filter,MetricType metric, string dimension, TimeframeType settingsTimeframe, DateOnly settingsFrom, DateOnly settingsTo);

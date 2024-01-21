@@ -63,59 +63,104 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         }
 
         // Fetch the costs from the Azure Cost Management API
-        IEnumerable<CostResourceItem> resources = new List<CostResourceItem>();
-
+        IEnumerable<UsageDetail> resources;
 
 
         await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data for resources...", async ctx =>
             {
-                resources = await _costRetriever.RetrieveCostForResources(
+                resources = await _costRetriever.RetrieveUsageDetails(
                     settings.Debug,
-                    settings.GetScope, settings.Filter,
-                    settings.Metric,
-                    false,
-                    settings.Timeframe,
+                    settings.GetScope,
+                    "",
                     settings.From,
                     settings.To);
+
+                // We need to group the resources by resource id AND product as we get for the same resource multiple items for each day
+                // However, we do need to make sure we sum the quantity and cost
+                resources = resources.OfType<LegacyUsageDetail>()
+                    //   .Where(a => a.properties is
+                    //       { consumedService: "Microsoft.Compute", meterDetails.meterCategory: "Virtual Machines" })
+                    .GroupBy(a => a.Properties.ResourceId)
+                    .Select(a => new LegacyUsageDetail
+                    {
+                        Id = a.Key,
+                        Name = a.First().Name,
+                        Type = a.First().Type,
+                        Kind = a.First().Kind,
+                        Tags = a.First().Tags,
+                        Properties = new LegacyUsageDetailProperties
+                        {
+                            MeterDetails = a.First().Properties.MeterDetails != null
+                                ? new MeterDetailsResponse()
+                                {
+                                    MeterCategory = a.First().Properties.MeterDetails.MeterCategory,
+                                    UnitOfMeasure = a.First().Properties.MeterDetails.UnitOfMeasure,
+                                    MeterName = a.First().Properties.MeterDetails.MeterName,
+                                    MeterSubCategory = a.First().Properties.MeterDetails.MeterSubCategory,
+                                }
+                                : null,
+                            Quantity = a.Sum(b => b.Properties.Quantity),
+                            ConsumedService = a.First().Properties.ConsumedService,
+                            Cost = a.Sum(b => b.Properties.Cost),
+                            MeterId = a.First().Properties.MeterId,
+                            ResourceGroup = a.First().Properties.ResourceGroup,
+                            Frequency = a.First().Properties.Frequency,
+                            Product = a.First().Properties.Product,
+                            AdditionalInfo = a.First().Properties.AdditionalInfo,
+                            BillingCurrency = a.First().Properties.BillingCurrency,
+                            BillingProfileId = a.First().Properties.BillingProfileId,
+                            OfferId = a.First().Properties.OfferId,
+                            ChargeType = a.First().Properties.ChargeType,
+                            ResourceLocation = a.First().Properties.ResourceLocation,
+                            ResourceId = a.First().Properties.ResourceId,
+                            ResourceName = a.First().Properties.ResourceName,
+                            BillingProfileName = a.First().Properties.BillingProfileName,
+                            UnitPrice = a.First().Properties.UnitPrice,
+                            EffectivePrice = a.First().Properties.EffectivePrice,
+                            BillingPeriodStartDate = a.First().Properties.BillingPeriodStartDate,
+                            BillingPeriodEndDate = a.First().Properties.BillingPeriodEndDate,
+                            PublisherType = a.First().Properties.PublisherType,
+                            IsAzureCreditEligible = a.First().Properties.IsAzureCreditEligible,
+                            SubscriptionName = a.First().Properties.SubscriptionName,
+                            SubscriptionId = a.First().Properties.SubscriptionId,
+                        }
+                    });
 
                 ctx.Status = "Running What-If analysis...";
 
                 List<Task> tasks = new List<Task>();
-                
-                foreach (var resource in resources)
+
+                foreach (var resource in resources.OfType<LegacyUsageDetail>())
                 {
-                    tasks.Add(Task.Run(async () =>
+                    var meterId = resource.Properties.MeterId;
+                    var location = resource.Properties.ResourceLocation;
+                    var currency = resource.Properties.BillingCurrency;
+
+                    // Skip if any required parameter is missing
+                    if (string.IsNullOrWhiteSpace(meterId) || string.IsNullOrWhiteSpace(location)) return;
+
+                    var devTestPrice = await GetDevTestPrice(meterId, location, currency);
+
+                    if (devTestPrice.HasValue) // && devTestPrice.Value < resource.properties.effectivePrice)
                     {
-                        var serviceName = resource.ServiceName;
-                        var location = resource.ResourceLocation;
-                        var currency = resource.Currency;
-
-                        // Skip if any required parameter is missing
-                        if (string.IsNullOrWhiteSpace(serviceName) || string.IsNullOrWhiteSpace(location)) return;
-
-                        var devTestPrice = await GetDevTestPrice(serviceName, location, currency);
-
-                        if (devTestPrice.HasValue) // && devTestPrice < resource.Cost)
-                        {
-                            Console.WriteLine($"Resource ID {resource.ResourceId} could have saved {resource.Cost - devTestPrice} {currency} with DevTest pricing.");
-                        }
-                    }));
+                        Console.WriteLine(
+                            $"Resource ID {resource.Properties.ResourceId} could have saved {resource.Properties.Cost - devTestPrice} {currency} with DevTest pricing.");
+                    }
                 }
 
                 // Wait for all tasks to complete
-                await Task.WhenAll(tasks);
-                
+                // await Task.WhenAll(tasks);
             });
 
 
         return 0;
     }
 
-    private async Task<double?> GetDevTestPrice(string serviceName, string location, string currency)
+    private async Task<double?> GetDevTestPrice(string meterId, string location, string currency)
     {
         // Use the service name, location, and currency as the cache key
-        string cacheKey = $"{serviceName}:{location}:{currency}";
+        string cacheKey = $"{meterId}:{location}:{currency}";
 
         // Check if the cache entry exists and if it's not expired
         if (_cache.TryGetValue(cacheKey, out CacheEntry cacheEntry) && cacheEntry.Expiry > DateTime.Now)
@@ -139,8 +184,8 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
 
             // If the price is not in the cache or it's expired, get it from the API
             string filter =
-                $"priceType eq 'DevTestConsumption' and Location eq '{location}' and serviceName eq '{serviceName}'";
-            IEnumerable<PriceRecord> devTestPrices = await _priceRetriever.GetAzurePricesAsync(filter);
+                $"priceType eq 'DevTestConsumption' and Location eq '{location}' and meterId eq '{meterId}'";
+            IEnumerable<PriceRecord> devTestPrices = await _priceRetriever.GetAzurePricesAsync(currency, filter);
             var devTestPriceRecord = devTestPrices.FirstOrDefault();
             double? price = devTestPriceRecord?.RetailPrice;
 
@@ -156,7 +201,6 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         }
     }
 }
-
 
 public class CacheEntry
 {
