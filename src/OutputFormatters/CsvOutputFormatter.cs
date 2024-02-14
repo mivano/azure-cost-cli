@@ -34,7 +34,28 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
-        return ExportToCsv(settings.SkipHeader, dailyCosts);
+        // code to create the column Tags only when needed
+        // small trick with the records dailyCostItemWithoutTags, and dailyCostItem
+        if (settings.IncludeTags == false)
+        {
+            var dailyCostsWithoutTags = new List<CostDailyItemWithoutTags>();
+            foreach (var item in dailyCosts)
+            {
+                var newItem = new CostDailyItemWithoutTags(
+                    Name: item.Name,
+                    Date: item.Date,
+                    Cost: item.Cost,
+                    Currency: item.Currency,
+                    CostUsd: item.CostUsd
+                );
+                dailyCostsWithoutTags.Add(newItem);
+            }
+            return ExportToCsv(settings.SkipHeader, dailyCostsWithoutTags); 
+        }
+        else 
+        {
+            return ExportToCsv(settings.SkipHeader, dailyCosts);
+        }
     }
 
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)

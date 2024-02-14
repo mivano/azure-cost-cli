@@ -4,6 +4,7 @@ using AzureCostCli.Infrastructure;
 using AzureCostCli.OutputFormatters;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System;
 
 namespace AzureCostCli.Commands.DailyCost;
 
@@ -86,6 +87,12 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
 
         IEnumerable<CostDailyItem> dailyCost = new List<CostDailyItem>();
 
+        // if output format is not csv, json, or jsonc, then don't include tags
+        if (settings.Output.ToString().ToLower() != "json" && settings.Output.ToString().ToLower() != "jsonc" && settings.Output.ToString().ToLower() != "csv")
+        { 
+            settings.IncludeTags = false;
+        }
+
         await AnsiConsoleExt.Status()
             .StartAsync("Fetching daily cost data...", async ctx =>
             {
@@ -96,12 +103,13 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
                     settings.Metric,
                     settings.Dimension,
                     settings.Timeframe,
-                    settings.From, settings.To);
+                    settings.From, settings.To,
+                    settings.IncludeTags);
             });
 
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteDailyCost(settings, dailyCost);
+        .WriteDailyCost(settings, dailyCost);        
 
         return 0; // Omitted
     }
