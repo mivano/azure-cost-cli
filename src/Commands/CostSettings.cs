@@ -71,7 +71,12 @@ public class CostSettings : LogCommandSettings, ICostSettings
     [Description("The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)")]
     [DefaultValue(MetricType.ActualCost)]
     public MetricType Metric { get; set; } = MetricType.ActualCost;
-    
+
+    [CommandOption("--includeTags")]
+    [Description("Include Tags from the selected dimension. The option is used for DailyCost report and output to Json, JsonC or Csv. Valid only for DailyCost report and output to Json, JsonC or Csv. Ignored in other reports and output formats.")]
+    [DefaultValue(false)]
+    public bool IncludeTags { get; set; }
+
 
     public Scope GetScope
     {
