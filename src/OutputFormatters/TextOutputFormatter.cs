@@ -178,7 +178,7 @@ public class TextOutputFormatter : BaseOutputFormatter
             var othersCost = day.Except(topCosts)
                 .Sum(item => settings.UseUSD ? item.CostUsd : item.Cost);
 
-            topCosts.Add(new CostDailyItem(day.Key, "Other", othersCost, othersCost, day.First().Currency, ""));
+            topCosts.Add(new CostDailyItem(day.Key, "Other", othersCost, othersCost, day.First().Currency, null));
 
             Console.Write($"{day.Key.ToString(CultureInfo.CurrentCulture)}  ");
 

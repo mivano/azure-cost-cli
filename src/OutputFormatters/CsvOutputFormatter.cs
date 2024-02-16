@@ -34,28 +34,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
-        // code to create the column Tags only when needed
-        // small trick with the records dailyCostItemWithoutTags, and dailyCostItem
-        if (settings.IncludeTags == false)
-        {
-            var dailyCostsWithoutTags = new List<CostDailyItemWithoutTags>();
-            foreach (var item in dailyCosts)
-            {
-                var newItem = new CostDailyItemWithoutTags(
-                    Name: item.Name,
-                    Date: item.Date,
-                    Cost: item.Cost,
-                    Currency: item.Currency,
-                    CostUsd: item.CostUsd
-                );
-                dailyCostsWithoutTags.Add(newItem);
-            }
-            return ExportToCsv(settings.SkipHeader, dailyCostsWithoutTags); 
-        }
-        else 
-        {
             return ExportToCsv(settings.SkipHeader, dailyCosts);
-        }
     }
 
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
@@ -147,6 +126,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
         using (var csv = new CsvWriter(writer, config))
         {
             csv.Context.TypeConverterCache.AddConverter<double>(new CustomDoubleConverter());
+            csv.Context.TypeConverterCache.AddConverter<Dictionary<string, string>>(new TagsConverter());
             csv.WriteRecords(resources);
 
             Console.Write(writer.ToString());
@@ -158,6 +138,17 @@ public class CsvOutputFormatter : BaseOutputFormatter
    
     
     
+}
+
+public class TagsConverter : DefaultTypeConverter
+{
+    public override string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
+    {
+        if (value == null)
+            return string.Empty;
+        var tags = (Dictionary<string, string>)value;
+        return string.Join(";", tags.Select(a => $"{a.Key}:{a.Value}"));
+    }
 }
 
 public class CustomDoubleConverter : DoubleConverter
