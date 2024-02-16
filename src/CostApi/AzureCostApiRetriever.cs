@@ -589,13 +589,15 @@ public class AzureCostApiRetriever : ICostRetriever
 
             // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
             var currency = row[5].ToString();
-            Dictionary<string, string> tags = new();
+            Dictionary<string, string>? tags =null;
 
             // if includeTags is true, switch the value between currency and tags
             // that's the order how the API REST exposes the resultset
             if (includeTags)
             {
                 var tagsArray = row[5].EnumerateArray().ToArray();
+                
+                tags = new Dictionary<string, string>();
                 
                 foreach (var tagString in tagsArray)
                 {
