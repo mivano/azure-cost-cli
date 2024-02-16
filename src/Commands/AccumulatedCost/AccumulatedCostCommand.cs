@@ -93,7 +93,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 {
                     ctx.Status = "Fetching subscription details...";
                     // Fetch the subscription details
-                    subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId.Value);
+                    subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId.Value, 
+                        new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
                 }
                 else 
                 {
@@ -108,7 +109,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe,
-                    settings.From, settings.To);
+                    settings.From, settings.To, 
+                    new SecurityCredentials (settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
 
                 List<CostItem> forecastedCosts = new List<CostItem>();
 
@@ -150,7 +152,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                         settings.Metric,
                         TimeframeType.Custom,
                         forecastStartDate,
-                        forecastEndDate)).ToList();
+                        forecastEndDate,
+                        new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret))).ToList();
                 }
 
                 IEnumerable<CostNamedItem> bySubscriptionCosts = null;
@@ -158,25 +161,29 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 {
                     ctx.Status = "Fetching cost data by subscription...";
                     bySubscriptionCosts = await _costRetriever.RetrieveCostBySubscription(settings.Debug,
-                        settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                        settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To,
+                        new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
                 }
 
                 ctx.Status = "Fetching cost data by service name...";
                 var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
-                    settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                    settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To,
+                    new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
                 
                 ctx.Status = "Fetching cost data by location...";
                 var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, settings.GetScope,
                     settings.Filter,
                     settings.Metric,
-                    settings.Timeframe, settings.From, settings.To);
+                    settings.Timeframe, settings.From, settings.To,
+                    new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
                 
                 ctx.Status= "Fetching cost data by resource group...";
                 var byResourceGroupCosts = await _costRetriever.RetrieveCostByResourceGroup(settings.Debug,
                     settings.GetScope,
                     settings.Filter,
                     settings.Metric,
-                    settings.Timeframe, settings.From, settings.To);
+                    settings.Timeframe, settings.From, settings.To,
+                    new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
 
                 accumulatedCost = new AccumulatedCostDetails(subscription, null, costs, forecastedCosts, byServiceNameCosts,
                     byLocationCosts, byResourceGroupCosts, bySubscriptionCosts);

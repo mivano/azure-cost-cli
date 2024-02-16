@@ -60,7 +60,8 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
         }
 
         // Fetch the details from the Azure Cost Management API
-        var budgets = await _costRetriever.RetrieveBudgets(settings.Debug, settings.GetScope);
+        var budgets = await _costRetriever.RetrieveBudgets(settings.Debug, settings.GetScope,
+            new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
 
         // Write the output
         await _outputFormatters[settings.Output]

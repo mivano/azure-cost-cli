@@ -97,14 +97,15 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
             .StartAsync("Fetching daily cost data...", async ctx =>
             {
                 // Fetch the costs from the Azure Cost Management API
-
+                
                 dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, settings.GetScope,
                     settings.Filter,
                     settings.Metric,
                     settings.Dimension,
                     settings.Timeframe,
                     settings.From, settings.To,
-                    settings.IncludeTags);
+                    settings.IncludeTags,
+                    new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
             });
 
         // Write the output

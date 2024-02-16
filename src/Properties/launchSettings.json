@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "azure-cost-cli": {
+      "commandName": "Project",
+      "commandLineArgs": "dailyCosts -s fb666ef7-4084-404b-83d5-fe52e2373597 --dimension ResourceId --includeTags -t MonthToDate -o Csv --tenantId a4b24bf8-4b12-4d01-843f-bb3d7a1127f8"
+    }
+  }
+}

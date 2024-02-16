@@ -2,6 +2,19 @@ using System.Text.Json;
 
 namespace AzureCostCli.CostApi;
 
+public class SecurityCredentials
+{
+    public SecurityCredentials(string tenantId, string ServicePrincipalId, string ServicePrincipalSecret)
+    {
+        this.tenantId = tenantId;
+        this.ServicePrincipalId = ServicePrincipalId;
+        this.ServicePrincipalSecret = ServicePrincipalSecret;
+    }
+    public string tenantId { get; set; }
+    public string ServicePrincipalId { get; set; }
+    public string ServicePrincipalSecret { get; set; }
+}
+
 public class CostQueryResponse
 {
     public object eTag { get; set; }

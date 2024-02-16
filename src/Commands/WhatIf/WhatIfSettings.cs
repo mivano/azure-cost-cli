@@ -5,6 +5,21 @@ namespace AzureCostCli.Commands.WhatIf;
 
 public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
 {
+    [CommandOption("--tenantId")]
+    [Description("The tenant id for authentication. Necessary when accessing non-default tenants.")]
+    [DefaultValue("")]
+    public string? TenantId { get; set; }
+
+    [CommandOption("--ServicePrincipalId")]
+    [Description("The service principal name for authentication (if used).")]
+    [DefaultValue("")]
+    public string? ServicePrincipalId { get; set; }
+
+    [CommandOption("--ServicePrincipalSecret")]
+    [Description("The service principal name Password for authentication (if used).")]
+    [DefaultValue("")]
+    public string? ServicePrincipalSecret { get; set; }
+
     [CommandOption("--debug")]
     [Description("Increase logging verbosity to show all debug logs.")]
     [DefaultValue(false)]

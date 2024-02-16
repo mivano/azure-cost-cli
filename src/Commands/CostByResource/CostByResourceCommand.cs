@@ -98,7 +98,8 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
                     settings.ExcludeMeterDetails,
                     settings.Timeframe,
                     settings.From,
-                    settings.To);
+                    settings.To,
+                    new SecurityCredentials(settings.TenantId, settings.ServicePrincipalId, settings.ServicePrincipalSecret));
             });
 
         // Write the output

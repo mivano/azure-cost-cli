@@ -12,6 +12,21 @@ public interface ICostSettings
 
 public class CostSettings : LogCommandSettings, ICostSettings
 {
+    [CommandOption("--tenantId")]
+    [Description("The tenant id for authentication. Necessary to access non-default tenants.")]
+    [DefaultValue("")]
+    public string? TenantId { get; set;}
+
+    [CommandOption("--servicePrincipalId")]
+    [Description("The service principal name for Service Principal-based authentication.")]
+    [DefaultValue("")]
+    public string? ServicePrincipalId { get; set;}
+
+    [CommandOption("--servicePrincipalSecret")]
+    [Description("The service principal name secret for Service Principal-based authentication.")]
+    [DefaultValue("")]
+    public string? ServicePrincipalSecret { get; set;}
+
     [CommandOption("-s|--subscription")]
     [Description("The subscription id to use. Will try to fetch the active id if not specified.")]
     public Guid? Subscription { get; set; }
