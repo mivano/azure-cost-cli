@@ -34,7 +34,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
-        return ExportToCsv(settings.SkipHeader, dailyCosts);
+            return ExportToCsv(settings.SkipHeader, dailyCosts);
     }
 
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
@@ -126,6 +126,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
         using (var csv = new CsvWriter(writer, config))
         {
             csv.Context.TypeConverterCache.AddConverter<double>(new CustomDoubleConverter());
+            csv.Context.TypeConverterCache.AddConverter<Dictionary<string, string>>(new TagsConverter());
             csv.WriteRecords(resources);
 
             Console.Write(writer.ToString());
@@ -137,6 +138,17 @@ public class CsvOutputFormatter : BaseOutputFormatter
    
     
     
+}
+
+public class TagsConverter : DefaultTypeConverter
+{
+    public override string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
+    {
+        if (value == null)
+            return string.Empty;
+        var tags = (Dictionary<string, string>)value;
+        return string.Join(";", tags.Select(a => $"{a.Key}:{a.Value}"));
+    }
 }
 
 public class CustomDoubleConverter : DoubleConverter

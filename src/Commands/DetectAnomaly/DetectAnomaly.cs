@@ -96,7 +96,8 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
             settings.Metric,
             settings.Dimension,
             settings.Timeframe,
-            settings.From, settings.To);
+            settings.From, settings.To,
+            false);
 
         var costAnalyzer = new CostAnalyzer(settings);
 

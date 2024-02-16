@@ -65,16 +65,29 @@ public class JsonOutputFormatter : BaseOutputFormatter
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
         // Create a new variable to hold the dailyCost items per day
-        var output = dailyCosts
+        // Code to avoid creating the column Tags when is not needed
+        if (settings.IncludeTags == false)
+        {
+            var output = dailyCosts
+                        .GroupBy(a => a.Date)
+                        .Select(a => new
+                        {
+                            Date = a.Key,
+                            Items = a.Select(b => new { b.Name, b.Cost, b.Currency, b.CostUsd})
+                        });
+            WriteJson(settings, output);
+        }
+        else
+        {
+            var output = dailyCosts
             .GroupBy(a => a.Date)
             .Select(a => new
-        {
-            Date = a.Key,
-            Items = a.Select(b => new { b.Name, b.Cost, b.Currency, b.CostUsd })
-        });
-
-        WriteJson(settings, output);
-
+            {
+                Date = a.Key,
+                Items = a.Select(b => new { b.Name, b.Cost, b.Currency, b.CostUsd, b.Tags})
+            });
+            WriteJson(settings, output);
+        }
         return Task.CompletedTask;
     }
 

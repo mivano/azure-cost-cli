@@ -77,6 +77,7 @@ OPTIONS:
         --useUSD          Force the use of USD for the currency. Defaults to false to use the currency returned by the API        
         --skipHeader      Skip header creation for specific output formats. Useful when appending the output from multiple runs into one file. Defaults to false 
         --filter          Filter the output by the specified properties. Defaults to no filtering and can be multiple values.
+        --includeTags     Include Tags from the selected dimension. Valid only for DailyCost report and output to Json, JsonC or Csv. Ignored in the rest of reports and output formats.
     -m, --metric           ActualCost    The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)    
 
 COMMANDS:
@@ -206,6 +207,22 @@ azure-cost dailyCosts
 The above screenshots show the default console output, but the other formatters can also be used.
 
 The available dimensions are: `ResourceGroup`,`ResourceGroupName`,`ResourceLocation`,`ConsumedService`,`ResourceType`,`ResourceId`,`MeterId`,`BillingMonth`,`MeterCategory`,`MeterSubcategory`,`Meter`,`AccountName`,`DepartmentName`,`SubscriptionId`,`SubscriptionName`,`ServiceName`,`ServiceTier`,`EnrollmentAccountName`,`BillingAccountId`,`ResourceGuid`,`BillingPeriod`,`InvoiceNumber`,`ChargeType`,`PublisherType`,`ReservationId`,`ReservationName`,`Frequency`,`PartNumber`,`CostAllocationRuleName`,`MarkupRuleName`,`PricingModel`,`BenefitId`,`BenefitName`
+
+### Include Tags
+This option allows to include the dimensions' Tags in the same row. Tags allow cost analysis customization. Adding the Tags from the dimension allows complementary analysis in tools like Power BI. This option is enabled for DailyCost report and for Json, JsonC, and Csv expor formats. Using other formats, ignores the option. 
+
+The following query shows the daily costs for subscription x group by resource group name including the tags for the resource group ready to export to Csv:
+
+```bash 
+azure-cost dailyCosts -s XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX --dimension ResourceGroupName --includeTags -o Csv
+```
+
+That would extend into a column called Tags the resource group tags in Json format:
+```bash 
+[""\""cost-center\"":\""my_cost_center\"""",""\""owner\"":\""my_email@email.com\""""]
+```
+Note that the Json column should be parsed in the analytical tool.
+
 
 ### Detect Anomalies
 

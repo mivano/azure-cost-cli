@@ -156,7 +156,7 @@ public class AzureCostApiRetriever : ICostRetriever
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var filters = GenerateFilters(filter);
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
         
         var payload = new
         {
@@ -222,7 +222,7 @@ public class AzureCostApiRetriever : ICostRetriever
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
         Scope scope, string[] filter, MetricType metric, TimeframeType timeFrame, DateOnly from, DateOnly to)
     {        
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
         
         var payload = new
         {
@@ -294,7 +294,7 @@ public class AzureCostApiRetriever : ICostRetriever
         string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
         var payload = new
         {
@@ -366,7 +366,7 @@ public class AzureCostApiRetriever : ICostRetriever
         Scope scope, string[] filter,MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
         var payload = new
         {
@@ -443,7 +443,7 @@ public class AzureCostApiRetriever : ICostRetriever
        Scope scope, string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
         
         var payload = new
         {
@@ -518,10 +518,9 @@ public class AzureCostApiRetriever : ICostRetriever
 
     public async Task<IEnumerable<CostDailyItem>> RetrieveDailyCost(bool includeDebugOutput,
         Scope scope, string[] filter, MetricType metric, string dimension,
-        TimeframeType timeFrame, DateOnly from, DateOnly to)
+        TimeframeType timeFrame, DateOnly from, DateOnly to, bool includeTags)
     {
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
-
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
         var payload = new
         {
@@ -537,6 +536,7 @@ public class AzureCostApiRetriever : ICostRetriever
             dataSet = new
             {
                 granularity = "Daily",
+                include = includeTags ? new[] { "Tags" } : null,
                 aggregation = new
                 {
                     totalCost = new
@@ -587,9 +587,32 @@ public class AzureCostApiRetriever : ICostRetriever
             var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
             var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
 
+            // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
             var currency = row[5].ToString();
+            Dictionary<string, string>? tags =null;
 
-            var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency);
+            // if includeTags is true, switch the value between currency and tags
+            // that's the order how the API REST exposes the resultset
+            if (includeTags)
+            {
+                var tagsArray = row[5].EnumerateArray().ToArray();
+                
+                tags = new Dictionary<string, string>();
+                
+                foreach (var tagString in tagsArray)
+                {
+                    var parts = tagString.GetString().Split(':');
+                    if (parts.Length == 2) // Ensure the string is in the format "key:value"
+                    {
+                        var key = parts[0].Trim('"'); // Remove quotes from the key
+                        var tagValue = parts[1].Trim('"'); // Remove quotes from the value
+                        tags[key] = tagValue;
+                    }
+                }
+                currency = row[6].ToString();
+            }
+
+            var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency, tags);
             items.Add(costItem);
         }
 
@@ -696,7 +719,7 @@ public class AzureCostApiRetriever : ICostRetriever
         DateOnly from,
         DateOnly to)
     {
-        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2021-10-01&$top=5000");
+        var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
         object grouping;
         if (excludeMeterDetails == false)
