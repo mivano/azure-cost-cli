@@ -64,6 +64,9 @@ EXAMPLES:
 OPTIONS:
     -h, --help            Prints help information
         --debug           Increase logging verbosity to show all debug logs  
+    --tenantId            The tenant id for authentication. Necessary to access non-default tenants
+    --servicePrincipalId  The service principal name for Service Principal-based authentication
+    --servicePrincipalSecret  The service principal name secret for Service Principal-based authentication
     -s, --subscription    The subscription id to use. Will try to fetch the active id if not specified 
     -g, --resource-group  The resource group to scope the request to. Need to be used in combination with the subscription id 
     -b, --billing-account The billing account id to use 
@@ -107,6 +110,28 @@ Starting from version `0.35`, you can select a different scope besides only subs
 ## Authentication
 
 To make the call to the Azure cost API, you do need to run this from a user account with permissions to access the cost overview of the subscription. Further more, it needs to find the active credentials and it does so by using the `ChainedTokenCredential` provider which will look for the `az cli` token first. Make sure to run `az login` (with optionally the `--tenant` parameter) to make sure you have an active session.
+
+## Non-default tenant authentication
+If the Azure account has access to multiple tenants, tenant id must be provided. It tenant id is not provided default tenant id will be used. This can be handle in az login --tenant, or using the --tenantId configuration option in the app:
+```bash
+azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 --tenantId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx -o json 
+```
+## Service principal-based authentication
+For service principal based authentication, tenant id, service principal id, and service principal secret must be provided.
+```bash
+azure-cost costByResource -s 574385a9-08e9-49fe-91a2-27660d92b8f5 --tenantId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx --servicePrincipalId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx --servicePrincipalSecret <secret_value> -o json 
+```
+
+## Authentication order
+These are the configuration options for authetication:
+1. Tenant Id: --tenantId
+2. Service principal name: --servicePrincipalId
+3. Service principal secret: --servicePrincipalSecret
+
+The authentication process will follow this path (in order):
+- If the three values ara provided, service principal-based authentication will be used.
+- If tenant id is provided, tenant-based authentication will be used.
+- If no tenant is provided, default tenant-based authentication will be used.
 
 ## Use in a GitHub workflow
 

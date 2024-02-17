@@ -89,7 +89,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
             // Request the token for the specified scope and tenantId
             TokenRequestContext tokenRequestContext;
-            if (sc.tenantId == null)
+            if (sc.tenantId == "")
                 tokenRequestContext = new TokenRequestContext(
                                     scopes: new[] { $"https://management.azure.com/.default" });
             else
