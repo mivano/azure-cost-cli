@@ -251,7 +251,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
             var currency = row[3].ToString();
 
-            var costItem = new CostItem(date, value, valueUsd, currency, "");
+            var costItem = new CostItem(date, value, valueUsd, currency);
             items.Add(costItem);
         }
 
@@ -630,14 +630,26 @@ public class AzureCostApiRetriever : ICostRetriever
 
             // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
             var currency = row[5].ToString();
-            var tags = "";
+            Dictionary<string, string>? tags =null;
 
             // if includeTags is true, switch the value between currency and tags
             // that's the order how the API REST exposes the resultset
             if (includeTags)
             {
-                System.Text.Json.JsonElement element = row[5];
-                tags = element.GetRawText();
+                var tagsArray = row[5].EnumerateArray().ToArray();
+                
+                tags = new Dictionary<string, string>();
+                
+                foreach (var tagString in tagsArray)
+                {
+                    var parts = tagString.GetString().Split(':');
+                    if (parts.Length == 2) // Ensure the string is in the format "key:value"
+                    {
+                        var key = parts[0].Trim('"'); // Remove quotes from the key
+                        var tagValue = parts[1].Trim('"'); // Remove quotes from the value
+                        tags[key] = tagValue;
+                    }
+                }
                 currency = row[6].ToString();
             }
 
@@ -726,7 +738,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
                 var currency = row[3].ToString();
 
-                var costItem = new CostItem(date, value, value, currency, "");
+                var costItem = new CostItem(date, value, value, currency);
                 items.Add(costItem);
             }
         }
