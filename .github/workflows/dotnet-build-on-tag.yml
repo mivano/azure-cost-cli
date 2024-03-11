@@ -58,7 +58,7 @@ jobs:
 
     - name: Create GitHub Release
       id: create_release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: src/nupkgs/*.nupkg
         generate_release_notes: true
