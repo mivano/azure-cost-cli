@@ -34,6 +34,33 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
     public override Task WriteDailyCost(DailyCostSettings settings, IEnumerable<CostDailyItem> dailyCosts)
     {
+        if (settings.IncludeTags)
+        {
+            var dailyCostWithTags = new List<dynamic>();
+         
+            // Get all the unique tag values first
+            var tags = dailyCosts.SelectMany(a => a.Tags).Select(a => a.Key).Distinct().OrderBy(a => a).ToList();
+            
+            // Map the dailyCosts to a dynamic object with the tags as columns
+            foreach (var dailyCost in dailyCosts)
+            {
+                dynamic expando = new ExpandoObject();
+                expando.Date = dailyCost.Date;
+                expando.Cost = dailyCost.Cost;
+                expando.Currency = dailyCost.Currency;
+                expando.CostUsd = dailyCost.CostUsd;
+                foreach (var tag in tags)
+                {
+                    var tagValue = dailyCost.Tags.FirstOrDefault(a => a.Key == tag);
+                    ((IDictionary<string, object>)expando)[tag] = tagValue.Value;
+                }
+                dailyCostWithTags.Add(expando);
+            }
+      
+        
+            return ExportToCsv(settings.SkipHeader, dailyCostWithTags);
+        }
+        else
             return ExportToCsv(settings.SkipHeader, dailyCosts);
     }
 
