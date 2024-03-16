@@ -79,6 +79,8 @@ OPTIONS:
         --filter          Filter the output by the specified properties. Defaults to no filtering and can be multiple values.
         --includeTags     Include Tags from the selected dimension. Valid only for DailyCost report and output to Json, JsonC or Csv. Ignored in the rest of reports and output formats.
     -m, --metric           ActualCost    The metric to use for the costs. Defaults to ActualCost. (ActualCost, AmortizedCost)    
+    --costApiBaseAddress  The base address of the cost API. Defaults to https://management.azure.com/, but can be set to a different value to use a different cloud, like https://management.usgovcloudapi.net/
+    --priceApiBaseAddress The base address of the price API. Defaults to https://prices.azure.com/, but can be set to a different value to use a different cloud, like https://prices.azure.us/ for government
 
 COMMANDS:
     accumulatedCost    Show the accumulated cost details

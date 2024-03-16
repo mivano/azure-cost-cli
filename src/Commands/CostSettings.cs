@@ -77,7 +77,15 @@ public class CostSettings : LogCommandSettings, ICostSettings
     [DefaultValue(false)]
     public bool IncludeTags { get; set; }
 
+    [CommandOption("--costApiBaseAddress <BASE_ADDRESS>")]
+    [Description("The base address for the Cost API. Defaults to https://management.azure.com/")]
+    public string CostApiAddress { get; set; } = "https://management.azure.com/";
+    
+    [CommandOption("--priceApiBaseAddress <BASE_ADDRESS>")]
+    [Description("The base address for the Price API. Defaults to https://prices.azure.com/")]
+    public string PriceApiAddress { get; set; } = "https://prices.azure.com/";
 
+    
     public Scope GetScope
     {
         get {

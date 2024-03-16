@@ -70,6 +70,10 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
     [DefaultValue(MetricType.ActualCost)]
     public MetricType Metric { get; set; } = MetricType.ActualCost;
     
+    [CommandOption("--costApiBaseAddress <BASE_ADDRESS>")]
+    [Description("The base address for the Cost API. Defaults to https://management.azure.com/")]
+    public string CostApiAddress { get; set; } = "https://management.azure.com/";
+    
     public Scope GetScope
     {
         get {

@@ -15,7 +15,9 @@ public class AzureCostApiRetriever : ICostRetriever
 {
     private readonly HttpClient _client;
     private bool _tokenRetrieved;
-
+   
+    public string CostApiAddress { get; set; }
+    
     public enum DimensionNames
     {
         PublisherType,
@@ -41,8 +43,6 @@ public class AzureCostApiRetriever : ICostRetriever
         _client = httpClientFactory.CreateClient("CostApi");
     }
 
-
-
     private async Task RetrieveToken(bool includeDebugOutput)
     {
         if (_tokenRetrieved)
@@ -57,7 +57,7 @@ public class AzureCostApiRetriever : ICostRetriever
             AnsiConsole.WriteLine($"Using token credential: {tokenCredential.GetType().Name} to fetch a token.");
 
         var token = await tokenCredential.GetTokenAsync(new TokenRequestContext(new[]
-            { $"https://management.azure.com/.default" }));
+            { $"{CostApiAddress}.default" }));
 
         if (includeDebugOutput)
             AnsiConsole.WriteLine($"Token retrieved and expires at: {token.ExpiresOn}");
@@ -126,7 +126,9 @@ public class AzureCostApiRetriever : ICostRetriever
             AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
             AnsiConsole.WriteLine();
         }
-
+        
+        _client.BaseAddress = new Uri(CostApiAddress);
+        
         var options = new JsonSerializerOptions
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
@@ -618,6 +620,8 @@ public class AzureCostApiRetriever : ICostRetriever
 
         return items;
     }
+
+    
 
     public async Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId)
     {

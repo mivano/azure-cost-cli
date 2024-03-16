@@ -57,7 +57,8 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(CostByResourceCommand).Assembly.GetName().Version}");
 
-
+        _costRetriever.CostApiAddress = settings.CostApiAddress;
+        
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
