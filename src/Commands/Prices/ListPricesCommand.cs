@@ -26,6 +26,7 @@ public class ListPricesCommand: AsyncCommand<PricesSettings>
     
     public override async Task<int> ExecuteAsync(CommandContext context, PricesSettings settings)
     {
+        _priceRetriever.PriceApiAddress = settings.PriceApiAddress;
         
         var prices = await _priceRetriever.GetAzurePricesAsync();
         

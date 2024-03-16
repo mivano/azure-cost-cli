@@ -6,7 +6,8 @@ namespace AzureCostCli.CostApi;
 public class AzurePriceRetriever : IPriceRetriever
 {
     private readonly HttpClient _client;
-
+    public string PriceApiAddress { get; set; }
+    
     public AzurePriceRetriever(IHttpClientFactory httpClientFactory)
     {
         _client = httpClientFactory.CreateClient("PriceApi");
@@ -14,6 +15,8 @@ public class AzurePriceRetriever : IPriceRetriever
 
     public async Task<IEnumerable<PriceRecord>> GetAzurePricesAsync(string currencyCode = "USD", string? filter = null)
     {
+        _client.BaseAddress = new Uri(PriceApiAddress);
+        
         var prices = new List<PriceRecord>();
         string? url = "https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview&currencyCode='" + currencyCode + "'";
 
@@ -51,6 +54,8 @@ public class AzurePriceRetriever : IPriceRetriever
 
         return prices;
     }
+
+   
 }
 
 public class PriceRecord
