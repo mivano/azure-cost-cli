@@ -62,7 +62,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
-        if (subscriptionId.GetValueOrDefault() == Guid.Empty)
+        if (subscriptionId.HasValue == false && (settings.GetScope.IsSubscriptionBased))
         {
             // Get the subscription ID from the Azure CLI
             try
