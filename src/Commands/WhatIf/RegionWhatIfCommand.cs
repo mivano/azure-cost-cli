@@ -32,6 +32,8 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
 
     public override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings)
     {
+        _costRetriever.CostApiAddress = settings.CostApiAddress;
+        
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 

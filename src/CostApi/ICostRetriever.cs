@@ -4,6 +4,9 @@ namespace AzureCostCli.CostApi;
 
 public interface ICostRetriever
 {
+
+    public string CostApiAddress { get; set; }
+    
     Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId);
     
     Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Scope scope,
