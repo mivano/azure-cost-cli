@@ -18,7 +18,7 @@ public class AzurePriceRetriever : IPriceRetriever
         _client.BaseAddress = new Uri(PriceApiAddress);
         
         var prices = new List<PriceRecord>();
-        string? url = "https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview&currencyCode='" + currencyCode + "'";
+        string? url = "api/retail/prices?api-version=2023-01-01-preview&currencyCode='" + currencyCode + "'";
 
         // Append the filter to the URL if it's provided
         if (!string.IsNullOrWhiteSpace(filter))
