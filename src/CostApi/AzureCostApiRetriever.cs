@@ -126,9 +126,12 @@ public class AzureCostApiRetriever : ICostRetriever
             AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
             AnsiConsole.WriteLine();
         }
-        
-        _client.BaseAddress = new Uri(CostApiAddress);
-        
+
+        if (!string.Equals(_client.BaseAddress?.ToString(), CostApiAddress))
+        {
+            _client.BaseAddress = new Uri(CostApiAddress);
+        }
+
         var options = new JsonSerializerOptions
         {
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
