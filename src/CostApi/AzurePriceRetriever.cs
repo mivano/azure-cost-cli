@@ -15,10 +15,13 @@ public class AzurePriceRetriever : IPriceRetriever
 
     public async Task<IEnumerable<PriceRecord>> GetAzurePricesAsync(string currencyCode = "USD", string? filter = null)
     {
-        _client.BaseAddress = new Uri(PriceApiAddress);
-        
+        if (!string.Equals(_client.BaseAddress?.ToString(), PriceApiAddress))
+        {
+            _client.BaseAddress = new Uri(PriceApiAddress);
+        }
+
         var prices = new List<PriceRecord>();
-        string? url = "https://prices.azure.com/api/retail/prices?api-version=2023-01-01-preview&currencyCode='" + currencyCode + "'";
+        string? url = "api/retail/prices?api-version=2023-01-01-preview&currencyCode='" + currencyCode + "'";
 
         // Append the filter to the URL if it's provided
         if (!string.IsNullOrWhiteSpace(filter))
