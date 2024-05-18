@@ -579,46 +579,59 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
         var items = new List<CostDailyItem>();
-        foreach (var row in content.properties.rows)
+        var nextLink = uri;
+
+        while (nextLink != null)
         {
-            var resourceGroupName = row[3].ToString();
-            var date = DateOnly.ParseExact(row[2].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
+            var response = await ExecuteCallToCostApi(includeDebugOutput, payload, nextLink);
+            CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
-            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
+            if (content == null || content.properties == null || content.properties.rows == null)
+                break;
 
-            // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
-            var currency = row[5].ToString();
-            Dictionary<string, string>? tags =null;
-
-            // if includeTags is true, switch the value between currency and tags
-            // that's the order how the API REST exposes the resultset
-            if (includeTags)
+            foreach (var row in content.properties.rows)
             {
-                var tagsArray = row[5].EnumerateArray().ToArray();
-                
-                tags = new Dictionary<string, string>();
-                
-                foreach (var tagString in tagsArray)
+                var resourceGroupName = row[3].ToString();
+                var date = DateOnly.ParseExact(row[2].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
+
+                var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
+                var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
+
+                // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
+                var currency = row[5].ToString();
+                Dictionary<string, string>? tags = null;
+
+                // if includeTags is true, switch the value between currency and tags
+                // that's the order how the API REST exposes the resultset
+                if (includeTags)
                 {
-                    var parts = tagString.GetString().Split(':');
-                    if (parts.Length == 2) // Ensure the string is in the format "key:value"
+                    var tagsArray = row[5].EnumerateArray().ToArray();
+
+                    tags = new Dictionary<string, string>();
+
+                    foreach (var tagString in tagsArray)
                     {
-                        var key = parts[0].Trim('"'); // Remove quotes from the key
-                        var tagValue = parts[1].Trim('"'); // Remove quotes from the value
-                        tags[key] = tagValue;
+                        var parts = tagString.GetString().Split(':');
+                        if (parts.Length == 2) // Ensure the string is in the format "key:value"
+                        {
+                            var key = parts[0].Trim('"'); // Remove quotes from the key
+                            var tagValue = parts[1].Trim('"'); // Remove quotes from the value
+                            tags[key] = tagValue;
+                        }
                     }
+                    currency = row[6].ToString();
                 }
-                currency = row[6].ToString();
+
+                var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency, tags);
+                items.Add(costItem);
             }
 
-            var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency, tags);
-            items.Add(costItem);
+            // Update nextLink for the next iteration
+            nextLink = !string.IsNullOrEmpty(content.properties.nextLink)
+                ? new Uri(content.properties.nextLink)
+                : null;
         }
 
         return items;

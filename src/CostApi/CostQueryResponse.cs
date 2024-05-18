@@ -21,6 +21,6 @@ public class Columns
 public class Properties
 {
     public Columns[] columns { get; set; }
-    public object nextLink { get; set; }
+    public string nextLink { get; set; }
     public JsonElement[] rows { get; set; }
 }
