@@ -84,12 +84,6 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
             }
         }
 
-        // Change the settings so it uses a custom timeframe and fetch the last 30 days of data, not including today
-
-        settings.Timeframe = TimeframeType.Custom;
-        settings.From = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
-        settings.To = DateOnly.FromDateTime(DateTime.Today.AddDays(-1));
-
         // Fetch the costs from the Azure Cost Management API
         var dailyCost = await _costRetriever.RetrieveDailyCost(settings.Debug, settings.GetScope,
             settings.Filter,
