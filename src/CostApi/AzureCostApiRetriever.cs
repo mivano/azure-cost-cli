@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -15,9 +16,9 @@ public class AzureCostApiRetriever : ICostRetriever
 {
     private readonly HttpClient _client;
     private bool _tokenRetrieved;
-   
+
     public string CostApiAddress { get; set; }
-    
+
     public enum DimensionNames
     {
         PublisherType,
@@ -113,19 +114,126 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         // return the scope.ScopePath combined with the path
         return new Uri(scope.ScopePath + path, UriKind.Relative);
-        
+
     }
 
-    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
+    private async Task RetrieveTokenWithDebugOutput(bool includeDebugOutput)
     {
         await RetrieveToken(includeDebugOutput);
 
+        if (includeDebugOutput)
+        {
+            AnsiConsole.WriteLine("Token retrieved successfully.");
+        }
+    }
+
+    private void LogDebugOutput(bool includeDebugOutput, Uri uri, object payload)
+    {
         if (includeDebugOutput)
         {
             AnsiConsole.WriteLine($"Retrieving data from {uri} using the following payload:");
             AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
             AnsiConsole.WriteLine();
         }
+    }
+
+    private async Task<JsonElement> GetJsonResponseContent(HttpResponseMessage response, bool includeDebugOutput)
+    {
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (includeDebugOutput)
+        {
+            AnsiConsole.WriteLine($"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
+            if (!response.IsSuccessStatusCode)
+            {
+                AnsiConsole.WriteLine($"Response content: {responseContent}");
+            }
+        }
+
+        response.EnsureSuccessStatusCode();
+        return JsonDocument.Parse(responseContent).RootElement;
+    }
+
+    private string SerializeCombinedProperties(JsonDocument initialResponseJson, object combinedProperties)
+    {
+        var originalResponse = initialResponseJson.RootElement;
+
+        var combinedObject = new
+        {
+            id = originalResponse.GetProperty("id").GetString(),
+            name = originalResponse.GetProperty("name").GetString(),
+            type = originalResponse.GetProperty("type").GetString(),
+            location = originalResponse.GetProperty("location").GetString(),
+            sku = originalResponse.GetProperty("sku").GetString(),
+            eTag = originalResponse.GetProperty("eTag").GetString(),
+            properties = combinedProperties
+        };
+
+        return JsonSerializer.Serialize(combinedObject);
+    }
+
+    private async Task<(JsonDocument? initialResponseJson, List<JsonElement>? combinedRows, JsonElement? columns)> FetchPaginatedResults(Uri originalApiCallUri, object payload, JsonSerializerOptions options, bool includeDebugOutput)
+    {
+        var combinedRows = new List<JsonElement>();
+        JsonElement? columns = null;
+        Uri? currentCallUri = originalApiCallUri;
+        JsonDocument? initialResponseJson = null;
+        bool isFirstCall = true;
+
+        do
+        {
+            var response = await _client.PostAsJsonAsync(currentCallUri, payload, options);
+
+            var jsonResponse = await GetJsonResponseContent(response, includeDebugOutput);
+
+            if (jsonResponse.TryGetProperty("properties", out var properties))
+            {
+                var nextCallUri = properties.TryGetProperty("nextLink", out var nextLinkProperty) && Uri.TryCreate(nextLinkProperty.GetString(), UriKind.Absolute, out var nextLinkUri)
+                    ? nextLinkUri
+                    : null;
+
+                if (isFirstCall)
+                {
+                    if (nextCallUri == null)
+                    {
+                        // If there is only a single page, return the original response immediately
+                        return (JsonDocument.Parse(jsonResponse.GetRawText()), null, null);
+                    }
+
+                    initialResponseJson = JsonDocument.Parse(jsonResponse.GetRawText()); // Store the first response as we now know we will have more than one
+                    isFirstCall = false;
+                }
+
+                if (properties.TryGetProperty("columns", out var columnsArray))
+                {
+                    columns = columnsArray;
+                }
+
+                if (properties.TryGetProperty("rows", out var rowsArray) && rowsArray.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var row in rowsArray.EnumerateArray())
+                    {
+                        combinedRows.Add(row);
+                    }
+                }
+
+                currentCallUri = nextCallUri; // Update the URI for the next call
+            }
+            else
+            {
+                currentCallUri = null; // Exit the loop if no properties are found
+            }
+
+        } while (currentCallUri != null);
+
+        return (initialResponseJson, combinedRows, columns);
+    }
+
+    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object payload, Uri originalApiCallUri)
+    {
+        await RetrieveTokenWithDebugOutput(includeDebugOutput);
+
+        LogDebugOutput(includeDebugOutput, originalApiCallUri, payload);
 
         if (!string.Equals(_client.BaseAddress?.ToString(), CostApiAddress))
         {
@@ -138,14 +246,55 @@ public class AzureCostApiRetriever : ICostRetriever
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        var response = payload == null
-            ? await _client.GetAsync(uri)
-            : await _client.PostAsJsonAsync(uri, payload, options);
+        var (initialResponseJson, paginatedResponseCombinedRows, columns) = await FetchPaginatedResults(originalApiCallUri, payload, options, includeDebugOutput);
+
+        // If there was no paginated response and we returned on intital call
+        if (paginatedResponseCombinedRows == null)
+        {
+            return new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(initialResponseJson.RootElement.GetRawText(), System.Text.Encoding.UTF8, "application/json")
+            };
+        }
+
+        //// We received paginated response - lets process it and return it
+
+        var paginatedResponseCombinedProperties = new
+        {
+            columns = columns ?? JsonDocument.Parse("[]").RootElement,
+            rows = paginatedResponseCombinedRows
+        };
+
+        var paginatedResponseCombinedJson = SerializeCombinedProperties(initialResponseJson, paginatedResponseCombinedProperties);
+
+        return new HttpResponseMessage
+        {
+            StatusCode = HttpStatusCode.OK,
+            Content = new StringContent(paginatedResponseCombinedJson, System.Text.Encoding.UTF8, "application/json")
+        };
+    }
+
+
+    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, Uri uri)
+    {
+        await RetrieveToken(includeDebugOutput);
 
         if (includeDebugOutput)
         {
-            AnsiConsole.WriteLine(
-                $"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
+            AnsiConsole.WriteLine($"Retrieving data from {uri} using GET request.");
+        }
+
+        if (!string.Equals(_client.BaseAddress?.ToString(), CostApiAddress))
+        {
+            _client.BaseAddress = new Uri(CostApiAddress);
+        }
+
+        var response = await _client.GetAsync(uri);
+
+        if (includeDebugOutput)
+        {
+            AnsiConsole.WriteLine($"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
             if (!response.IsSuccessStatusCode)
             {
                 AnsiConsole.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
@@ -162,7 +311,7 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var filters = GenerateFilters(filter);
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
-        
+
         var payload = new
         {
             type = metric.ToString(),
@@ -222,13 +371,12 @@ public class AzureCostApiRetriever : ICostRetriever
         return items;
     }
 
-   
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByServiceName(bool includeDebugOutput,
         Scope scope, string[] filter, MetricType metric, TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {        
+    {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
-        
+
         var payload = new
         {
             type = metric.ToString(),
@@ -296,7 +444,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByLocation(bool includeDebugOutput, Scope scope,
-        string[] filter,MetricType metric,
+        string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
@@ -368,7 +516,7 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<CostNamedItem>> RetrieveCostByResourceGroup(bool includeDebugOutput,
-        Scope scope, string[] filter,MetricType metric,
+        Scope scope, string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
@@ -449,7 +597,7 @@ public class AzureCostApiRetriever : ICostRetriever
         TimeframeType timeFrame, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
-        
+
         var payload = new
         {
             type = metric.ToString(),
@@ -579,65 +727,51 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
+
+        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
 
         var items = new List<CostDailyItem>();
-        var nextLink = uri;
-
-        while (nextLink != null)
+        foreach (var row in content.properties.rows)
         {
-            var response = await ExecuteCallToCostApi(includeDebugOutput, payload, nextLink);
-            CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
+            var resourceGroupName = row[3].ToString();
+            var date = DateOnly.ParseExact(row[2].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
 
-            if (content == null || content.properties == null || content.properties.rows == null)
-                break;
+            var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
+            var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
 
-            foreach (var row in content.properties.rows)
+            // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
+            var currency = row[5].ToString();
+            Dictionary<string, string>? tags = null;
+
+            // if includeTags is true, switch the value between currency and tags
+            // that's the order how the API REST exposes the resultset
+            if (includeTags)
             {
-                var resourceGroupName = row[3].ToString();
-                var date = DateOnly.ParseExact(row[2].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
+                var tagsArray = row[5].EnumerateArray().ToArray();
 
-                var value = double.Parse(row[0].ToString(), CultureInfo.InvariantCulture);
-                var valueUsd = double.Parse(row[1].ToString(), CultureInfo.InvariantCulture);
+                tags = new Dictionary<string, string>();
 
-                // if includeTags is true, row[5] is the tag, and row[6] is the currency, otherwise row[5] is the currency
-                var currency = row[5].ToString();
-                Dictionary<string, string>? tags = null;
-
-                // if includeTags is true, switch the value between currency and tags
-                // that's the order how the API REST exposes the resultset
-                if (includeTags)
+                foreach (var tagString in tagsArray)
                 {
-                    var tagsArray = row[5].EnumerateArray().ToArray();
-
-                    tags = new Dictionary<string, string>();
-
-                    foreach (var tagString in tagsArray)
+                    var parts = tagString.GetString().Split(':');
+                    if (parts.Length == 2) // Ensure the string is in the format "key:value"
                     {
-                        var parts = tagString.GetString().Split(':');
-                        if (parts.Length == 2) // Ensure the string is in the format "key:value"
-                        {
-                            var key = parts[0].Trim('"'); // Remove quotes from the key
-                            var tagValue = parts[1].Trim('"'); // Remove quotes from the value
-                            tags[key] = tagValue;
-                        }
+                        var key = parts[0].Trim('"'); // Remove quotes from the key
+                        var tagValue = parts[1].Trim('"'); // Remove quotes from the value
+                        tags[key] = tagValue;
                     }
-                    currency = row[6].ToString();
                 }
-
-                var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency, tags);
-                items.Add(costItem);
+                currency = row[6].ToString();
             }
 
-            // Update nextLink for the next iteration
-            nextLink = !string.IsNullOrEmpty(content.properties.nextLink)
-                ? new Uri(content.properties.nextLink)
-                : null;
+            var costItem = new CostDailyItem(date, resourceGroupName, value, valueUsd, currency, tags);
+            items.Add(costItem);
         }
 
         return items;
     }
 
-    
 
     public async Task<Subscription> RetrieveSubscription(bool includeDebugOutput, Guid subscriptionId)
     {
@@ -645,7 +779,7 @@ public class AzureCostApiRetriever : ICostRetriever
             $"/subscriptions/{subscriptionId}/?api-version=2019-11-01",
             UriKind.Relative);
 
-        var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
+        var response = await ExecuteCallToCostApi(includeDebugOutput, uri);
 
         var content = await response.Content.ReadFromJsonAsync<Subscription>();
 
@@ -663,7 +797,7 @@ public class AzureCostApiRetriever : ICostRetriever
     public async Task<IEnumerable<CostItem>> RetrieveForecastedCosts(bool includeDebugOutput, Scope scope,
         string[] filter, MetricType metric,
         TimeframeType timeFrame, DateOnly from, DateOnly to)
-    {      
+    {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000");
 
         var payload = new
@@ -930,13 +1064,13 @@ public class AzureCostApiRetriever : ICostRetriever
     }
 
     public async Task<IEnumerable<UsageDetails>> RetrieveUsageDetails(bool includeDebugOutput,
-        Scope scope, string filter,  DateOnly from, DateOnly to)
+        Scope scope, string filter, DateOnly from, DateOnly to)
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.Consumption/usageDetails?api-version=2023-05-01&$expand=meterDetails&metric=usage&$top=5000");
 
         filter = (!string.IsNullOrWhiteSpace(filter)
-            ?   filter + " AND "
-            : "") +"properties/usageStart ge '" + from.ToString("yyyy-MM-dd") + "' and properties/usageEnd le '" +
+            ? filter + " AND "
+            : "") + "properties/usageStart ge '" + from.ToString("yyyy-MM-dd") + "' and properties/usageEnd le '" +
                  to.ToString("yyyy-MM-dd") + "'";
 
 
@@ -946,7 +1080,7 @@ public class AzureCostApiRetriever : ICostRetriever
 
         while (uri != null)
         {
-            var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
+            var response = await ExecuteCallToCostApi(includeDebugOutput, uri);
 
             UsageDetailsResponse payload = await response.Content.ReadFromJsonAsync<UsageDetailsResponse>() ??
                                            new UsageDetailsResponse();
@@ -962,7 +1096,7 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.Consumption/budgets/?api-version=2021-10-01");
 
-        var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
+        var response = await ExecuteCallToCostApi(includeDebugOutput, uri);
 
         var json = await response.Content.ReadAsStringAsync();
         var doc = JsonDocument.Parse(json);
