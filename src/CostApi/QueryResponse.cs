@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace AzureCostCli.CostApi;
 
-public class CostQueryResponse
+public class QueryResponse
 {
     public object eTag { get; set; }
     public string id { get; set; }
@@ -10,6 +10,15 @@ public class CostQueryResponse
     public string name { get; set; }
     public Properties properties { get; set; }
     public string type { get; set; }
+    
+    // Combine method to merge results
+    public void Combine(QueryResponse other)
+    {
+        if (other?.properties?.rows != null)
+        {
+            this.properties.rows.AddRange(other.properties.rows);
+        }
+    }
 }
 
 public class Columns
@@ -21,6 +30,6 @@ public class Columns
 public class Properties
 {
     public Columns[] columns { get; set; }
-    public object nextLink { get; set; }
-    public JsonElement[] rows { get; set; }
+    public string nextLink { get; set; }
+    public List<JsonElement> rows { get; set; }
 }
