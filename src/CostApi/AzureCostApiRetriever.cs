@@ -116,7 +116,7 @@ public class AzureCostApiRetriever : ICostRetriever
         
     }
 
-    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
+    private async Task<QueryResponse> ExecutePagedCallToCostApi(bool includeDebugOutput, object? payload, Uri uri)
     {
         await RetrieveToken(includeDebugOutput);
 
@@ -138,22 +138,91 @@ public class AzureCostApiRetriever : ICostRetriever
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        var response = payload == null
-            ? await _client.GetAsync(uri)
-            : await _client.PostAsJsonAsync(uri, payload, options);
+        QueryResponse? combinedResponse = new QueryResponse { properties = new Properties { rows = new List<JsonElement>() } };
+
+        Uri? nextUri = uri;
+
+        while (nextUri != null)
+        {
+            var response = payload == null
+                ? await _client.GetAsync(nextUri)
+                : await _client.PostAsJsonAsync(nextUri, payload, options);
+
+            if (includeDebugOutput)
+            {
+                AnsiConsole.WriteLine(
+                    $"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    AnsiConsole.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
+                }
+            }
+
+            response.EnsureSuccessStatusCode();
+        
+            QueryResponse? content = await response.Content.ReadFromJsonAsync<QueryResponse>();
+
+            if (content == null)
+            {
+                throw new Exception("Failed to deserialize the response from the API.");
+            }
+
+            combinedResponse.Combine(content);
+
+            nextUri = string.IsNullOrEmpty(content.properties.nextLink) ? null : new Uri(content.properties.nextLink);
+        }
+
+        return combinedResponse;
+    }
+
+    private async Task<T?> ExecuteTypedCallToCostApi<T>(bool includeDebugOutput, object? payload, Uri uri)
+        where T : class
+    {
+        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
+        
+        var content = await response.Content.ReadFromJsonAsync<T>();
+        return content;
+    }
+
+    private async Task<HttpResponseMessage> ExecuteCallToCostApi(bool includeDebugOutput, object? payload, Uri uri) 
+    {
+        await RetrieveToken(includeDebugOutput);
 
         if (includeDebugOutput)
         {
-            AnsiConsole.WriteLine(
-                $"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
-            if (!response.IsSuccessStatusCode)
-            {
-                AnsiConsole.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
-            }
+            AnsiConsole.WriteLine($"Retrieving data from {uri} using the following payload:");
+            AnsiConsole.Write(new JsonText(JsonSerializer.Serialize(payload)));
+            AnsiConsole.WriteLine();
         }
 
-        response.EnsureSuccessStatusCode();
-        return response;
+        if (!string.Equals(_client.BaseAddress?.ToString(), CostApiAddress))
+        {
+            _client.BaseAddress = new Uri(CostApiAddress);
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+      
+            var response = payload == null
+                ? await _client.GetAsync(uri)
+                : await _client.PostAsJsonAsync(uri, payload, options);
+
+            if (includeDebugOutput)
+            {
+                AnsiConsole.WriteLine(
+                    $"Response status code is {response.StatusCode} and got payload size of {response.Content.Headers.ContentLength}");
+                if (!response.IsSuccessStatusCode)
+                {
+                    AnsiConsole.WriteLine($"Response content: {await response.Content.ReadAsStringAsync()}");
+                }
+            }
+
+            response.EnsureSuccessStatusCode();
+            return response;
     }
 
     public async Task<IEnumerable<CostItem>> RetrieveCosts(bool includeDebugOutput, Scope scope,
@@ -202,10 +271,8 @@ public class AzureCostApiRetriever : ICostRetriever
             }
         };
 
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
+        
         var items = new List<CostItem>();
         foreach (var row in content.properties.rows)
         {
@@ -275,10 +342,8 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
+        
         var items = new List<CostNamedItem>();
         foreach (var row in content.properties.rows)
         {
@@ -347,10 +412,8 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
+        
         var items = new List<CostNamedItem>();
         foreach (var row in content.properties.rows)
         {
@@ -424,10 +487,8 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
+        
         var items = new List<CostNamedItem>();
         foreach (var row in content.properties.rows)
         {
@@ -501,10 +562,8 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
+        
         var items = new List<CostNamedItem>();
         foreach (var row in content.properties.rows)
         {
@@ -579,9 +638,7 @@ public class AzureCostApiRetriever : ICostRetriever
                 filter = GenerateFilters(filter)
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
 
         var items = new List<CostDailyItem>();
         foreach (var row in content.properties.rows)
@@ -632,10 +689,8 @@ public class AzureCostApiRetriever : ICostRetriever
             $"/subscriptions/{subscriptionId}/?api-version=2019-11-01",
             UriKind.Relative);
 
-        var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
-
-        var content = await response.Content.ReadFromJsonAsync<Subscription>();
-
+        var content = await ExecuteTypedCallToCostApi<Subscription>(includeDebugOutput, null, uri);
+        
         if (includeDebugOutput)
         {
             var json = JsonSerializer.Serialize(content, new JsonSerializerOptions { WriteIndented = true });
@@ -692,11 +747,9 @@ public class AzureCostApiRetriever : ICostRetriever
         try
         {
             // Allow this one to fail, as it is not supported for all subscriptions
-            var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
+            var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
 
-            CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
-
+          
             foreach (var row in content.properties.rows)
             {
                 var date = DateOnly.ParseExact(row[1].ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
@@ -847,10 +900,8 @@ public class AzureCostApiRetriever : ICostRetriever
                 grouping = grouping,
             }
         };
-        var response = await ExecuteCallToCostApi(includeDebugOutput, payload, uri);
-
-        CostQueryResponse? content = await response.Content.ReadFromJsonAsync<CostQueryResponse>();
-
+        var content = await ExecutePagedCallToCostApi(includeDebugOutput, payload, uri);
+        
         var items = new List<CostResourceItem>();
         foreach (JsonElement row in content.properties.rows)
         {
@@ -933,11 +984,8 @@ public class AzureCostApiRetriever : ICostRetriever
 
         while (uri != null)
         {
-            var response = await ExecuteCallToCostApi(includeDebugOutput, null, uri);
-
-            UsageDetailsResponse payload = await response.Content.ReadFromJsonAsync<UsageDetailsResponse>() ??
-                                           new UsageDetailsResponse();
-
+            var payload = await ExecuteTypedCallToCostApi<UsageDetailsResponse>(includeDebugOutput, null, uri);
+         
             items.AddRange(payload.value);
             uri = payload.nextLink != null ? new Uri(payload.nextLink, UriKind.Relative) : null;
         }
