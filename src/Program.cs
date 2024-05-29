@@ -1,21 +1,17 @@
 ﻿using System.ComponentModel;
-using AzureCostCli.Commands;
 using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
-using AzureCostCli.Commands.Prices;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
 using Microsoft.Extensions.DependencyInjection;
-using Spectre.Console;
 using Spectre.Console.Cli;
-using Spectre.Console.Rendering;
 
 // Setup the DI
 var registrations = new ServiceCollection();
