@@ -13,7 +13,9 @@ using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
 using Microsoft.Extensions.DependencyInjection;
+using Spectre.Console;
 using Spectre.Console.Cli;
+using Spectre.Console.Rendering;
 
 // Setup the DI
 var registrations = new ServiceCollection();
@@ -67,9 +69,12 @@ app.Configure(config =>
   config.AddExample(new[] { "detectAnomalies", "--dimension", "ResourceId", "--recent-activity-days", "4" });
   config.AddExample(new[] { "costByTag", "--tag", "cost-center" });
   
-#if DEBUG
-  config.PropagateExceptions();
-#endif
+  config.SetExceptionHandler((ex, resolver) =>
+  {
+    // Explicitly write to error output
+    Console.Error.Write(ex);
+    return -1;
+  });
 
   config.AddCommand<AccumulatedCostCommand>("accumulatedCost")
       .WithDescription("Show the accumulated cost details.");
