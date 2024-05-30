@@ -57,7 +57,8 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
             AnsiConsole.WriteLine($"Version: {typeof(CostByResourceCommand).Assembly.GetName().Version}");
 
         _costRetriever.CostApiAddress = settings.CostApiAddress;
-        
+        _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 

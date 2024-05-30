@@ -56,6 +56,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
         _costRetriever.CostApiAddress = settings.CostApiAddress;
+        _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
 
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;

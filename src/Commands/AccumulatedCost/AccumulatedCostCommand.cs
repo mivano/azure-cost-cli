@@ -9,13 +9,13 @@ namespace AzureCostCli.Commands.AccumulatedCost;
 public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 {
     private readonly ICostRetriever _costRetriever;
-    
+
     private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
 
     public AccumulatedCostCommand(ICostRetriever costRetriever)
     {
         _costRetriever = costRetriever;
-        
+
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -56,7 +56,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             AnsiConsole.WriteLine($"Version: {typeof(AccumulatedCostCommand).Assembly.GetName().Version}");
 
         _costRetriever.CostApiAddress = settings.CostApiAddress;
-        
+        _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -67,12 +68,12 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             {
                 if (settings.Debug)
                     AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
-                
+
                 subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
-                
+
                 if (settings.Debug)
                     AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
-                
+
                 settings.Subscription = subscriptionId;
             }
             catch (Exception e)
@@ -86,18 +87,18 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         AccumulatedCostDetails accumulatedCost = null;
 
         Subscription subscription = null;
-       
+
         await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data...", async ctx =>
             {
-                
+
                 if (settings.GetScope.IsSubscriptionBased)
                 {
                     ctx.Status = "Fetching subscription details...";
                     // Fetch the subscription details
                     subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId.Value);
                 }
-                else 
+                else
                 {
                     ctx.Status = "Fetching Enrollment details...";
                     // Fetch the enrollment details //TODO
@@ -156,7 +157,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 }
 
                 IEnumerable<CostNamedItem> bySubscriptionCosts = null;
-                if (settings.GetScope.IsSubscriptionBased==false)
+                if (settings.GetScope.IsSubscriptionBased == false)
                 {
                     ctx.Status = "Fetching cost data by subscription...";
                     bySubscriptionCosts = await _costRetriever.RetrieveCostBySubscription(settings.Debug,
@@ -166,14 +167,14 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 ctx.Status = "Fetching cost data by service name...";
                 var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
                     settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
-                
+
                 ctx.Status = "Fetching cost data by location...";
                 var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, settings.GetScope,
                     settings.Filter,
                     settings.Metric,
                     settings.Timeframe, settings.From, settings.To);
-                
-                ctx.Status= "Fetching cost data by resource group...";
+
+                ctx.Status = "Fetching cost data by resource group...";
                 var byResourceGroupCosts = await _costRetriever.RetrieveCostByResourceGroup(settings.Debug,
                     settings.GetScope,
                     settings.Filter,
@@ -184,10 +185,10 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                     byLocationCosts, byResourceGroupCosts, bySubscriptionCosts);
 
             });
-        
+
         // Write the output
         await _outputFormatters[settings.Output]
-            .WriteAccumulatedCost(settings,accumulatedCost);
+            .WriteAccumulatedCost(settings, accumulatedCost);
 
         return 0;
     }

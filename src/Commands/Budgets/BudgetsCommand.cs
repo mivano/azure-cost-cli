@@ -7,7 +7,7 @@ using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.Budgets;
 
-public class BudgetsCommand: AsyncCommand<BudgetsSettings>
+public class BudgetsCommand : AsyncCommand<BudgetsSettings>
 {
     private readonly ICostRetriever _costRetriever;
 
@@ -16,7 +16,7 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
     public BudgetsCommand(ICostRetriever costRetriever)
     {
         _costRetriever = costRetriever;
-        
+
         // Add the output formatters
         _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
         _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
@@ -31,9 +31,10 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
         // Show version
         if (settings.Debug)
             AnsiConsole.WriteLine($"Version: {typeof(CostByResourceCommand).Assembly.GetName().Version}");
-        
+
         _costRetriever.CostApiAddress = settings.CostApiAddress;
-        
+        _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -44,12 +45,12 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
             {
                 if (settings.Debug)
                     AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
-                
+
                 subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
-                
+
                 if (settings.Debug)
                     AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
-                
+
                 settings.Subscription = subscriptionId;
             }
             catch (Exception e)
@@ -69,6 +70,6 @@ public class BudgetsCommand: AsyncCommand<BudgetsSettings>
 
         return 0;
     }
-    
-    
+
+
 }
