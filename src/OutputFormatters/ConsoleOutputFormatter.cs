@@ -51,6 +51,8 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         var costLastThirtyDays = accumulatedCostDetails.Costs.Where(x => x.Date >= todaysDate.AddDays(-30))
             .Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
 
+        var totalCostInTimeframe = accumulatedCostDetails.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+
         var currency = settings.UseUSD ? "USD" : accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
 
         // Header
@@ -84,6 +86,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             new Money(costSinceStartOfCurrentMonth, currency));
         table.AddRow(new Markup("[yellow bold]Last 7 days:[/]"), new Money(costLastSevenDays, currency));
         table.AddRow(new Markup("[yellow bold]Last 30 days:[/]"), new Money(costLastThirtyDays, currency));
+        table.AddRow(new Markup("[yellow bold]Total in timeframe:[/]"), new Money(totalCostInTimeframe, currency));
 
         var accumulatedCostChart = new BarChart()
             .Width(60)
