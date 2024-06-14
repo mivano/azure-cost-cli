@@ -28,6 +28,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
                     .Sum(a => settings.UseUSD ? a.CostUsd :a.Cost),
                 lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
                     .Sum(a => settings.UseUSD ? a.CostUsd :a.Cost),
+                totalCostInTimeframe = accumulatedCostDetails.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost)
             },
         };
 
@@ -47,6 +48,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine($"|Yesterday|{output.costs.yesterdayCost:N2} {currency}|");
         Console.WriteLine($"|Last 7 days|{output.costs.lastSevenDaysCost:N2} {currency}|");
         Console.WriteLine($"|Last 30 days|{output.costs.lastThirtyDaysCost:N2} {currency}|");
+        Console.WriteLine($"|Total cost in timeframe|{output.costs.totalCostInTimeframe:N2} {currency}|");
 
         // Generate a gantt chart using mermaidjs
         Console.WriteLine();

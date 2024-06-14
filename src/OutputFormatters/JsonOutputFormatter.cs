@@ -31,6 +31,7 @@ public class JsonOutputFormatter : BaseOutputFormatter
                     .Sum(a => settings.UseUSD ? a.CostUsd :  a.Cost),
                 lastThirtyDaysCost = accumulatedCostDetails.Costs.Where(a => a.Date >= DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-30)))
                     .Sum(a => settings.UseUSD ? a.CostUsd :  a.Cost),
+                totalCostInTimeframe = accumulatedCostDetails.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost)
             },
             cost = accumulatedCostDetails.Costs.OrderBy(a => a.Date).Select(a => new { a.Date, a.Cost, a.Currency, a.CostUsd }),
             forecastedCosts = accumulatedCostDetails.ForecastedCosts.OrderByDescending(a => a.Date)
