@@ -59,7 +59,8 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
 
 
         _costRetriever.CostApiAddress = settings.CostApiAddress;
-        
+        _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
+
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
 
@@ -90,7 +91,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         IEnumerable<CostDailyItem> dailyCost = new List<CostDailyItem>();
 
         // if output format is not csv, json, or jsonc, then don't include tags
-        if (settings.Output != OutputFormat.Json && 
+        if (settings.Output != OutputFormat.Json &&
             settings.Output != OutputFormat.Jsonc &&
             settings.Output != OutputFormat.Csv)
         {
