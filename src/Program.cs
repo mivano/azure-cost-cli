@@ -68,7 +68,7 @@ app.Configure(config =>
   config.SetExceptionHandler((ex, resolver) =>
   {
     // Explicitly write to error output
-    Console.Error.Write(ex);
+    Console.Error.WriteLine(ex);
     return -1;
   });
 
