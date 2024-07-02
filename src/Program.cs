@@ -1,12 +1,10 @@
 ﻿using System.ComponentModel;
-using AzureCostCli.Commands;
 using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
-using AzureCostCli.Commands.Prices;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -67,9 +65,12 @@ app.Configure(config =>
   config.AddExample(new[] { "detectAnomalies", "--dimension", "ResourceId", "--recent-activity-days", "4" });
   config.AddExample(new[] { "costByTag", "--tag", "cost-center" });
   
-#if DEBUG
-  config.PropagateExceptions();
-#endif
+  config.SetExceptionHandler((ex, resolver) =>
+  {
+    // Explicitly write to error output
+    Console.Error.WriteLine(ex);
+    return -1;
+  });
 
   config.AddCommand<AccumulatedCostCommand>("accumulatedCost")
       .WithDescription("Show the accumulated cost details.");

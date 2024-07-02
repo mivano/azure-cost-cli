@@ -127,10 +127,12 @@ jobs:
   run-azure-cost-cli:
     runs-on: ubuntu-latest
     steps:
-      - name: Azure Login
-        uses: azure/login@v1
+      - name: Azure login
+        uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Install Azure Cost CLI
         run: dotnet tool install -g azure-cost-cli
@@ -140,7 +142,7 @@ jobs:
 
 ```
 
-The last step output the markdown to the Job Summary. This can be used to show the cost of the subscription in the workflow summary. Use it on a schedule to get for example a daily overview. Alternatively you can use the `-o json` parameter to get the results in JSON format and use it for further processing.
+The last step outputs the markdown to the Job Summary. This can be used to show the cost of the subscription in the workflow summary. Use it on a schedule to get for example a daily overview. Alternatively you can use the `-o json` parameter to get the results in JSON format and use it for further processing.
 
 ## Available commands
 
@@ -603,6 +605,16 @@ azure-cost accumulatedCost -s 574385a9-08e9-49fe-91a2-27660d92b8f5 -o markdown >
 ```
 
 Excluded in the above sample, but it will also include mermaidjs diagrams as well.
+
+## Error handling
+
+When the tool detects an exception, it will write this to the error stream and return with a -1. This can be used in scripts to detect if something went wrong. If you output using one of the formatters and want to save this to a file, you can use the `>` operator to redirect the output to a file. If you want to capture any errors as well, you can use the `2>&1` operator to redirect the error stream to the output stream. Or output it to a different file.
+
+```bash 
+azure-cost accumulatedCost -o markdown > cost.md 2>error.log
+```  
+
+> Breaking change in version 0.41.0: The tool will now return with a -1 when an error occurs. This is to make it easier to detect errors in scripts.
 
 ## Iterate over multiple subscriptions
 
