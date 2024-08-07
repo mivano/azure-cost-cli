@@ -247,7 +247,7 @@ There are a number of settings you can use to finetune the detection.
 --threshold-cost          2                    The thresshold cost to use. Values lower than this are excluded. Defaults to 2.00      
 ```
 
-All the different formatters can be used to output the data, so you can further process it with the JSON or CSV output, send it via email with the text formatter, or use the markdown formatter to include it in a GitHub workflow. The console output will render the different anomalies in different and point out the moment in time where the anomaly was detected.
+All the different formatters can be used to output the data, so you can further process it with the JSON or CSV output, send it via email with the text formatter, or use the markdown formatter to include it in a GitHub workflow. The console output will render the different anomalies in different categories and point out the moment in time when the anomaly was detected.
 
 ![](screenshot_anomalies.png)
 
