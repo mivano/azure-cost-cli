@@ -45,6 +45,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
             foreach (var dailyCost in dailyCosts)
             {
                 dynamic expando = new ExpandoObject();
+                expando.Name = dailyCost.Name;
                 expando.Date = dailyCost.Date;
                 expando.Cost = dailyCost.Cost;
                 expando.Currency = dailyCost.Currency;
@@ -56,8 +57,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
                 }
                 dailyCostWithTags.Add(expando);
             }
-      
-        
+            
             return ExportToCsv(settings.SkipHeader, dailyCostWithTags);
         }
         else
