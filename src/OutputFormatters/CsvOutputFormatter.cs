@@ -182,7 +182,11 @@ public class CustomDoubleConverter : DoubleConverter
 {
     public override string ConvertToString(object value, IWriterRow row, MemberMapData memberMapData)
     {
-        double number = (double)value;
-        return number.ToString("F8", CultureInfo.InvariantCulture);
+        return value switch
+        {
+            null => string.Empty,
+            double number => number.ToString("F8", CultureInfo.InvariantCulture),
+            _ => throw new InvalidOperationException("The value is not a double.")
+        };
     }
 }
