@@ -37,6 +37,8 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
     {
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;
+        _costRetriever.CostApiAddress = settings.CostApiAddress;
+        _priceRetriever.PriceApiAddress = settings.PriceApiAddress;
 
         if (subscriptionId.HasValue == false && (settings.GetScope.IsSubscriptionBased))
         {
