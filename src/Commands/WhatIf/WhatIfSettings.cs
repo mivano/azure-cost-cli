@@ -20,7 +20,7 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
 
     [CommandOption("-b|--billing-account")]
     [Description("The billing account id to use.")]
-    public int? BillingAccountId { get; set; }
+    public string? BillingAccountId { get; set; }
     
     [CommandOption("-e|--enrollment-account")]
     [Description("The enrollment account id to use.")]
@@ -83,15 +83,15 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
         get {
             if ((Subscription==null || Subscription == Guid.Empty) && EnrollmentAccountId != null && BillingAccountId != null)
             {
-                return Scope.EnrollmentAccount(BillingAccountId.Value, EnrollmentAccountId.Value);
+                return Scope.EnrollmentAccount(BillingAccountId, EnrollmentAccountId.Value);
             }
             else if (Subscription != null && !string.IsNullOrWhiteSpace(ResourceGroup))
             {
                 return Scope.ResourceGroup(Subscription.Value, ResourceGroup);
             }
-            else if (BillingAccountId.HasValue)
+            else if (BillingAccountId != null)
             {
-                return Scope.BillingAccount(BillingAccountId.Value);
+                return Scope.BillingAccount(BillingAccountId);
             }
             else // default to subscription
             {
