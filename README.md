@@ -284,7 +284,9 @@ Generate a difference between two cost outputs. Create the json export first usi
 azure-cost accumulatedCost -o json > filename.json
 ```
 
-When you have a source file and a target file, you can use the diff command to show the difference between the two. 
+Save this result, store it in source control etc and create a new snapshot at a later time.
+
+When you have both a source file and a target file, you can use the diff command to show the difference between the two. 
 
 ```bash
 azure-cost diff --compare-to new.json --compare-from old.json 
