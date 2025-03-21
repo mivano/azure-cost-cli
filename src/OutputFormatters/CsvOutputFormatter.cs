@@ -6,6 +6,7 @@ using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
+using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -17,7 +18,8 @@ namespace AzureCostCli.OutputFormatters;
 
 public class CsvOutputFormatter : BaseOutputFormatter
 {
-    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, AccumulatedCostDetails accumulatedCostDetails)
+    public override Task WriteAccumulatedCost(AccumulatedCostSettings settings,
+        AccumulatedCostDetails accumulatedCostDetails)
     {
         return ExportToCsv(settings.SkipHeader, accumulatedCostDetails.Costs);
     }
@@ -26,7 +28,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
     {
         return ExportToCsv(settings.SkipHeader, resources);
     }
-    
+
     public override Task WriteBudgets(BudgetsSettings settings, IEnumerable<BudgetItem> budgets)
     {
         return ExportToCsv(settings.SkipHeader, budgets);
@@ -37,10 +39,10 @@ public class CsvOutputFormatter : BaseOutputFormatter
         if (settings.IncludeTags)
         {
             var dailyCostWithTags = new List<dynamic>();
-         
+
             // Get all the unique tag values first
             var tags = dailyCosts.SelectMany(a => a.Tags).Select(a => a.Key).Distinct().OrderBy(a => a).ToList();
-            
+
             // Map the dailyCosts to a dynamic object with the tags as columns
             foreach (var dailyCost in dailyCosts)
             {
@@ -55,16 +57,18 @@ public class CsvOutputFormatter : BaseOutputFormatter
                     var tagValue = dailyCost.Tags.FirstOrDefault(a => a.Key == tag);
                     ((IDictionary<string, object>)expando)[tag] = tagValue.Value;
                 }
+
                 dailyCostWithTags.Add(expando);
             }
-            
+
             return ExportToCsv(settings.SkipHeader, dailyCostWithTags);
         }
         else
             return ExportToCsv(settings.SkipHeader, dailyCosts);
     }
 
-    public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings, List<AnomalyDetectionResult> anomalies)
+    public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings,
+        List<AnomalyDetectionResult> anomalies)
     {
         return ExportToCsv(settings.SkipHeader, anomalies);
     }
@@ -74,7 +78,8 @@ public class CsvOutputFormatter : BaseOutputFormatter
         return ExportToCsv(settings.SkipHeader, regions);
     }
 
-    public override Task WriteCostByTag(CostByTagSettings settings, Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
+    public override Task WriteCostByTag(CostByTagSettings settings,
+        Dictionary<string, Dictionary<string, List<CostResourceItem>>> byTags)
     {
         // Flatten the hierarchy to a single list, including the tag and value
         var resourcesWithTagAndValue = new List<dynamic>();
@@ -94,53 +99,59 @@ public class CsvOutputFormatter : BaseOutputFormatter
                     expando.Cost = resource.Cost;
                     expando.Currency = resource.Currency;
                     expando.CostUsd = resource.CostUSD;
-                    
+
                     resourcesWithTagAndValue.Add(expando);
                 }
             }
         }
-      
-        
+
+
         return ExportToCsv(settings.SkipHeader, resourcesWithTagAndValue);
     }
 
- public override Task WritePricesPerRegion(WhatIfSettings settings, Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
-{
-    // Flatten the dictionary to a single list
-    // We need to end up with the properties of the CostResourceItem and then each column for each region in the pricesByRegion
-
-    // Get the list of regions
-    var regions = pricesByRegion.Select(a => a.Value.Select(b => b.Location)).SelectMany(a => a).Distinct().OrderBy(a => a).ToList();
-
-    // Create the list of properties for the CSV
-    var properties = typeof(UsageDetails).GetProperties().Select(a => a.Name).ToList();
-    properties.AddRange(regions);
-
-    // Create the list of objects to be written to the CSV
-    var resources = new List<dynamic>();
-    foreach (var (resource, prices) in pricesByRegion)
+    public override Task WritePricesPerRegion(WhatIfSettings settings,
+        Dictionary<UsageDetails, List<PriceRecord>> pricesByRegion)
     {
-        dynamic expando = new ExpandoObject();
-        foreach (var property in typeof(UsageDetails).GetProperties())
+        // Flatten the dictionary to a single list
+        // We need to end up with the properties of the CostResourceItem and then each column for each region in the pricesByRegion
+
+        // Get the list of regions
+        var regions = pricesByRegion.Select(a => a.Value.Select(b => b.Location)).SelectMany(a => a).Distinct()
+            .OrderBy(a => a).ToList();
+
+        // Create the list of properties for the CSV
+        var properties = typeof(UsageDetails).GetProperties().Select(a => a.Name).ToList();
+        properties.AddRange(regions);
+
+        // Create the list of objects to be written to the CSV
+        var resources = new List<dynamic>();
+        foreach (var (resource, prices) in pricesByRegion)
         {
-            ((IDictionary<string, object>)expando)[property.Name] = property.GetValue(resource);
+            dynamic expando = new ExpandoObject();
+            foreach (var property in typeof(UsageDetails).GetProperties())
+            {
+                ((IDictionary<string, object>)expando)[property.Name] = property.GetValue(resource);
+            }
+
+            foreach (var region in regions)
+            {
+                var price = prices.FirstOrDefault(a => a.Location == region);
+                ((IDictionary<string, object>)expando)[region] = price?.RetailPrice;
+            }
+
+            resources.Add(expando);
         }
 
-        foreach (var region in regions)
-        {
-            var price = prices.FirstOrDefault(a => a.Location == region);
-            ((IDictionary<string, object>)expando)[region] = price?.RetailPrice;
-        }
-
-        resources.Add(expando);
+        // Write the CSV
+        return ExportToCsv(settings.SkipHeader, resources);
     }
 
-    // Write the CSV
-    return ExportToCsv(settings.SkipHeader, resources);
-}
+    public override Task WriteAccumulatedDiffCost(DiffSettings settings, AccumulatedCostDetails accumulatedCostSource,
+        AccumulatedCostDetails accumulatedCostTarget)
+    {
+        return Task.CompletedTask;
+    }
 
-
-    
 
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {
@@ -148,7 +159,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
         {
             HasHeaderRecord = skipHeader == false
         };
-        
+
         using (var writer = new StringWriter())
         using (var csv = new CsvWriter(writer, config))
         {
@@ -161,10 +172,6 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
         return Task.CompletedTask;
     }
-
-   
-    
-    
 }
 
 public class TagsConverter : DefaultTypeConverter

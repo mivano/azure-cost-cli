@@ -7,6 +7,7 @@ using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
+using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -126,6 +127,67 @@ public class JsonOutputFormatter : BaseOutputFormatter
         return Task.CompletedTask;
     }
     
+public override Task WriteAccumulatedDiffCost(DiffSettings settings, AccumulatedCostDetails accumulatedCostSource,
+    AccumulatedCostDetails accumulatedCostTarget)
+{
+    var costDiff = accumulatedCostSource.Costs
+        .Join(accumulatedCostTarget.Costs,
+            source => source.Date,
+            target => target.Date,
+            (source, target) => new
+            {
+                Date = source.Date,
+                Cost = target.Cost - source.Cost,
+                Currency = source.Currency,
+                CostUsd = target.CostUsd - source.CostUsd
+            })
+        .ToList();
+
+    var forecastedCostsDiff = accumulatedCostSource.ForecastedCosts
+        .Join(accumulatedCostTarget.ForecastedCosts,
+            source => source.Date,
+            target => target.Date,
+            (source, target) => new
+            {
+                Date = source.Date,
+                Cost = target.Cost - source.Cost,
+                Currency = source.Currency,
+                CostUsd = target.CostUsd - source.CostUsd
+            })
+        .ToList();
+
+    var byServiceNameCostsDiff = accumulatedCostSource.ByServiceNameCosts
+        .Join(accumulatedCostTarget.ByServiceNameCosts,
+            source => source.ItemName,
+            target => target.ItemName,
+            (source, target) => (source with { Cost = target.Cost - source.Cost, CostUsd = target.CostUsd - source.CostUsd }))
+      ;
+
+    var byLocationCostsDiff = accumulatedCostSource.ByLocationCosts
+        .Join(accumulatedCostTarget.ByLocationCosts,
+            source => source.ItemName,
+            target => target.ItemName,
+            (source, target) => (source with { Cost = target.Cost - source.Cost, CostUsd = target.CostUsd - source.CostUsd }))
+        ;
+
+    var byResourceGroupCostsDiff = accumulatedCostSource.ByResourceGroupCosts
+        .Join(accumulatedCostTarget.ByResourceGroupCosts,
+            source => source.ItemName,
+            target => target.ItemName,
+            (source, target) => (source with { Cost = target.Cost - source.Cost, CostUsd = target.CostUsd - source.CostUsd }))
+        ;
+
+    var diffResult = new AccumulatedCostDetails(null, null,
+        costDiff.Where(a=>a.Cost!=0).Select(x => new CostItem (x.Date, x.Cost, x.CostUsd, x.Currency)).ToList(),
+        forecastedCostsDiff.Where(a=>a.Cost!=0).Select(x => new CostItem (x.Date, x.Cost, x.CostUsd, x.Currency)).ToList(),
+        byServiceNameCostsDiff.Where(a=>a.Cost!=0).ToList(),
+        byLocationCostsDiff.Where(a=>a.Cost!=0).ToList(),
+        byResourceGroupCostsDiff.Where(a=>a.Cost!=0).ToList(),
+        null
+    );
+
+    return WriteAccumulatedCost(new AccumulatedCostSettings{ UseUSD = settings.UseUSD}, diffResult);
+}
 
     private static void WriteJson(ICostSettings settings, object items)
     {

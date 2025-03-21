@@ -6,6 +6,7 @@ using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
+using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -734,5 +735,162 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
 
 
         return Task.CompletedTask;
+    }
+
+    public override Task WriteAccumulatedDiffCost(DiffSettings settings, AccumulatedCostDetails accumulatedCostSource,
+            AccumulatedCostDetails accumulatedCostTarget)
+        {
+            var rootTable = new Table();
+            rootTable.Border(TableBorder.None);
+            rootTable.AddColumn("").Expand();
+            
+            // Create header info
+            var sourceRange = $"{accumulatedCostSource.Costs.Min(a => a.Date)} to {accumulatedCostSource.Costs.Max(a => a.Date)}";
+            var targetRange = $"{accumulatedCostTarget.Costs.Min(a => a.Date)} to {accumulatedCostTarget.Costs.Max(a => a.Date)}";
+            
+            // Set the header
+            var headerInfo = $"[bold]Azure Cost Diff[/]\nSource: ([green]{sourceRange}[/])\nTarget: ([green]{targetRange}[/])";
+            rootTable.Title = new TableTitle(headerInfo);
+            
+            // Compare costs by service names
+            var serviceTable = CreateComparisonTable("By Service Name");
+            CompareItems(
+                accumulatedCostSource.ByServiceNameCosts.ToList(), 
+                accumulatedCostTarget.ByServiceNameCosts.ToList(), 
+                serviceTable, 
+                settings.UseUSD);
+            
+            // Compare costs by location
+            var locationTable = CreateComparisonTable("By Location");
+            CompareItems(
+                accumulatedCostSource.ByLocationCosts.ToList(), 
+                accumulatedCostTarget.ByLocationCosts.ToList(), 
+                locationTable, 
+                settings.UseUSD);
+            
+            // Compare costs by resource group
+            var resourceGroupTable = CreateComparisonTable("By Resource Group");
+            CompareItems(
+                accumulatedCostSource.ByResourceGroupCosts.ToList(), 
+                accumulatedCostTarget.ByResourceGroupCosts.ToList(), 
+                resourceGroupTable, 
+                settings.UseUSD);
+            
+            // Calculate totals
+            var totalSource = accumulatedCostSource.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+            var totalTarget = accumulatedCostTarget.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+            var totalDiff = totalTarget - totalSource;
+            var currency = settings.UseUSD ? "USD" : accumulatedCostSource.Costs.FirstOrDefault()?.Currency ?? "USD";
+            
+            // Create panels for each table
+            var panel1 = new Panel(serviceTable)
+                .Header("Services")
+                .Border(BoxBorder.Rounded);
+            
+            var panel2 = new Panel(locationTable)
+                .Header("Locations")
+                .Border(BoxBorder.Rounded);
+            
+            var panel3 = new Panel(resourceGroupTable)
+                .Header("Resource Groups")
+                .Border(BoxBorder.Rounded);
+            
+            rootTable.AddRow(new Rows(panel1, panel2, panel3));
+            
+            // Create totals table
+            var totalsTable = new Table();
+            totalsTable.Border(TableBorder.Rounded);
+            totalsTable.AddColumn("[bold]Comparison[/]");
+            totalsTable.AddColumn("[bold]Source[/]");
+            totalsTable.AddColumn("[bold]Target[/]");
+            totalsTable.AddColumn("[bold]Change[/]");
+            
+            var diffFormatted = totalDiff >= 0 
+                ? $"[bold red]+{Money.FormatMoney(totalDiff, currency)}[/]" 
+                : $"[bold green]{Money.FormatMoney(totalDiff, currency)}[/]";
+            
+            totalsTable.AddRow(
+                "[bold]TOTAL COSTS[/]",
+                Money.FormatMoney(totalSource, currency),
+                Money.FormatMoney(totalTarget, currency),
+                diffFormatted
+            );
+            
+            rootTable.AddRow(new Panel(totalsTable).Header("Summary").Border(BoxBorder.Rounded));
+            
+            AnsiConsole.Write(rootTable);
+            
+            return Task.CompletedTask;
+        }
+    
+    private Table CreateComparisonTable(string title)
+    {
+        var table = new Table();
+        table.Border(TableBorder.Simple);
+        table.AddColumn("[bold]Name[/]");
+        table.AddColumn("[bold]Source[/]");
+        table.AddColumn("[bold]Target[/]");
+        table.AddColumn("[bold]Change[/]");
+        return table;
+    }
+    
+    private void CompareItems(
+        List<CostNamedItem> sourceItems, 
+        List<CostNamedItem> targetItems, 
+        Table table, 
+        bool useUSD)
+    {
+        var allItems = sourceItems.Select(a => a.ItemName)
+            .Union(targetItems.Select(a => a.ItemName))
+            .OrderByDescending(name => 
+                Math.Max(
+                    sourceItems.Where(a => a.ItemName == name).Sum(a => useUSD ? a.CostUsd : a.Cost),
+                    targetItems.Where(a => a.ItemName == name).Sum(a => useUSD ? a.CostUsd : a.Cost)
+                ))
+            .ToList();
+        
+        var totalSource = 0.0;
+        var totalTarget = 0.0;
+        var currency = useUSD ? "USD" : sourceItems.FirstOrDefault()?.Currency ?? "USD";
+        
+        foreach (var item in allItems)
+        {
+            var sourceCost = sourceItems
+                .Where(a => a.ItemName == item)
+                .Sum(a => useUSD ? a.CostUsd : a.Cost);
+            
+            var targetCost = targetItems
+                .Where(a => a.ItemName == item)
+                .Sum(a => useUSD ? a.CostUsd : a.Cost);
+            
+            totalSource += sourceCost;
+            totalTarget += targetCost;
+            
+            var diff = targetCost - sourceCost;
+            
+            var diffFormatted = diff >= 0 
+                ? $"[red]+{Money.FormatMoney(diff, currency)}[/]" 
+                : $"[green]{Money.FormatMoney(diff, currency)}[/]";
+            
+            table.AddRow(
+                item.EscapeMarkup(),
+                Money.FormatMoney(sourceCost, currency),
+                Money.FormatMoney(targetCost, currency),
+                diffFormatted
+            );
+        }
+        
+        // Add subtotal row
+        var totalDiff = totalTarget - totalSource;
+        var totalDiffFormatted = totalDiff >= 0 
+            ? $"[bold red]+{Money.FormatMoney(totalDiff, currency)}[/]" 
+            : $"[bold green]{Money.FormatMoney(totalDiff, currency)}[/]";
+        
+        table.AddRow(
+            "[bold]SUBTOTAL[/]",
+            $"[bold]{Money.FormatMoney(totalSource, currency)}[/]",
+            $"[bold]{Money.FormatMoney(totalTarget, currency)}[/]",
+            totalDiffFormatted
+        );
     }
 }
