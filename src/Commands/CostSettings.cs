@@ -22,7 +22,7 @@ public class CostSettings : LogCommandSettings, ICostSettings
 
     [CommandOption("-b|--billing-account")]
     [Description("The billing account id to use.")]
-    public int? BillingAccountId { get; set; }
+    public string? BillingAccountId { get; set; }
     
     [CommandOption("-e|--enrollment-account")]
     [Description("The enrollment account id to use.")]
@@ -94,15 +94,15 @@ public class CostSettings : LogCommandSettings, ICostSettings
         get {
             if ((Subscription==null || Subscription == Guid.Empty) && EnrollmentAccountId != null && BillingAccountId != null)
             {
-                return Scope.EnrollmentAccount(BillingAccountId.Value, EnrollmentAccountId.Value);
+                return Scope.EnrollmentAccount(BillingAccountId, EnrollmentAccountId.Value);
             }
             else if (Subscription != null && !string.IsNullOrWhiteSpace(ResourceGroup))
             {
                return Scope.ResourceGroup(Subscription.Value, ResourceGroup);
             }
-            else if (BillingAccountId.HasValue)
+            else if (BillingAccountId != null)
             {
-                return Scope.BillingAccount(BillingAccountId.Value);
+                return Scope.BillingAccount(BillingAccountId);
             }
             else // default to subscription
             {
@@ -131,8 +131,8 @@ public  class Scope
 {
     public static Scope Subscription(Guid subscriptionId) => new("Subscription", "/subscriptions/" + subscriptionId, true);
     public static Scope ResourceGroup(Guid subscriptionId, string resourceGroup) => new("ResourceGroup", $"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}", true);
-    public static Scope EnrollmentAccount(int billingAccountId, int enrollmentAccountId) => new("EnrollmentAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}", false);
-    public static Scope BillingAccount(int billingAccountId) => new("BillingAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}", false);
+    public static Scope EnrollmentAccount(string billingAccountId, int enrollmentAccountId) => new("EnrollmentAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}", false);
+    public static Scope BillingAccount(string billingAccountId) => new("BillingAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}", false);
     
     private Scope(string name, string path, bool isSubscriptionBased)
     {
