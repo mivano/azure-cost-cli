@@ -57,6 +57,7 @@ EXAMPLES:
     azure-cost accumulatedCost -o json
     azure-cost costByResource -s 00000000-0000-0000-0000-000000000000 -o text
     azure-cost dailyCosts --dimension MeterCategory
+    azure-cost diff   --compare-to new.json --compare-from old.json 
     azure-cost budgets -s 00000000-0000-0000-0000-000000000000
     azure-cost detectAnomalies --dimension ResourceId --recent-activity-days 4
     azure-cost costByTag --tag cost-center
@@ -87,6 +88,7 @@ COMMANDS:
     costByResource     Show the cost details by resource
     costByTag          Show the cost details by the provided tag key(s)
     dailyCosts         Show the daily cost by a given dimension
+    diff                            Show the cost difference between two timeframes 
     detectAnomalies    Detect anomalies and trends  
     budgets            Get the available budgets   
     regions            Get the available Azure regions 
@@ -272,6 +274,79 @@ azure-cost regions
 ```
 
 > Not all the formatters are supported for this command. Let me know if there is a need.
+
+
+### Diff
+
+Generate a difference between two cost outputs. Create the json export first using 
+
+```bash
+azure-cost accumulatedCost -o json > filename.json
+```
+
+When you have a source file and a target file, you can use the diff command to show the difference between the two. 
+
+```bash
+azure-cost diff --compare-to new.json --compare-from old.json 
+```
+
+This will give an output like:
+
+```bash
+                                                                                                           Azure Cost Diff                                                                                                            
+                                                                                                  Source: (01/03/2025 to 20/03/2025)                                                                                                  
+                                                                                                  Target: (01/03/2025 to 20/03/2025)                                                                                                  
+                                                                                                                                                                                                                                    
+╭─Services────────────────────────────────────────────────────╮                                                                                                                                                                     
+│                                                             │                                                                                                                                                                     
+│   Name                 Source      Target      Change       │                                                                                                                                                                     
+│ ─────────────────────────────────────────────────────────── │                                                                                                                                                                     
+│   Microsoft Dev Box    12,27 EUR   22,27 EUR   +10,00 EUR   │                                                                                                                                                                     
+│   Azure Monitor        5,21 EUR    15,21 EUR   +10,00 EUR   │                                                                                                                                                                     
+│   Azure App Service    7,97 EUR    7,97 EUR    +0,00 EUR    │                                                                                                                                                                     
+│   Container Registry   3,07 EUR    3,07 EUR    +0,00 EUR    │                                                                                                                                                                     
+│   Azure DNS            0,30 EUR    2,30 EUR    +2,00 EUR    │                                                                                                                                                                     
+│   Log Analytics        0,29 EUR    0,29 EUR    +0,00 EUR    │                                                                                                                                                                     
+│   Key Vault            0,00 EUR    0,00 EUR    +0,00 EUR    │                                                                                                                                                                     
+│   Storage              0,00 EUR    0,00 EUR    +0,00 EUR    │                                                                                                                                                                     
+│   Bandwidth            0,00 EUR    0,00 EUR    +0,00 EUR    │                                                                                                                                                                     
+│   SUBTOTAL             29,11 EUR   51,11 EUR   +22,00 EUR   │                                                                                                                                                                     
+│                                                             │                                                                                                                                                                     
+╰─────────────────────────────────────────────────────────────╯                                                                                                                                                                     
+╭─Locations─────────────────────────────────────────╮                                                                                                                                                                               
+│                                                   │                                                                                                                                                                               
+│   Name       Source      Target      Change       │                                                                                                                                                                               
+│ ───────────────────────────────────────────────── │                                                                                                                                                                               
+│   EU West    28,81 EUR   48,81 EUR   +20,00 EUR   │                                                                                                                                                                               
+│   Unknown    0,30 EUR    0,30 EUR    +0,00 EUR    │                                                                                                                                                                               
+│   SUBTOTAL   29,11 EUR   49,11 EUR   +20,00 EUR   │                                                                                                                                                                               
+│                                                   │                                                                                                                                                                               
+╰───────────────────────────────────────────────────╯                                                                                                                                                                               
+╭─Resource Groups───────────────────────────────────────────────────╮                                                                                                                                                               
+│                                                                   │                                                                                                                                                               
+│   Name                       Source      Target      Change       │                                                                                                                                                               
+│ ───────────────────────────────────────────────────────────────── │                                                                                                                                                               
+│   rg-scitor-prd-weu          16,25 EUR   26,25 EUR   +10,00 EUR   │                                                                                                                                                               
+│   devbox                     12,27 EUR   2,27 EUR    -10,00 EUR   │                                                                                                                                                               
+│   globaldevopsexperience     0,30 EUR    1,30 EUR    +1,00 EUR    │                                                                                                                                                               
+│   defaultresourcegroup-weu   0,29 EUR    0,29 EUR    +0,00 EUR    │                                                                                                                                                               
+│   SUBTOTAL                   29,11 EUR   30,11 EUR   +1,00 EUR    │                                                                                                                                                               
+│                                                                   │                                                                                                                                                               
+╰───────────────────────────────────────────────────────────────────╯                                                                                                                                                               
+╭─Summary─────────────────────────────────────────────╮                                                                                                                                                                             
+│ ╭─────────────┬───────────┬───────────┬───────────╮ │                                                                                                                                                                             
+│ │ Comparison  │ Source    │ Target    │ Change    │ │                                                                                                                                                                             
+│ ├─────────────┼───────────┼───────────┼───────────┤ │                                                                                                                                                                             
+│ │ TOTAL COSTS │ 29,11 EUR │ 32,01 EUR │ +2,90 EUR │ │                                                                                                                                                                             
+│ ╰─────────────┴───────────┴───────────┴───────────╯ │                                                                                                                                                                             
+╰─────────────────────────────────────────────────────╯                                                                                                                                                                             
+
+```
+
+Also, the JSON output can be used to further process the data. It will output only the differences between the two files where the cost is the actual difference.
+
+> Not all the formatters are supported for this command. Let me know if there is a need for another formatter.
+
 
 ### What-if scenarios
 

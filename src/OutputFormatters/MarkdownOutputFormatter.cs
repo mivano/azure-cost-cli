@@ -6,6 +6,7 @@ using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
+using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -365,6 +366,12 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         return Task.CompletedTask;
     }
 
+    public override Task WriteAccumulatedDiffCost(DiffSettings settings, AccumulatedCostDetails accumulatedCostSource,
+        AccumulatedCostDetails accumulatedCostTarget)
+    {
+        return Task.CompletedTask;
+    }
+    
     public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
     {
         throw new NotImplementedException();

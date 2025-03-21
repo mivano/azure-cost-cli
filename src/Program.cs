@@ -5,6 +5,7 @@ using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
+using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
@@ -86,6 +87,9 @@ app.Configure(config =>
   
   config.AddCommand<DetectAnomalyCommand>("detectAnomalies")
     .WithDescription("Detect anomalies and trends.");
+  
+  config.AddCommand<DiffCommand>("diff")
+    .WithDescription("Show the cost difference between two timeframes.");
   
   config.AddCommand<BudgetsCommand>("budgets")
     .WithDescription("Get the available budgets.");
