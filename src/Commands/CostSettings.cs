@@ -26,7 +26,7 @@ public class CostSettings : LogCommandSettings, ICostSettings
     
     [CommandOption("-e|--enrollment-account")]
     [Description("The enrollment account id to use.")]
-    public int? EnrollmentAccountId { get; set; }
+    public string? EnrollmentAccountId { get; set; }
 
     [CommandOption("-o|--output")] 
     [Description("The output format to use. Defaults to Console (Console, Json, JsonC, Text, Markdown, Csv)")]
@@ -94,7 +94,7 @@ public class CostSettings : LogCommandSettings, ICostSettings
         get {
             if ((Subscription==null || Subscription == Guid.Empty) && EnrollmentAccountId != null && BillingAccountId != null)
             {
-                return Scope.EnrollmentAccount(BillingAccountId, EnrollmentAccountId.Value);
+                return Scope.EnrollmentAccount(BillingAccountId, EnrollmentAccountId);
             }
             else if (Subscription != null && !string.IsNullOrWhiteSpace(ResourceGroup))
             {
@@ -131,7 +131,7 @@ public  class Scope
 {
     public static Scope Subscription(Guid subscriptionId) => new("Subscription", "/subscriptions/" + subscriptionId, true);
     public static Scope ResourceGroup(Guid subscriptionId, string resourceGroup) => new("ResourceGroup", $"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}", true);
-    public static Scope EnrollmentAccount(string billingAccountId, int enrollmentAccountId) => new("EnrollmentAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}", false);
+    public static Scope EnrollmentAccount(string billingAccountId, string enrollmentAccountId) => new("EnrollmentAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}", false);
     public static Scope BillingAccount(string billingAccountId) => new("BillingAccount", $"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}", false);
     
     private Scope(string name, string path, bool isSubscriptionBased)

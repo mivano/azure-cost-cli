@@ -24,7 +24,7 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
     
     [CommandOption("-e|--enrollment-account")]
     [Description("The enrollment account id to use.")]
-    public int? EnrollmentAccountId { get; set; }
+    public string? EnrollmentAccountId { get; set; }
 
     [CommandOption("-o|--output")] 
     [Description("The output format to use. Defaults to Console (Console, Json, JsonC, Text, Markdown, Csv)")]
@@ -83,7 +83,7 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
         get {
             if ((Subscription==null || Subscription == Guid.Empty) && EnrollmentAccountId != null && BillingAccountId != null)
             {
-                return Scope.EnrollmentAccount(BillingAccountId, EnrollmentAccountId.Value);
+                return Scope.EnrollmentAccount(BillingAccountId, EnrollmentAccountId);
             }
             else if (Subscription != null && !string.IsNullOrWhiteSpace(ResourceGroup))
             {
