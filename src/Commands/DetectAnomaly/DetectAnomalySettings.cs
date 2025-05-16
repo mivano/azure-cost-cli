@@ -31,4 +31,9 @@ public class DetectAnomalySettings : CostSettings
     [Description("The thresshold cost to use. Values lower than this are excluded. Defaults to 2.00.")]
     [DefaultValue(2.00D)]
     public double ThresholdCost { get; set; }
+
+    [CommandOption("--exclude-removed-costs")]
+    [Description("Exclude removed costs. Defaults to false.")]
+    [DefaultValue(false)]
+    public bool ExcludeRemovedCosts { get; set; }
 }

@@ -8,13 +8,15 @@ public class CostAnalyzer
     private double SignificantChange = 0.5; // 50%
     private int SteadyGrowthDays = 7;
     private double ThresholdCost = 2.00d;
-    
+    private bool ExcludeRemovedCosts = false;
+
     public CostAnalyzer(DetectAnomalySettings settings)
     {
         RecentActivityDays = settings.RecentActivityDays;
         SignificantChange = settings.SignificantChange;
         SteadyGrowthDays = settings.SteadyGrowthDays;
         ThresholdCost = settings.ThresholdCost;
+        ExcludeRemovedCosts = settings.ExcludeRemovedCosts;
     }
 
     public List<AnomalyDetectionResult> AnalyzeCost(List<CostDailyItem> items)
@@ -45,8 +47,8 @@ public class CostAnalyzer
                 results[(startCostItem.Name, AnomalyType.NewCost)] = result;
             }
 
-            // Check for removed costs
-            if (group.Last().Cost == 0)
+            // Check for removed costs, if setting is enabled
+            if (!ExcludeRemovedCosts && group.Last().Cost == 0)
             {
                 for (int i = group.Count - 2; i >= 0; i--)
                 {
