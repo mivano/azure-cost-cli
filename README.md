@@ -247,6 +247,7 @@ There are a number of settings you can use to finetune the detection.
 --significant-change      0,75                 The significant change in cost to use. Defaults to 0.75 (75%)                                                                                          
 --steady-growth-days      7                    The number of days to use for steady growth. Defaults to 7                                                                                             
 --threshold-cost          2                    The thresshold cost to use. Values lower than this are excluded. Defaults to 2.00      
+--exclude-removed-costs   false                Exclude removed costs. Defaults to false. 
 ```
 
 All the different formatters can be used to output the data, so you can further process it with the JSON or CSV output, send it via email with the text formatter, or use the markdown formatter to include it in a GitHub workflow. The console output will render the different anomalies in different categories and point out the moment in time when the anomaly was detected.
