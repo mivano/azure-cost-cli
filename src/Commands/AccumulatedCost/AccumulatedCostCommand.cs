@@ -1,11 +1,14 @@
+using System.ComponentModel;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
 using AzureCostCli.OutputFormatters;
+using ModelContextProtocol.Server;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.AccumulatedCost;
 
+[McpServerToolType]
 public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 {
     private readonly ICostRetriever _costRetriever;
@@ -67,7 +70,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             try
             {
                 if (settings.Debug)
-                    AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
+                    AnsiConsole.WriteLine(
+                        "No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
 
                 subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
 
@@ -91,7 +95,6 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         await AnsiConsoleExt.Status()
             .StartAsync("Fetching cost data...", async ctx =>
             {
-
                 if (settings.GetScope.IsSubscriptionBased)
                 {
                     ctx.Status = "Fetching subscription details...";
@@ -102,7 +105,9 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 {
                     ctx.Status = "Fetching Enrollment details...";
                     // Fetch the enrollment details //TODO
-                    subscription = new Subscription(string.Empty, string.Empty, Array.Empty<object>(), "Enrollment", "Enrollment", $"Enrollment {settings.EnrollmentAccountId}", "Active", new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
+                    subscription = new Subscription(string.Empty, string.Empty, Array.Empty<object>(), "Enrollment",
+                        "Enrollment", $"Enrollment {settings.EnrollmentAccountId}", "Active",
+                        new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
                 }
 
                 ctx.Status = "Fetching cost data...";
@@ -161,12 +166,14 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 {
                     ctx.Status = "Fetching cost data by subscription...";
                     bySubscriptionCosts = await _costRetriever.RetrieveCostBySubscription(settings.Debug,
-                        settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                        settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From,
+                        settings.To);
                 }
 
                 ctx.Status = "Fetching cost data by service name...";
                 var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
-                    settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+                    settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From,
+                    settings.To);
 
                 ctx.Status = "Fetching cost data by location...";
                 var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, settings.GetScope,
@@ -181,9 +188,9 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                     settings.Metric,
                     settings.Timeframe, settings.From, settings.To);
 
-                accumulatedCost = new AccumulatedCostDetails(subscription, null, costs, forecastedCosts, byServiceNameCosts,
+                accumulatedCost = new AccumulatedCostDetails(subscription, null, costs, forecastedCosts,
+                    byServiceNameCosts,
                     byLocationCosts, byResourceGroupCosts, bySubscriptionCosts);
-
             });
 
         // Write the output
@@ -191,5 +198,126 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
             .WriteAccumulatedCost(settings, accumulatedCost);
 
         return 0;
+    }
+
+    [McpServerTool, Description("Fetch accumulated cost details from Azure Cost Management API")]
+    public async Task<AccumulatedCostDetails> GetAccumulatedCostAsync(
+        [Description("The Azure Subscription ID to use or empty to use the default one specified by the AZ CLI tooling")] Guid? subscriptionId,
+        [Description("Timeframe")] TimeframeType timeframe,
+        [Description("From date (YYYY-MM-DD)")]
+        DateOnly? from = null,
+        [Description("To date (YYYY-MM-DD)")] DateOnly? to = null)
+    {
+        if (subscriptionId.HasValue == false)
+        {
+            // Get the subscription ID from the Azure CLI
+            try
+            {
+                subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
+
+            }
+            catch (Exception e)
+            {
+              
+            }
+        }
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = subscriptionId,
+            Timeframe = timeframe,
+            From = from.GetValueOrDefault(),
+            To = to.GetValueOrDefault()
+        };
+        AccumulatedCostDetails accumulatedCost = null;
+
+        Subscription subscription = null;
+
+        if (settings.GetScope.IsSubscriptionBased)
+        {
+            // Fetch the subscription details
+            subscription = await _costRetriever.RetrieveSubscription(settings.Debug, subscriptionId.Value);
+        }
+        else
+        {
+            // Fetch the enrollment details //TODO
+            subscription = new Subscription(string.Empty, string.Empty, Array.Empty<object>(), "Enrollment",
+                "Enrollment", $"Enrollment {settings.EnrollmentAccountId}", "Active",
+                new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
+        }
+
+        // Fetch the costs from the Azure Cost Management API
+        var costs = await _costRetriever.RetrieveCosts(settings.Debug, settings.GetScope,
+            settings.Filter,
+            settings.Metric,
+            settings.Timeframe,
+            settings.From, settings.To);
+
+        List<CostItem> forecastedCosts = new List<CostItem>();
+
+        // Check if the 'settings.To' date is equal to or greater than today's date
+        DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
+        DateOnly forecastStartDate;
+
+        switch (settings.Timeframe)
+        {
+            case TimeframeType.BillingMonthToDate:
+            case TimeframeType.MonthToDate:
+                forecastStartDate =
+                    DateOnly.FromDateTime(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
+                break;
+            case TimeframeType.TheLastBillingMonth:
+            case TimeframeType.TheLastMonth:
+                forecastStartDate =
+                    DateOnly.FromDateTime(
+                        new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1));
+                break;
+            case TimeframeType.WeekToDate:
+                forecastStartDate =
+                    DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek));
+                break;
+            default:
+                // Custom Timeframe
+                forecastStartDate = settings.To >= today ? today : default;
+                break;
+        }
+
+        if (forecastStartDate != default)
+        {
+            DateOnly forecastEndDate = new DateOnly(settings.To.Year, settings.To.Month,
+                DateTime.DaysInMonth(settings.To.Year, settings.To.Month));
+
+            forecastedCosts = (await _costRetriever.RetrieveForecastedCosts(settings.Debug, settings.GetScope,
+                settings.Filter,
+                settings.Metric,
+                TimeframeType.Custom,
+                forecastStartDate,
+                forecastEndDate)).ToList();
+        }
+
+        IEnumerable<CostNamedItem> bySubscriptionCosts = null;
+        if (settings.GetScope.IsSubscriptionBased == false)
+        {
+            bySubscriptionCosts = await _costRetriever.RetrieveCostBySubscription(settings.Debug,
+                settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+        }
+
+        var byServiceNameCosts = await _costRetriever.RetrieveCostByServiceName(settings.Debug,
+            settings.GetScope, settings.Filter, settings.Metric, settings.Timeframe, settings.From, settings.To);
+
+        var byLocationCosts = await _costRetriever.RetrieveCostByLocation(settings.Debug, settings.GetScope,
+            settings.Filter,
+            settings.Metric,
+            settings.Timeframe, settings.From, settings.To);
+
+        var byResourceGroupCosts = await _costRetriever.RetrieveCostByResourceGroup(settings.Debug,
+            settings.GetScope,
+            settings.Filter,
+            settings.Metric,
+            settings.Timeframe, settings.From, settings.To);
+
+        accumulatedCost = new AccumulatedCostDetails(subscription, null, costs, forecastedCosts, byServiceNameCosts,
+            byLocationCosts, byResourceGroupCosts, bySubscriptionCosts);
+
+        return accumulatedCost;
     }
 }

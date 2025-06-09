@@ -89,6 +89,10 @@ public class CostSettings : LogCommandSettings, ICostSettings
     [Description("Allows overriding the default HTTP timeout in seconds. Defaults to 100 seconds.")]
     public int HttpTimeout { get; set; } = 100;
     
+    [CommandOption("--mcp")]
+    [Description("Use the Microsoft Cloud Partner (MCP) API for cost retrieval. Defaults to false.")]
+    public bool UseMcp { get; set; } = false;
+    
     public Scope GetScope
     {
         get {
