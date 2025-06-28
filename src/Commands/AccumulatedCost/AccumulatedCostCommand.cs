@@ -100,9 +100,13 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 }
                 else
                 {
-                    ctx.Status = "Fetching Enrollment details...";
+                    ctx.Status = $"Fetching {settings.GetScope.Name} details...";
+
                     // Fetch the enrollment details //TODO
-                    subscription = new Subscription(string.Empty, string.Empty, Array.Empty<object>(), "Enrollment", "Enrollment", $"Enrollment {settings.EnrollmentAccountId}", "Active", new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
+
+                    var enrollmentIdDisplayName = settings.EnrollmentAccountId != null ? $" {settings.EnrollmentAccountId}" : "";
+                    var billingIdDisplayName = settings.BillingAccountId != null ? $" {settings.BillingAccountId}" : "";
+                    subscription = new Subscription(string.Empty, string.Empty, Array.Empty<object>(), settings.GetScope.Name, settings.GetScope.Name, $"{settings.GetScope.Name} {enrollmentIdDisplayName} {billingIdDisplayName}", "Active", new SubscriptionPolicies(string.Empty, string.Empty, string.Empty));
                 }
 
                 ctx.Status = "Fetching cost data...";
