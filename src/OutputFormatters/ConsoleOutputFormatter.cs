@@ -130,8 +130,9 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                 Color.FromInt32(counter++));
         }
 
-        // Render the resource groups table
+        // Render the resource groups or subscriptions table depending on scope
         BreakdownChartExt? resourceGroupBreakdown = null;
+        BreakdownChartExt? subscriptionBreakdown = null;
         if (settings.GetScope.IsSubscriptionBased)
         {
             resourceGroupBreakdown = new BreakdownChartExt()
@@ -145,14 +146,11 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                     Color.FromInt32(counter++));
             }
         }
-
-        BreakdownChartExt? subscriptionBreakdown = null;
-        if (settings.GetScope.Name.Equals("EnrollmentAccount", StringComparison.InvariantCultureIgnoreCase))
+        else // not subscription based scope, so we don't render resource groups, we render subscription breakdown
         {
-            // Render the resource groups table
             subscriptionBreakdown = new BreakdownChartExt()
-            .UseValueFormatter(value => Money.FormatMoney(value, currency))
-            .Width(60);
+                .UseValueFormatter(value => Money.FormatMoney(value, currency))
+                .Width(60);
 
             counter = 2;
             foreach (var rg in accumulatedCostDetails.BySubscriptionCosts.TrimList(threshold: settings.OthersCutoff))
@@ -161,6 +159,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
                     Color.FromInt32(counter++));
             }
         }
+
 
         // Render the locations table
         var locationsBreakdown = new BreakdownChartExt()
