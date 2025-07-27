@@ -1,3 +1,4 @@
+using AzureCostCli.Commands;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
@@ -19,7 +20,7 @@ public class JsonOutputFormatterTests
     public async Task WriteBudgets_WithBudgets_ShouldNotThrow()
     {
         // Arrange
-        var settings = new BudgetsSettings();
+        var settings = new BudgetsSettings { Output = OutputFormat.Json };
         var budgets = new List<BudgetItem>
         {
             new("Test Budget", "/subscriptions/123/budgets/test", 1000.0, "Monthly", 
@@ -35,7 +36,7 @@ public class JsonOutputFormatterTests
     public async Task WriteCostByResource_WithResources_ShouldNotThrow()
     {
         // Arrange
-        var settings = new AzureCostCli.Commands.CostByResource.CostByResourceSettings();
+        var settings = new AzureCostCli.Commands.CostByResource.CostByResourceSettings { Output = OutputFormat.Json };
         var resources = new List<CostResourceItem>
         {
             new(100.0, 105.0, "/subscriptions/123/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm", 
