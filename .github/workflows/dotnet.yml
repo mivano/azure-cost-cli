@@ -12,11 +12,13 @@ on:
     branches: [ "main" ]
     paths:
       - "src/**"
+      - "tests/**"
       - ".github/workflows/dotnet.yml" 
   pull_request:
     branches: [ "main" ]
     paths:
       - "src/**"
+      - "tests/**"
       - ".github/workflows/dotnet.yml" 
       
 jobs:
