@@ -1,5 +1,5 @@
 using AzureCostCli.CostApi;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace AzureCostCli.Tests.CostApi;
@@ -19,10 +19,10 @@ public class CostItemTests
         var costItem = new CostItem(date, cost, costUsd, currency);
 
         // Assert
-        costItem.Date.Should().Be(date);
-        costItem.Cost.Should().Be(cost);
-        costItem.CostUsd.Should().Be(costUsd);
-        costItem.Currency.Should().Be(currency);
+        costItem.Date.ShouldBe(date);
+        costItem.Cost.ShouldBe(cost);
+        costItem.CostUsd.ShouldBe(costUsd);
+        costItem.Currency.ShouldBe(currency);
     }
 
     [Fact]
@@ -38,10 +38,10 @@ public class CostItemTests
         var costNamedItem = new CostNamedItem(itemName, cost, costUsd, currency);
 
         // Assert
-        costNamedItem.ItemName.Should().Be(itemName);
-        costNamedItem.Cost.Should().Be(cost);
-        costNamedItem.CostUsd.Should().Be(costUsd);
-        costNamedItem.Currency.Should().Be(currency);
+        costNamedItem.ItemName.ShouldBe(itemName);
+        costNamedItem.Cost.ShouldBe(cost);
+        costNamedItem.CostUsd.ShouldBe(costUsd);
+        costNamedItem.Currency.ShouldBe(currency);
     }
 
     [Fact]
@@ -63,15 +63,15 @@ public class CostItemTests
         var costDailyItem = new CostDailyItem(date, name, cost, costUsd, currency, tags);
 
         // Assert
-        costDailyItem.Date.Should().Be(date);
-        costDailyItem.Name.Should().Be(name);
-        costDailyItem.Cost.Should().Be(cost);
-        costDailyItem.CostUsd.Should().Be(costUsd);
-        costDailyItem.Currency.Should().Be(currency);
-        costDailyItem.Tags.Should().NotBeNull();
-        costDailyItem.Tags.Should().HaveCount(2);
-        costDailyItem.Tags!["Environment"].Should().Be("Production");
-        costDailyItem.Tags["Team"].Should().Be("Backend");
+        costDailyItem.Date.ShouldBe(date);
+        costDailyItem.Name.ShouldBe(name);
+        costDailyItem.Cost.ShouldBe(cost);
+        costDailyItem.CostUsd.ShouldBe(costUsd);
+        costDailyItem.Currency.ShouldBe(currency);
+        costDailyItem.Tags.ShouldNotBeNull();
+        costDailyItem.Tags.Count.ShouldBe(2);
+        costDailyItem.Tags!["Environment"].ShouldBe("Production");
+        costDailyItem.Tags["Team"].ShouldBe("Backend");
     }
 
     [Fact]
@@ -88,12 +88,12 @@ public class CostItemTests
         var costDailyItem = new CostDailyItem(date, name, cost, costUsd, currency, null);
 
         // Assert
-        costDailyItem.Date.Should().Be(date);
-        costDailyItem.Name.Should().Be(name);
-        costDailyItem.Cost.Should().Be(cost);
-        costDailyItem.CostUsd.Should().Be(costUsd);
-        costDailyItem.Currency.Should().Be(currency);
-        costDailyItem.Tags.Should().BeNull();
+        costDailyItem.Date.ShouldBe(date);
+        costDailyItem.Name.ShouldBe(name);
+        costDailyItem.Cost.ShouldBe(cost);
+        costDailyItem.CostUsd.ShouldBe(costUsd);
+        costDailyItem.Currency.ShouldBe(currency);
+        costDailyItem.Tags.ShouldBeNull();
     }
 
     [Fact]
@@ -110,11 +110,11 @@ public class CostItemTests
         var costDailyItem = new CostDailyItemWithoutTags(date, name, cost, costUsd, currency);
 
         // Assert
-        costDailyItem.Date.Should().Be(date);
-        costDailyItem.Name.Should().Be(name);
-        costDailyItem.Cost.Should().Be(cost);
-        costDailyItem.CostUsd.Should().Be(costUsd);
-        costDailyItem.Currency.Should().Be(currency);
+        costDailyItem.Date.ShouldBe(date);
+        costDailyItem.Name.ShouldBe(name);
+        costDailyItem.Cost.ShouldBe(cost);
+        costDailyItem.CostUsd.ShouldBe(costUsd);
+        costDailyItem.Currency.ShouldBe(currency);
     }
 
     [Fact]
@@ -142,17 +142,17 @@ public class CostItemTests
             currentSpendAmount, currentSpendCurrency, forecastAmount, forecastCurrency, notifications);
 
         // Assert
-        budgetItem.Name.Should().Be(name);
-        budgetItem.Id.Should().Be(id);
-        budgetItem.Amount.Should().Be(amount);
-        budgetItem.TimeGrain.Should().Be(timeGrain);
-        budgetItem.StartDate.Should().Be(startDate);
-        budgetItem.EndDate.Should().Be(endDate);
-        budgetItem.CurrentSpendAmount.Should().Be(currentSpendAmount);
-        budgetItem.CurrentSpendCurrency.Should().Be(currentSpendCurrency);
-        budgetItem.ForecastAmount.Should().Be(forecastAmount);
-        budgetItem.ForecastCurrency.Should().Be(forecastCurrency);
-        budgetItem.Notifications.Should().HaveCount(1);
+        budgetItem.Name.ShouldBe(name);
+        budgetItem.Id.ShouldBe(id);
+        budgetItem.Amount.ShouldBe(amount);
+        budgetItem.TimeGrain.ShouldBe(timeGrain);
+        budgetItem.StartDate.ShouldBe(startDate);
+        budgetItem.EndDate.ShouldBe(endDate);
+        budgetItem.CurrentSpendAmount.ShouldBe(currentSpendAmount);
+        budgetItem.CurrentSpendCurrency.ShouldBe(currentSpendCurrency);
+        budgetItem.ForecastAmount.ShouldBe(forecastAmount);
+        budgetItem.ForecastCurrency.ShouldBe(forecastCurrency);
+        budgetItem.Notifications.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -171,13 +171,13 @@ public class CostItemTests
         var notification = new Notification(name, enabled, operatorValue, threshold, contactEmails, contactRoles, contactGroups);
 
         // Assert
-        notification.Name.Should().Be(name);
-        notification.Enabled.Should().Be(enabled);
-        notification.Operator.Should().Be(operatorValue);
-        notification.Threshold.Should().Be(threshold);
-        notification.ContactEmails.Should().BeEquivalentTo(contactEmails);
-        notification.ContactRoles.Should().BeEquivalentTo(contactRoles);
-        notification.ContactGroups.Should().BeEquivalentTo(contactGroups);
+        notification.Name.ShouldBe(name);
+        notification.Enabled.ShouldBe(enabled);
+        notification.Operator.ShouldBe(operatorValue);
+        notification.Threshold.ShouldBe(threshold);
+        notification.ContactEmails.ShouldBe(contactEmails);
+        notification.ContactRoles.ShouldBe(contactRoles);
+        notification.ContactGroups.ShouldBe(contactGroups);
     }
 
     [Fact]
@@ -204,19 +204,19 @@ public class CostItemTests
             resourceGroupName, publisherType, serviceName, serviceTier, meter, tags, currency);
 
         // Assert
-        costResourceItem.Cost.Should().Be(cost);
-        costResourceItem.CostUSD.Should().Be(costUSD);
-        costResourceItem.ResourceId.Should().Be(resourceId);
-        costResourceItem.ResourceType.Should().Be(resourceType);
-        costResourceItem.ResourceLocation.Should().Be(resourceLocation);
-        costResourceItem.ChargeType.Should().Be(chargeType);
-        costResourceItem.ResourceGroupName.Should().Be(resourceGroupName);
-        costResourceItem.PublisherType.Should().Be(publisherType);
-        costResourceItem.ServiceName.Should().Be(serviceName);
-        costResourceItem.ServiceTier.Should().Be(serviceTier);
-        costResourceItem.Meter.Should().Be(meter);
-        costResourceItem.Tags.Should().BeEquivalentTo(tags);
-        costResourceItem.Currency.Should().Be(currency);
+        costResourceItem.Cost.ShouldBe(cost);
+        costResourceItem.CostUSD.ShouldBe(costUSD);
+        costResourceItem.ResourceId.ShouldBe(resourceId);
+        costResourceItem.ResourceType.ShouldBe(resourceType);
+        costResourceItem.ResourceLocation.ShouldBe(resourceLocation);
+        costResourceItem.ChargeType.ShouldBe(chargeType);
+        costResourceItem.ResourceGroupName.ShouldBe(resourceGroupName);
+        costResourceItem.PublisherType.ShouldBe(publisherType);
+        costResourceItem.ServiceName.ShouldBe(serviceName);
+        costResourceItem.ServiceTier.ShouldBe(serviceTier);
+        costResourceItem.Meter.ShouldBe(meter);
+        costResourceItem.Tags.ShouldBe(tags);
+        costResourceItem.Currency.ShouldBe(currency);
     }
 
     [Fact]
@@ -233,6 +233,6 @@ public class CostItemTests
         var resourceName = resource.GetResourceName();
 
         // Assert
-        resourceName.Should().Be("my-test-vm");
+        resourceName.ShouldBe("my-test-vm");
     }
 }

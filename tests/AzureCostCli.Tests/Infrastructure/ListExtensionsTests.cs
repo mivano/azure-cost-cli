@@ -1,6 +1,6 @@
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace AzureCostCli.Tests.Infrastructure;
@@ -22,13 +22,13 @@ public class ListExtensionsTests
         var result = items.TrimList(10);
 
         // Assert
-        result.Should().HaveCount(3);
-        result[0].ItemName.Should().Be("Item2");
-        result[0].Cost.Should().Be(200);
-        result[1].ItemName.Should().Be("Item1");
-        result[1].Cost.Should().Be(100);
-        result[2].ItemName.Should().Be("Item3");
-        result[2].Cost.Should().Be(50);
+        result.Count.ShouldBe(3);
+        result[0].ItemName.ShouldBe("Item2");
+        result[0].Cost.ShouldBe(200);
+        result[1].ItemName.ShouldBe("Item1");
+        result[1].Cost.ShouldBe(100);
+        result[2].ItemName.ShouldBe("Item3");
+        result[2].Cost.ShouldBe(50);
     }
 
     [Fact]
@@ -46,10 +46,10 @@ public class ListExtensionsTests
         var result = items.TrimList(3);
 
         // Assert
-        result.Should().HaveCount(3);
-        result[0].ItemName.Should().Be("Item2");
-        result[1].ItemName.Should().Be("Item1");
-        result[2].ItemName.Should().Be("Item3");
+        result.Count.ShouldBe(3);
+        result[0].ItemName.ShouldBe("Item2");
+        result[1].ItemName.ShouldBe("Item1");
+        result[2].ItemName.ShouldBe("Item3");
     }
 
     [Fact]
@@ -69,15 +69,15 @@ public class ListExtensionsTests
         var result = items.TrimList(3);
 
         // Assert
-        result.Should().HaveCount(3);
-        result[0].ItemName.Should().Be("Item2");
-        result[0].Cost.Should().Be(200);
-        result[1].ItemName.Should().Be("Item1");
-        result[1].Cost.Should().Be(100);
-        result[2].ItemName.Should().Be("Others");
-        result[2].Cost.Should().Be(150); // 50 + 75 + 25
-        result[2].CostUsd.Should().Be(150);
-        result[2].Currency.Should().Be("USD");
+        result.Count.ShouldBe(3);
+        result[0].ItemName.ShouldBe("Item2");
+        result[0].Cost.ShouldBe(200);
+        result[1].ItemName.ShouldBe("Item1");
+        result[1].Cost.ShouldBe(100);
+        result[2].ItemName.ShouldBe("Others");
+        result[2].Cost.ShouldBe(150); // 50 + 75 + 25
+        result[2].CostUsd.ShouldBe(150);
+        result[2].Currency.ShouldBe("USD");
     }
 
     [Fact]
@@ -94,9 +94,9 @@ public class ListExtensionsTests
         var result = items.TrimList(0);
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].ItemName.Should().Be("Item2");
-        result[1].ItemName.Should().Be("Item1");
+        result.Count.ShouldBe(2);
+        result[0].ItemName.ShouldBe("Item2");
+        result[1].ItemName.ShouldBe("Item1");
     }
 
     [Fact]
@@ -113,9 +113,9 @@ public class ListExtensionsTests
         var result = items.TrimList(-1);
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].ItemName.Should().Be("Item2");
-        result[1].ItemName.Should().Be("Item1");
+        result.Count.ShouldBe(2);
+        result[0].ItemName.ShouldBe("Item2");
+        result[1].ItemName.ShouldBe("Item1");
     }
 
     [Fact]
@@ -128,7 +128,7 @@ public class ListExtensionsTests
         var result = items.TrimList(5);
 
         // Assert
-        result.Should().BeEmpty();
+        result.ShouldBeEmpty();
     }
 
     [Fact]
@@ -143,12 +143,12 @@ public class ListExtensionsTests
         var result = items.TrimList();
 
         // Assert
-        result.Should().HaveCount(10); // 9 top items + 1 "Others"
-        result[0].ItemName.Should().Be("Item15");
-        result[0].Cost.Should().Be(150);
-        result[8].ItemName.Should().Be("Item7");
-        result[8].Cost.Should().Be(70);
-        result[9].ItemName.Should().Be("Others");
-        result[9].Cost.Should().Be(210); // Sum of items 1-6: 10+20+30+40+50+60
+        result.Count.ShouldBe(10); // 9 top items + 1 "Others"
+        result[0].ItemName.ShouldBe("Item15");
+        result[0].Cost.ShouldBe(150);
+        result[8].ItemName.ShouldBe("Item7");
+        result[8].Cost.ShouldBe(70);
+        result[9].ItemName.ShouldBe("Others");
+        result[9].Cost.ShouldBe(210); // Sum of items 1-6: 10+20+30+40+50+60
     }
 }

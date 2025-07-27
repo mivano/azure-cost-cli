@@ -1,5 +1,5 @@
 using AzureCostCli.CostApi;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace AzureCostCli.Tests.CostApi;
@@ -25,14 +25,14 @@ public class AdditionalCostDataModelsTests
             tenantId, displayName, state, subscriptionPolicies);
 
         // Assert
-        subscription.id.Should().Be(id);
-        subscription.authorizationSource.Should().Be(authorizationSource);
-        subscription.managedByTenants.Should().BeEquivalentTo(managedByTenants);
-        subscription.subscriptionId.Should().Be(subscriptionId);
-        subscription.tenantId.Should().Be(tenantId);
-        subscription.displayName.Should().Be(displayName);
-        subscription.state.Should().Be(state);
-        subscription.subscriptionPolicies.Should().Be(subscriptionPolicies);
+        subscription.id.ShouldBe(id);
+        subscription.authorizationSource.ShouldBe(authorizationSource);
+        subscription.managedByTenants.ShouldBe(managedByTenants);
+        subscription.subscriptionId.ShouldBe(subscriptionId);
+        subscription.tenantId.ShouldBe(tenantId);
+        subscription.displayName.ShouldBe(displayName);
+        subscription.state.ShouldBe(state);
+        subscription.subscriptionPolicies.ShouldBe(subscriptionPolicies);
     }
 
     [Fact]
@@ -47,9 +47,9 @@ public class AdditionalCostDataModelsTests
         var policies = new SubscriptionPolicies(locationPlacementId, quotaId, spendingLimit);
 
         // Assert
-        policies.locationPlacementId.Should().Be(locationPlacementId);
-        policies.quotaId.Should().Be(quotaId);
-        policies.spendingLimit.Should().Be(spendingLimit);
+        policies.locationPlacementId.ShouldBe(locationPlacementId);
+        policies.quotaId.ShouldBe(quotaId);
+        policies.spendingLimit.ShouldBe(spendingLimit);
     }
 
     [Fact]
@@ -64,9 +64,9 @@ public class AdditionalCostDataModelsTests
         var enrollmentAccount = new EnrollmentAccount(id, name, props);
 
         // Assert
-        enrollmentAccount.id.Should().Be(id);
-        enrollmentAccount.name.Should().Be(name);
-        enrollmentAccount.properties.Should().Be(props);
+        enrollmentAccount.id.ShouldBe(id);
+        enrollmentAccount.name.ShouldBe(name);
+        enrollmentAccount.properties.ShouldBe(props);
     }
 
     [Fact]
@@ -81,9 +81,9 @@ public class AdditionalCostDataModelsTests
         var properties = new properties(accountName, costCenter, displayName);
 
         // Assert
-        properties.accountName.Should().Be(accountName);
-        properties.costCenter.Should().Be(costCenter);
-        properties.displayName.Should().Be(displayName);
+        properties.accountName.ShouldBe(accountName);
+        properties.costCenter.ShouldBe(costCenter);
+        properties.displayName.ShouldBe(displayName);
     }
 
     [Fact]
@@ -116,26 +116,26 @@ public class AdditionalCostDataModelsTests
         };
 
         // Assert
-        region.id.Should().Be("eastus");
-        region.displayName.Should().Be("East US");
-        region.location.Should().Be("eastus");
-        region.continent.Should().Be("NA");
-        region.geographyId.Should().Be("US");
-        region.latitude.Should().Be(37.3719);
-        region.longitude.Should().Be(-79.8164);
-        region.typeId.Should().Be("Region");
-        region.isOpen.Should().BeTrue();
-        region.yearOpen.Should().Be(2014);
-        region.complianceIds.Should().BeEquivalentTo(new[] { "SOC", "HIPAA" });
-        region.hasGroundStation.Should().BeFalse();
-        region.dataResidency.Should().Be("US");
-        region.availableTo.Should().Be("Public");
-        region.availabilityZonesId.Should().Be("AZ123");
-        region.availabilityZonesNearestRegionIds.Should().BeEquivalentTo(new[] { "westus", "centralus" });
-        region.productsByRegionLink.Should().Be("https://azure.microsoft.com/en-us/global-infrastructure/services/");
-        region.productsByRegionLinkNonRegional.Should().Be("https://azure.microsoft.com/en-us/services/");
-        region.sustainabilityIds.Should().BeEquivalentTo(new[] { "Green" });
-        region.disasterRecoveryCrossregionIds.Should().BeEquivalentTo(new[] { "westus" });
-        region.disasterRecoveryInregionIds.Should().BeEquivalentTo(new[] { "eastus2" });
+        region.id.ShouldBe("eastus");
+        region.displayName.ShouldBe("East US");
+        region.location.ShouldBe("eastus");
+        region.continent.ShouldBe("NA");
+        region.geographyId.ShouldBe("US");
+        region.latitude.ShouldBe(37.3719);
+        region.longitude.ShouldBe(-79.8164);
+        region.typeId.ShouldBe("Region");
+        region.isOpen.ShouldBeTrue();
+        region.yearOpen.ShouldBe(2014);
+        region.complianceIds.ShouldBe(new[] { "SOC", "HIPAA" });
+        region.hasGroundStation.ShouldBeFalse();
+        region.dataResidency.ShouldBe("US");
+        region.availableTo.ShouldBe("Public");
+        region.availabilityZonesId.ShouldBe("AZ123");
+        region.availabilityZonesNearestRegionIds.ShouldBe(new[] { "westus", "centralus" });
+        region.productsByRegionLink.ShouldBe("https://azure.microsoft.com/en-us/global-infrastructure/services/");
+        region.productsByRegionLinkNonRegional.ShouldBe("https://azure.microsoft.com/en-us/services/");
+        region.sustainabilityIds.ShouldBe(new[] { "Green" });
+        region.disasterRecoveryCrossregionIds.ShouldBe(new[] { "westus" });
+        region.disasterRecoveryInregionIds.ShouldBe(new[] { "eastus2" });
     }
 }

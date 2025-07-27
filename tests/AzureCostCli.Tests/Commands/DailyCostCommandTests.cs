@@ -1,7 +1,7 @@
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.CostApi;
-using FluentAssertions;
+using Shouldly;
 using Moq;
 using Spectre.Console.Cli;
 using Xunit;
@@ -35,7 +35,7 @@ public class DailyCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -54,8 +54,8 @@ public class DailyCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeFalse();
-        result.Message.Should().Be("The from date must be before the to date.");
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldBe("The from date must be before the to date.");
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class DailyCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class DailyCostCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new DailyCostCommand(_mockCostRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     [Theory]
@@ -102,7 +102,7 @@ public class DailyCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class DailyCostCommandTests
         var settings = new DailyCostSettings();
 
         // Assert
-        settings.Dimension.Should().Be("ResourceGroupName");
+        settings.Dimension.ShouldBe("ResourceGroupName");
     }
 
     private static CommandContext CreateCommandContext()

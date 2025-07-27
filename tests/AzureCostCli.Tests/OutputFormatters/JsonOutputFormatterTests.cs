@@ -2,7 +2,7 @@ using AzureCostCli.Commands;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace AzureCostCli.Tests.OutputFormatters;
@@ -61,7 +61,7 @@ public class JsonOutputFormatterTests
         var result = converter.Read(ref reader, typeof(DateOnly), new System.Text.Json.JsonSerializerOptions());
 
         // Assert
-        result.Should().Be(new DateOnly(2023, 1, 15));
+        result.ShouldBe(new DateOnly(2023, 1, 15));
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class JsonOutputFormatterTests
 
         // Assert
         var json = System.Text.Encoding.UTF8.GetString(stream.ToArray());
-        json.Should().Be("\"2023-01-15\"");
+        json.ShouldBe("\"2023-01-15\"");
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class JsonOutputFormatterTests
         var resourceName = resource.GetResourceName();
 
         // Assert
-        resourceName.Should().Be("my-test-vm");
+        resourceName.ShouldBe("my-test-vm");
     }
 
     [Fact]
@@ -112,6 +112,6 @@ public class JsonOutputFormatterTests
         var resourceName = resource.GetResourceName();
 
         // Assert
-        resourceName.Should().Be("simple-resource-name");
+        resourceName.ShouldBe("simple-resource-name");
     }
 }

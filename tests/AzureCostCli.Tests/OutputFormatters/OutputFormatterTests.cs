@@ -2,7 +2,7 @@ using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace AzureCostCli.Tests.OutputFormatters;

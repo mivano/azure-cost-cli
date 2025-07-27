@@ -1,5 +1,5 @@
 using AzureCostCli.Commands;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 namespace AzureCostCli.Tests.Commands;
@@ -22,9 +22,9 @@ public class CostSettingsTests
         var scope = settings.GetScope;
 
         // Assert
-        scope.Name.Should().Be("ResourceGroup");
-        scope.ScopePath.Should().Be($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}");
-        scope.IsSubscriptionBased.Should().BeTrue();
+        scope.Name.ShouldBe("ResourceGroup");
+        scope.ScopePath.ShouldBe($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}");
+        scope.IsSubscriptionBased.ShouldBeTrue();
     }
 
     [Fact]
@@ -44,9 +44,9 @@ public class CostSettingsTests
         var scope = settings.GetScope;
 
         // Assert
-        scope.Name.Should().Be("EnrollmentAccount");
-        scope.ScopePath.Should().Be($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}");
-        scope.IsSubscriptionBased.Should().BeFalse();
+        scope.Name.ShouldBe("EnrollmentAccount");
+        scope.ScopePath.ShouldBe($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}");
+        scope.IsSubscriptionBased.ShouldBeFalse();
     }
 
     [Fact]
@@ -64,9 +64,9 @@ public class CostSettingsTests
         var scope = settings.GetScope;
 
         // Assert
-        scope.Name.Should().Be("BillingAccount");
-        scope.ScopePath.Should().Be($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}");
-        scope.IsSubscriptionBased.Should().BeFalse();
+        scope.Name.ShouldBe("BillingAccount");
+        scope.ScopePath.ShouldBe($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}");
+        scope.IsSubscriptionBased.ShouldBeFalse();
     }
 
     [Fact]
@@ -83,9 +83,9 @@ public class CostSettingsTests
         var scope = settings.GetScope;
 
         // Assert
-        scope.Name.Should().Be("Subscription");
-        scope.ScopePath.Should().Be($"/subscriptions/{subscriptionId}");
-        scope.IsSubscriptionBased.Should().BeTrue();
+        scope.Name.ShouldBe("Subscription");
+        scope.ScopePath.ShouldBe($"/subscriptions/{subscriptionId}");
+        scope.IsSubscriptionBased.ShouldBeTrue();
     }
 
     [Fact]
@@ -101,9 +101,9 @@ public class CostSettingsTests
         var scope = settings.GetScope;
 
         // Assert
-        scope.Name.Should().Be("Subscription");
-        scope.ScopePath.Should().Be($"/subscriptions/{Guid.Empty}");
-        scope.IsSubscriptionBased.Should().BeTrue();
+        scope.Name.ShouldBe("Subscription");
+        scope.ScopePath.ShouldBe($"/subscriptions/{Guid.Empty}");
+        scope.IsSubscriptionBased.ShouldBeTrue();
     }
 
     [Fact]
@@ -116,9 +116,9 @@ public class CostSettingsTests
         var scope = settings.GetScope;
 
         // Assert
-        scope.Name.Should().Be("Subscription");
-        scope.ScopePath.Should().Be($"/subscriptions/{Guid.Empty}");
-        scope.IsSubscriptionBased.Should().BeTrue();
+        scope.Name.ShouldBe("Subscription");
+        scope.ScopePath.ShouldBe($"/subscriptions/{Guid.Empty}");
+        scope.IsSubscriptionBased.ShouldBeTrue();
     }
 
     [Fact]
@@ -128,18 +128,18 @@ public class CostSettingsTests
         var settings = new CostSettings();
 
         // Assert
-        settings.Output.Should().Be(OutputFormat.Console);
-        settings.Timeframe.Should().Be(TimeframeType.BillingMonthToDate);
-        settings.OthersCutoff.Should().Be(10);
-        settings.Query.Should().Be(string.Empty);
-        settings.UseUSD.Should().BeFalse();
-        settings.SkipHeader.Should().BeFalse();
-        settings.Filter.Should().BeEmpty();
-        settings.Metric.Should().Be(MetricType.ActualCost);
-        settings.IncludeTags.Should().BeFalse();
-        settings.CostApiAddress.Should().Be("https://management.azure.com/");
-        settings.PriceApiAddress.Should().Be("https://prices.azure.com/");
-        settings.HttpTimeout.Should().Be(100);
+        settings.Output.ShouldBe(OutputFormat.Console);
+        settings.Timeframe.ShouldBe(TimeframeType.BillingMonthToDate);
+        settings.OthersCutoff.ShouldBe(10);
+        settings.Query.ShouldBe(string.Empty);
+        settings.UseUSD.ShouldBeFalse();
+        settings.SkipHeader.ShouldBeFalse();
+        settings.Filter.ShouldBeEmpty();
+        settings.Metric.ShouldBe(MetricType.ActualCost);
+        settings.IncludeTags.ShouldBeFalse();
+        settings.CostApiAddress.ShouldBe("https://management.azure.com/");
+        settings.PriceApiAddress.ShouldBe("https://prices.azure.com/");
+        settings.HttpTimeout.ShouldBe(100);
     }
 }
 
@@ -155,9 +155,9 @@ public class ScopeTests
         var scope = Scope.Subscription(subscriptionId);
 
         // Assert
-        scope.Name.Should().Be("Subscription");
-        scope.ScopePath.Should().Be($"/subscriptions/{subscriptionId}");
-        scope.IsSubscriptionBased.Should().BeTrue();
+        scope.Name.ShouldBe("Subscription");
+        scope.ScopePath.ShouldBe($"/subscriptions/{subscriptionId}");
+        scope.IsSubscriptionBased.ShouldBeTrue();
     }
 
     [Fact]
@@ -171,9 +171,9 @@ public class ScopeTests
         var scope = Scope.ResourceGroup(subscriptionId, resourceGroup);
 
         // Assert
-        scope.Name.Should().Be("ResourceGroup");
-        scope.ScopePath.Should().Be($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}");
-        scope.IsSubscriptionBased.Should().BeTrue();
+        scope.Name.ShouldBe("ResourceGroup");
+        scope.ScopePath.ShouldBe($"/subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}");
+        scope.IsSubscriptionBased.ShouldBeTrue();
     }
 
     [Fact]
@@ -187,9 +187,9 @@ public class ScopeTests
         var scope = Scope.EnrollmentAccount(billingAccountId, enrollmentAccountId);
 
         // Assert
-        scope.Name.Should().Be("EnrollmentAccount");
-        scope.ScopePath.Should().Be($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}");
-        scope.IsSubscriptionBased.Should().BeFalse();
+        scope.Name.ShouldBe("EnrollmentAccount");
+        scope.ScopePath.ShouldBe($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}/enrollmentAccounts/{enrollmentAccountId}");
+        scope.IsSubscriptionBased.ShouldBeFalse();
     }
 
     [Fact]
@@ -202,8 +202,8 @@ public class ScopeTests
         var scope = Scope.BillingAccount(billingAccountId);
 
         // Assert
-        scope.Name.Should().Be("BillingAccount");
-        scope.ScopePath.Should().Be($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}");
-        scope.IsSubscriptionBased.Should().BeFalse();
+        scope.Name.ShouldBe("BillingAccount");
+        scope.ScopePath.ShouldBe($"/providers/Microsoft.Billing/billingAccounts/{billingAccountId}");
+        scope.IsSubscriptionBased.ShouldBeFalse();
     }
 }

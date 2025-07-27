@@ -2,7 +2,7 @@ using AzureCostCli.Commands;
 using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.CostApi;
-using FluentAssertions;
+using Shouldly;
 using Moq;
 using Spectre.Console.Cli;
 using Xunit;
@@ -36,7 +36,7 @@ public class AccumulatedCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -55,8 +55,8 @@ public class AccumulatedCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeFalse();
-        result.Message.Should().Be("The from date must be before the to date.");
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldBe("The from date must be before the to date.");
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public class AccumulatedCostCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class AccumulatedCostCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new AccumulatedCostCommand(_mockCostRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     private static CommandContext CreateCommandContext()
@@ -107,7 +107,7 @@ public class BudgetsCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new BudgetsCommand(_mockCostRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class BudgetsCommandTests
         var settings = new BudgetsSettings();
 
         // Assert
-        settings.Output.Should().Be(OutputFormat.Console);
-        settings.UseUSD.Should().BeFalse();
+        settings.Output.ShouldBe(OutputFormat.Console);
+        settings.UseUSD.ShouldBeFalse();
     }
 }

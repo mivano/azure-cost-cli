@@ -1,5 +1,5 @@
 using AzureCostCli.Infrastructure;
-using FluentAssertions;
+using Shouldly;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using Xunit;
@@ -29,9 +29,9 @@ public class TypeRegistrarTests
 
         // Assert
         var serviceDescriptor = _serviceCollection.FirstOrDefault(s => s.ServiceType == serviceType);
-        serviceDescriptor.Should().NotBeNull();
-        serviceDescriptor!.ImplementationType.Should().Be(implementationType);
-        serviceDescriptor.Lifetime.Should().Be(ServiceLifetime.Singleton);
+        serviceDescriptor.ShouldNotBeNull();
+        serviceDescriptor!.ImplementationType.ShouldBe(implementationType);
+        serviceDescriptor.Lifetime.ShouldBe(ServiceLifetime.Singleton);
     }
 
     [Fact]
@@ -46,9 +46,9 @@ public class TypeRegistrarTests
 
         // Assert
         var serviceDescriptor = _serviceCollection.FirstOrDefault(s => s.ServiceType == serviceType);
-        serviceDescriptor.Should().NotBeNull();
-        serviceDescriptor!.ImplementationInstance.Should().Be(instance);
-        serviceDescriptor.Lifetime.Should().Be(ServiceLifetime.Singleton);
+        serviceDescriptor.ShouldNotBeNull();
+        serviceDescriptor!.ImplementationInstance.ShouldBe(instance);
+        serviceDescriptor.Lifetime.ShouldBe(ServiceLifetime.Singleton);
     }
 
     [Fact]
@@ -64,9 +64,9 @@ public class TypeRegistrarTests
 
         // Assert
         var serviceDescriptor = _serviceCollection.FirstOrDefault(s => s.ServiceType == serviceType);
-        serviceDescriptor.Should().NotBeNull();
-        serviceDescriptor!.ImplementationFactory.Should().NotBeNull();
-        serviceDescriptor.Lifetime.Should().Be(ServiceLifetime.Singleton);
+        serviceDescriptor.ShouldNotBeNull();
+        serviceDescriptor!.ImplementationFactory.ShouldNotBeNull();
+        serviceDescriptor.Lifetime.ShouldBe(ServiceLifetime.Singleton);
     }
 
     [Fact]
@@ -86,8 +86,8 @@ public class TypeRegistrarTests
         var resolver = _registrar.Build();
 
         // Assert
-        resolver.Should().NotBeNull();
-        resolver.Should().BeOfType<TypeResolver>();
+        resolver.ShouldNotBeNull();
+        resolver.ShouldBeOfType<TypeResolver>();
     }
 
     // Test interfaces and classes
@@ -122,8 +122,8 @@ public class TypeResolverTests
         var result = resolver.Resolve(typeof(ITestService));
 
         // Assert
-        result.Should().NotBeNull();
-        result.Should().BeOfType<TestService>();
+        result.ShouldNotBeNull();
+        result.ShouldBeOfType<TestService>();
     }
 
     [Fact]
@@ -138,7 +138,7 @@ public class TypeResolverTests
         var result = resolver.Resolve(null!);
 
         // Assert
-        result.Should().BeNull();
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -153,7 +153,7 @@ public class TypeResolverTests
         var result = resolver.Resolve(typeof(ITestService));
 
         // Assert
-        result.Should().BeNull();
+        result.ShouldBeNull();
     }
 
     [Fact]

@@ -4,7 +4,7 @@ using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.Prices;
 using AzureCostCli.CostApi;
-using FluentAssertions;
+using Shouldly;
 using Moq;
 using Spectre.Console.Cli;
 using Xunit;
@@ -38,7 +38,7 @@ public class CostByTagCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -57,8 +57,8 @@ public class CostByTagCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeFalse();
-        result.Message.Should().Be("The from date must be before the to date.");
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldBe("The from date must be before the to date.");
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public class CostByTagCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public class CostByTagCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new CostByTagCommand(_mockCostRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     private static CommandContext CreateCommandContext()
@@ -120,7 +120,7 @@ public class DetectAnomalyCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeTrue();
+        result.Successful.ShouldBeTrue();
     }
 
     [Fact]
@@ -139,8 +139,8 @@ public class DetectAnomalyCommandTests
         var result = _command.Validate(context, settings);
 
         // Assert
-        result.Successful.Should().BeFalse();
-        result.Message.Should().Be("The from date must be before the to date.");
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldBe("The from date must be before the to date.");
     }
 
     [Fact]
@@ -148,7 +148,7 @@ public class DetectAnomalyCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new DetectAnomalyCommand(_mockCostRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     private static CommandContext CreateCommandContext()
@@ -174,7 +174,7 @@ public class RegionsCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new RegionsCommand(_mockRegionsRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     [Fact]
@@ -184,7 +184,7 @@ public class RegionsCommandTests
         var settings = new RegionsSettings();
 
         // Assert
-        settings.Output.Should().Be(OutputFormat.Console);
+        settings.Output.ShouldBe(OutputFormat.Console);
     }
 
     private static CommandContext CreateCommandContext()
@@ -210,7 +210,7 @@ public class ListPricesCommandTests
     {
         // Act & Assert - Constructor should not throw
         var command = new ListPricesCommand(_mockPriceRetriever.Object);
-        command.Should().NotBeNull();
+        command.ShouldNotBeNull();
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class ListPricesCommandTests
         var settings = new PricesSettings();
 
         // Assert
-        settings.Output.Should().Be(OutputFormat.Console);
+        settings.Output.ShouldBe(OutputFormat.Console);
     }
 
     private static CommandContext CreateCommandContext()

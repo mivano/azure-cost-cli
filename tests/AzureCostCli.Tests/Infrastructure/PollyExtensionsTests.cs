@@ -1,5 +1,5 @@
 using AzureCostCli.Infrastructure;
-using FluentAssertions;
+using Shouldly;
 using System.Net;
 using Xunit;
 
@@ -14,7 +14,7 @@ public class PollyExtensionsTests
         var policy = PollyExtensions.GetRetryAfterPolicy();
 
         // Assert
-        policy.Should().NotBeNull();
+        policy.ShouldNotBeNull();
     }
 
     [Fact]
@@ -28,8 +28,8 @@ public class PollyExtensionsTests
         var result = await policy.ExecuteAsync(() => Task.FromResult(response));
 
         // Assert
-        result.Should().Be(response);
-        result.StatusCode.Should().Be(HttpStatusCode.OK);
+        result.ShouldBe(response);
+        result.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public class PollyExtensionsTests
         var result = await policy.ExecuteAsync(() => Task.FromResult(response));
 
         // Assert
-        result.Should().Be(response);
-        result.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        result.ShouldBe(response);
+        result.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 }

@@ -1,5 +1,5 @@
 using AzureCostCli.Infrastructure.TypeConvertors;
-using FluentAssertions;
+using Shouldly;
 using System.Globalization;
 using Xunit;
 
@@ -21,7 +21,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.CanConvertFrom(typeof(string));
 
         // Assert
-        result.Should().BeTrue();
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.CanConvertFrom(typeof(int));
 
         // Assert
-        result.Should().BeFalse();
+        result.ShouldBeFalse();
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.ConvertFrom(dateString);
 
         // Assert
-        result.Should().Be(new DateOnly(2023, 1, 15));
+        result.ShouldBe(new DateOnly(2023, 1, 15));
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.ConvertFrom(null, culture, dateString);
 
         // Assert
-        result.Should().Be(new DateOnly(2023, 1, 15));
+        result.ShouldBe(new DateOnly(2023, 1, 15));
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.CanConvertTo(typeof(string));
 
         // Assert
-        result.Should().BeTrue();
+        result.ShouldBeTrue();
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.CanConvertTo(typeof(int));
 
         // Assert
-        result.Should().BeFalse();
+        result.ShouldBeFalse();
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.ConvertTo(date, typeof(string));
 
         // Assert
-        result.Should().Be("2023-01-15");
+        result.ShouldBe("2023-01-15");
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class DateOnlyTypeConverterTests
         var result = _converter.ConvertTo(null, culture, date, typeof(string));
 
         // Assert
-        result.Should().Be("2023-01-15");
+        result.ShouldBe("2023-01-15");
     }
 
     [Fact]
@@ -136,6 +136,6 @@ public class DateOnlyTypeConverterTests
 
         // Assert
         // The base implementation might return null or empty string
-        result.Should().BeOfType<string>();
+        result.ShouldBeOfType<string>();
     }
 }

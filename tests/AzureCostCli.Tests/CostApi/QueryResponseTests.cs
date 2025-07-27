@@ -1,5 +1,5 @@
 using AzureCostCli.CostApi;
-using FluentAssertions;
+using Shouldly;
 using System.Text.Json;
 using Xunit;
 
@@ -39,11 +39,11 @@ public class QueryResponseTests
         response1.Combine(response2);
 
         // Assert
-        response1.properties.rows.Should().HaveCount(4);
-        response1.properties.rows[0].GetString().Should().Be("row1");
-        response1.properties.rows[1].GetString().Should().Be("row2");
-        response1.properties.rows[2].GetString().Should().Be("row3");
-        response1.properties.rows[3].GetString().Should().Be("row4");
+        response1.properties.rows.Count.ShouldBe(4);
+        response1.properties.rows[0].GetString().ShouldBe("row1");
+        response1.properties.rows[1].GetString().ShouldBe("row2");
+        response1.properties.rows[2].GetString().ShouldBe("row3");
+        response1.properties.rows[3].GetString().ShouldBe("row4");
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public class QueryResponseTests
 
         // Act & Assert - Should not throw
         response.Combine(null);
-        response.properties.rows.Should().HaveCount(1);
+        response.properties.rows.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public class QueryResponseTests
 
         // Act & Assert - Should not throw
         response1.Combine(response2);
-        response1.properties.rows.Should().HaveCount(1);
+        response1.properties.rows.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class QueryResponseTests
 
         // Act & Assert - Should not throw
         response1.Combine(response2);
-        response1.properties.rows.Should().HaveCount(1);
+        response1.properties.rows.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class QueryResponseTests
         response1.Combine(response2);
 
         // Assert
-        response1.properties.rows.Should().HaveCount(1);
+        response1.properties.rows.Count.ShouldBe(1);
     }
 
     [Fact]
@@ -173,18 +173,18 @@ public class QueryResponseTests
         };
 
         // Assert
-        response.eTag.Should().Be("test-etag");
-        response.id.Should().Be("test-id");
-        response.location.Should().Be("East US");
-        response.name.Should().Be("test-name");
-        response.type.Should().Be("test-type");
-        response.properties.Should().NotBeNull();
-        response.properties.columns.Should().HaveCount(2);
-        response.properties.columns[0].name.Should().Be("Date");
-        response.properties.columns[0].type.Should().Be("string");
-        response.properties.columns[1].name.Should().Be("Cost");
-        response.properties.columns[1].type.Should().Be("number");
-        response.properties.nextLink.Should().Be("https://next-link");
-        response.properties.rows.Should().BeEmpty();
+        response.eTag.ShouldBe("test-etag");
+        response.id.ShouldBe("test-id");
+        response.location.ShouldBe("East US");
+        response.name.ShouldBe("test-name");
+        response.type.ShouldBe("test-type");
+        response.properties.ShouldNotBeNull();
+        response.properties.columns.Length.ShouldBe(2);
+        response.properties.columns[0].name.ShouldBe("Date");
+        response.properties.columns[0].type.ShouldBe("string");
+        response.properties.columns[1].name.ShouldBe("Cost");
+        response.properties.columns[1].type.ShouldBe("number");
+        response.properties.nextLink.ShouldBe("https://next-link");
+        response.properties.rows.ShouldBeEmpty();
     }
 }
