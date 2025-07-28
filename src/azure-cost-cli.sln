@@ -1,6 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "azure-cost-cli", "azure-cost-cli.csproj", "{FF1C08F8-1A32-44C2-92BC-1900ECB699E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AzureCostCli.Tests", "..\tests\AzureCostCli.Tests\AzureCostCli.Tests.csproj", "{92A871B6-31D6-4721-95FB-88BAA6FD3F56}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -12,5 +15,9 @@ Global
 		{FF1C08F8-1A32-44C2-92BC-1900ECB699E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FF1C08F8-1A32-44C2-92BC-1900ECB699E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FF1C08F8-1A32-44C2-92BC-1900ECB699E8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92A871B6-31D6-4721-95FB-88BAA6FD3F56}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92A871B6-31D6-4721-95FB-88BAA6FD3F56}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92A871B6-31D6-4721-95FB-88BAA6FD3F56}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92A871B6-31D6-4721-95FB-88BAA6FD3F56}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

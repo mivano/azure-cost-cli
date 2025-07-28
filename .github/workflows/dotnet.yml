@@ -12,11 +12,13 @@ on:
     branches: [ "main" ]
     paths:
       - "src/**"
+      - "tests/**"
       - ".github/workflows/dotnet.yml" 
   pull_request:
     branches: [ "main" ]
     paths:
       - "src/**"
+      - "tests/**"
       - ".github/workflows/dotnet.yml" 
       
 jobs:
@@ -40,4 +42,9 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ../TestResults --logger trx --logger "console;verbosity=detailed"
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./TestResults/**/coverage.cobertura.xml
+        fail_ci_if_error: false
