@@ -42,9 +42,9 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ./tests/TestResults
+      run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ../TestResults --logger trx --logger "console;verbosity=detailed"
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
       with:
-        file: ./tests/TestResults/**/coverage.cobertura.xml
+        file: ./TestResults/**/coverage.cobertura.xml
         fail_ci_if_error: false
