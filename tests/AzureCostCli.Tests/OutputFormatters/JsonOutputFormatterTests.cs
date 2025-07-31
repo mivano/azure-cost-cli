@@ -1,5 +1,6 @@
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
 using Shouldly;
@@ -166,6 +167,68 @@ public class JsonOutputFormatterTests
 
         // Assert
         resourceName.ShouldBe("my-test-vm");
+    }
+
+    [Fact]
+    public async Task WriteCostByResource_WithJsoncFormat_ProducesColoredJsonOutput()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new CostByResourceSettings { Output = OutputFormat.Jsonc };
+            var resources = new List<CostResourceItem>
+            {
+                new(100.0, 105.0, "/subscriptions/123/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm", 
+                    "Microsoft.Compute/virtualMachines", "East US", "Usage", "test-rg", "Microsoft", 
+                    "Virtual Machines", "Standard", "D2s v3", new Dictionary<string, string>(), "USD")
+            };
+
+            // Act
+            await _formatter.WriteCostByResource(settings, resources);
+            var outputText = output.ToString();
+
+            // Assert - Should contain ANSI escape sequences for colors and not be empty
+            outputText.ShouldNotBeEmpty();
+            outputText.ShouldContain('\x1b'); // ANSI escape character indicates colored output
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public async Task WriteCostByResource_WithUnsupportedFormat_ThrowsArgumentException()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new CostByResourceSettings { Output = OutputFormat.Markdown }; // Unsupported format
+            var resources = new List<CostResourceItem>
+            {
+                new(100.0, 105.0, "/subscriptions/123/test-vm", 
+                    "Microsoft.Compute/virtualMachines", "East US", "Usage", "test-rg", "Microsoft", 
+                    "Virtual Machines", "Standard", "D2s v3", new Dictionary<string, string>(), "USD")
+            };
+
+            // Act & Assert
+            var exception = await Should.ThrowAsync<ArgumentException>(
+                async () => await _formatter.WriteCostByResource(settings, resources));
+            
+            exception.Message.ShouldContain("JsonOutputFormatter does not support output format: Markdown");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
     }
 
     [Fact]
