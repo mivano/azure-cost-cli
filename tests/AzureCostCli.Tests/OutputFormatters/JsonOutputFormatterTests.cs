@@ -1,5 +1,6 @@
 using AzureCostCli.Commands;
 using AzureCostCli.Commands.Budgets;
+using AzureCostCli.Commands.CostByResource;
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
 using Shouldly;
@@ -8,6 +9,7 @@ using Xunit;
 
 namespace AzureCostCli.Tests.OutputFormatters;
 
+[Collection("ConsoleOutputTests")]
 public class JsonOutputFormatterTests
 {
     private readonly JsonOutputFormatter _formatter;
@@ -53,68 +55,84 @@ public class JsonOutputFormatterTests
     public async Task WriteBudgets_ProducesValidJsonOutput()
     {
         // Arrange
+        var originalOut = Console.Out;
         var output = new StringWriter();
         Console.SetOut(output);
         
-        var settings = new BudgetsSettings { Output = OutputFormat.Json };
-        var budgets = new List<BudgetItem>
+        try
         {
-            new("Test Budget", "/subscriptions/123/budgets/test", 1000.0, "Monthly", 
-                new DateTime(2023, 1, 1), new DateTime(2023, 12, 31), 
-                250.0, "USD", 800.0, "USD", new List<Notification>())
-        };
+            var settings = new BudgetsSettings { Output = OutputFormat.Json };
+            var budgets = new List<BudgetItem>
+            {
+                new("Test Budget", "/subscriptions/123/budgets/test", 1000.0, "Monthly", 
+                    new DateTime(2023, 1, 1), new DateTime(2023, 12, 31), 
+                    250.0, "USD", 800.0, "USD", new List<Notification>())
+            };
 
-        // Act
-        await _formatter.WriteBudgets(settings, budgets);
-        var jsonOutput = output.ToString();
+            // Act
+            await _formatter.WriteBudgets(settings, budgets);
+            var jsonOutput = output.ToString();
 
-        // Assert - Validate JSON can be parsed and contains expected data
-        var parsedJson = JsonDocument.Parse(jsonOutput);
-        var budgetArray = parsedJson.RootElement;
-        budgetArray.ValueKind.ShouldBe(JsonValueKind.Array);
-        budgetArray.GetArrayLength().ShouldBe(1);
-        
-        var budget = budgetArray[0];
-        budget.GetProperty("Name").GetString().ShouldBe("Test Budget");
-        budget.GetProperty("Amount").GetDouble().ShouldBe(1000.0);
-        budget.GetProperty("TimeGrain").GetString().ShouldBe("Monthly");
-        budget.GetProperty("CurrentSpendAmount").GetDouble().ShouldBe(250.0);
-        budget.GetProperty("CurrentSpendCurrency").GetString().ShouldBe("USD");
+            // Assert - Validate JSON can be parsed and contains expected data
+            var parsedJson = JsonDocument.Parse(jsonOutput);
+            var budgetArray = parsedJson.RootElement;
+            budgetArray.ValueKind.ShouldBe(JsonValueKind.Array);
+            budgetArray.GetArrayLength().ShouldBe(1);
+            
+            var budget = budgetArray[0];
+            budget.GetProperty("Name").GetString().ShouldBe("Test Budget");
+            budget.GetProperty("Amount").GetDouble().ShouldBe(1000.0);
+            budget.GetProperty("TimeGrain").GetString().ShouldBe("Monthly");
+            budget.GetProperty("CurrentSpendAmount").GetDouble().ShouldBe(250.0);
+            budget.GetProperty("CurrentSpendCurrency").GetString().ShouldBe("USD");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
     }
 
     [Fact]
     public async Task WriteCostByResource_ProducesValidJsonOutput()
     {
         // Arrange
+        var originalOut = Console.Out;
         var output = new StringWriter();
         Console.SetOut(output);
         
-        var settings = new AzureCostCli.Commands.CostByResource.CostByResourceSettings { Output = OutputFormat.Json };
-        var resources = new List<CostResourceItem>
+        try
         {
-            new(100.0, 105.0, "/subscriptions/123/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm", 
-                "Microsoft.Compute/virtualMachines", "East US", "Usage", "test-rg", "Microsoft", 
-                "Virtual Machines", "Standard", "D2s v3", new Dictionary<string, string>(), "USD")
-        };
+            var settings = new AzureCostCli.Commands.CostByResource.CostByResourceSettings { Output = OutputFormat.Json };
+            var resources = new List<CostResourceItem>
+            {
+                new(100.0, 105.0, "/subscriptions/123/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm", 
+                    "Microsoft.Compute/virtualMachines", "East US", "Usage", "test-rg", "Microsoft", 
+                    "Virtual Machines", "Standard", "D2s v3", new Dictionary<string, string>(), "USD")
+            };
 
-        // Act
-        await _formatter.WriteCostByResource(settings, resources);
-        var jsonOutput = output.ToString();
+            // Act
+            await _formatter.WriteCostByResource(settings, resources);
+            var jsonOutput = output.ToString();
 
-        // Assert - Validate JSON structure and content
-        var parsedJson = JsonDocument.Parse(jsonOutput);
-        var resourceArray = parsedJson.RootElement;
-        resourceArray.ValueKind.ShouldBe(JsonValueKind.Array);
-        resourceArray.GetArrayLength().ShouldBe(1);
-        
-        var resource = resourceArray[0];
-        resource.GetProperty("Cost").GetDouble().ShouldBe(100.0);
-        resource.GetProperty("CostUSD").GetDouble().ShouldBe(105.0);
-        resource.GetProperty("ResourceType").GetString().ShouldBe("Microsoft.Compute/virtualMachines");
-        resource.GetProperty("ResourceLocation").GetString().ShouldBe("East US");
-        resource.GetProperty("ResourceGroupName").GetString().ShouldBe("test-rg");
-        resource.GetProperty("ServiceName").GetString().ShouldBe("Virtual Machines");
-        resource.GetProperty("Currency").GetString().ShouldBe("USD");
+            // Assert - Validate JSON structure and content
+            var parsedJson = JsonDocument.Parse(jsonOutput);
+            var resourceArray = parsedJson.RootElement;
+            resourceArray.ValueKind.ShouldBe(JsonValueKind.Array);
+            resourceArray.GetArrayLength().ShouldBe(1);
+            
+            var resource = resourceArray[0];
+            resource.GetProperty("Cost").GetDouble().ShouldBe(100.0);
+            resource.GetProperty("CostUSD").GetDouble().ShouldBe(105.0);
+            resource.GetProperty("ResourceType").GetString().ShouldBe("Microsoft.Compute/virtualMachines");
+            resource.GetProperty("ResourceLocation").GetString().ShouldBe("East US");
+            resource.GetProperty("ResourceGroupName").GetString().ShouldBe("test-rg");
+            resource.GetProperty("ServiceName").GetString().ShouldBe("Virtual Machines");
+            resource.GetProperty("Currency").GetString().ShouldBe("USD");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
     }
 
     [Fact]
@@ -166,6 +184,68 @@ public class JsonOutputFormatterTests
 
         // Assert
         resourceName.ShouldBe("my-test-vm");
+    }
+
+    [Fact]
+    public async Task WriteCostByResource_WithJsoncFormat_ProducesColoredJsonOutput()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new CostByResourceSettings { Output = OutputFormat.Jsonc };
+            var resources = new List<CostResourceItem>
+            {
+                new(100.0, 105.0, "/subscriptions/123/resourceGroups/test/providers/Microsoft.Compute/virtualMachines/test-vm", 
+                    "Microsoft.Compute/virtualMachines", "East US", "Usage", "test-rg", "Microsoft", 
+                    "Virtual Machines", "Standard", "D2s v3", new Dictionary<string, string>(), "USD")
+            };
+
+            // Act
+            await _formatter.WriteCostByResource(settings, resources);
+            var outputText = output.ToString();
+
+            // Assert - Should contain ANSI escape sequences for colors and not be empty
+            outputText.ShouldNotBeEmpty();
+            outputText.ShouldContain('\x1b'); // ANSI escape character indicates colored output
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public async Task WriteCostByResource_WithUnsupportedFormat_ThrowsArgumentException()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new CostByResourceSettings { Output = OutputFormat.Markdown }; // Unsupported format
+            var resources = new List<CostResourceItem>
+            {
+                new(100.0, 105.0, "/subscriptions/123/test-vm", 
+                    "Microsoft.Compute/virtualMachines", "East US", "Usage", "test-rg", "Microsoft", 
+                    "Virtual Machines", "Standard", "D2s v3", new Dictionary<string, string>(), "USD")
+            };
+
+            // Act & Assert
+            var exception = await Should.ThrowAsync<ArgumentException>(
+                async () => await _formatter.WriteCostByResource(settings, resources));
+            
+            exception.Message.ShouldContain("JsonOutputFormatter does not support output format: Markdown");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
     }
 
     [Fact]

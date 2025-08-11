@@ -212,7 +212,7 @@ public override Task WriteAccumulatedDiffCost(DiffSettings settings, Accumulated
             case OutputFormat.Json:
                 Console.Write(json);
                 break;
-            default:
+            case OutputFormat.Jsonc:
                 AnsiConsole.Write(
                     new JsonText(json)
                         .BracesColor(Color.Red)
@@ -224,6 +224,8 @@ public override Task WriteAccumulatedDiffCost(DiffSettings settings, Accumulated
                         .BooleanColor(Color.Red)
                         .NullColor(Color.Green));
                 break;
+            default:
+                throw new ArgumentException($"JsonOutputFormatter does not support output format: {settings.Output}");
         }
     }
 
