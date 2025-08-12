@@ -7,6 +7,12 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
 
 
+permissions:
+  contents: read # This is required for actions/checkout
+  checks: write # This is required for dorny/test-reporter
+  id-token: write # This is required for requesting the JWT
+  pull-requests: write # This is required for commenting on PRs
+
 on:
   push:
     branches: [ "main" ]
@@ -43,8 +49,39 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ../TestResults --logger trx --logger "console;verbosity=detailed"
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
+    - name: Generate coverage report
+      run: |
+        dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.4.9
+        reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Cobertura;MarkdownSummaryGithub"
+        
+    - name: Create Test Report
+      uses: dorny/test-reporter@v2
+      if: always()
       with:
-        file: ./TestResults/**/coverage.cobertura.xml
-        fail_ci_if_error: false
+        name: Valuations API Tests
+        path: "**/*.trx" # Path to test results (inside artifact .zip)
+        reporter: dotnet-trx # Format of test results
+
+    - name: Add Coverage Report to Job Summary
+      if: always()
+      run: |
+        if [ -f "coverage-report/SummaryGithub.md" ]; then
+          echo "## 📊 Code Coverage Report" >> $GITHUB_STEP_SUMMARY
+          cat coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+        else
+          echo "## ⚠️ No Coverage Report Generated" >> $GITHUB_STEP_SUMMARY
+          echo "Coverage report file not found at coverage-report/SummaryGithub.md" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Code Coverage Report
+      if: github.event_name == 'pull_request'
+      uses: 5monkeys/cobertura-action@master
+      with:
+        path: src/coverage-report/Cobertura.xml
+        minimum_coverage: 75
+        fail_below_threshold: false
+        show_lines: true
+        show_branch: true
+        show_missing: true
+        link_missing_lines: true
+        only_changed_files: true
