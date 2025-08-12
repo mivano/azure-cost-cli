@@ -155,7 +155,7 @@ public class CsvOutputFormatter : BaseOutputFormatter
 
     private static Task ExportToCsv(bool skipHeader, IEnumerable<object> resources)
     {
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        var config = new CsvConfiguration(CultureInfo.CurrentCulture)
         {
             HasHeaderRecord = skipHeader == false
         };
