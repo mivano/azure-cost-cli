@@ -52,7 +52,7 @@ jobs:
     - name: Generate coverage report
       run: |
         dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.4.9
-        reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Cobertura;MarkdownSummaryGithub"
+        reportgenerator -reports:"../TestResults/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Cobertura;MarkdownSummaryGithub"
         
     - name: Create Test Report
       uses: dorny/test-reporter@v2
