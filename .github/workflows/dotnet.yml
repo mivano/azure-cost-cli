@@ -48,7 +48,7 @@ jobs:
     - name: Build
       run: dotnet build --no-restore
     - name: Test
-      run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --results-directory ../TestResults --logger "trx;LogFileName=test_results.trx" --logger "console;verbosity=detailed" --results-directory ./coverage
+      run: dotnet test --no-build --verbosity normal --collect:"XPlat Code Coverage" --logger "trx;LogFileName=test_results.trx" --logger "console;verbosity=detailed" --results-directory ./coverage
     - name: Generate coverage report
       run: |
          dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.4.9
