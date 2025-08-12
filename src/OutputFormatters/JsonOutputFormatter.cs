@@ -186,17 +186,13 @@ public override Task WriteAccumulatedDiffCost(DiffSettings settings, Accumulated
         null
     );
 
-    return WriteAccumulatedCost(new AccumulatedCostSettings{ UseUSD = settings.UseUSD}, diffResult);
+    return WriteAccumulatedCost(new AccumulatedCostSettings{ UseUSD = settings.UseUSD, Output = settings.Output}, diffResult);
 }
 
     private static void WriteJson(ICostSettings settings, object items)
     {
 
         var options = new JsonSerializerOptions { WriteIndented = true };
-        
-#if NET6_0
-        options.Converters.Add(new DateOnlyJsonConverter());
-#endif
         
         var json = JsonSerializer.Serialize(items, options );
 
