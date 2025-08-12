@@ -77,7 +77,7 @@ jobs:
       if: github.event_name == 'pull_request'
       uses: 5monkeys/cobertura-action@master
       with:
-        path: src/coverage-report/Cobertura.xml
+        path: coverage-report/Cobertura.xml
         minimum_coverage: 75
         fail_below_threshold: false
         show_lines: true
