@@ -292,6 +292,43 @@ public class TextOutputFormatterTests
             Console.SetOut(originalOut);
         }
     }
+
+    [Fact]
+    public async Task WriteAccumulatedCost_WithEmptyCosts_ShouldNotThrow()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new AzureCostCli.Commands.AccumulatedCost.AccumulatedCostSettings();
+            var subscription = new Subscription("123", "Test Subscription", new object[0], "Test", "Test", "Test Subscription", "Active", new SubscriptionPolicies("", "", ""));
+            var accumulatedCostDetails = new AccumulatedCostDetails(
+                subscription,
+                null,
+                new List<CostItem>(), // Empty costs list
+                new List<CostItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                null
+            );
+
+            // Act & Assert - Should not throw
+            await _formatter.WriteAccumulatedCost(settings, accumulatedCostDetails);
+            var textOutput = output.ToString();
+
+            // Assert - Validate it shows a "No data found" message
+            textOutput.ShouldContain("Azure Cost Overview");
+            textOutput.ShouldContain("No data found");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
 }
 
 [Collection("ConsoleOutputTests")]

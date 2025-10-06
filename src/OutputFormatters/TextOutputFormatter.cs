@@ -17,6 +17,14 @@ public class TextOutputFormatter : BaseOutputFormatter
 {
     public override Task WriteAccumulatedCost(AccumulatedCostSettings settings, AccumulatedCostDetails accumulatedCostDetails)
     {
+        if (accumulatedCostDetails.Costs.Any() == false)
+        {
+            Console.WriteLine("Azure Cost Overview");
+            Console.WriteLine();
+            Console.WriteLine("No data found");
+            return Task.CompletedTask;
+        }
+
         var output = new
         {
             costs = new
