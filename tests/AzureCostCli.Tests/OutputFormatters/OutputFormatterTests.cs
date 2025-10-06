@@ -1,3 +1,4 @@
+using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.CostApi;
@@ -291,6 +292,43 @@ public class TextOutputFormatterTests
             Console.SetOut(originalOut);
         }
     }
+
+    [Fact]
+    public async Task WriteAccumulatedCost_WithEmptyCosts_ShouldNotThrow()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new AzureCostCli.Commands.AccumulatedCost.AccumulatedCostSettings();
+            var subscription = new Subscription("123", "Test Subscription", new object[0], "Test", "Test", "Test Subscription", "Active", new SubscriptionPolicies("", "", ""));
+            var accumulatedCostDetails = new AccumulatedCostDetails(
+                subscription,
+                null,
+                new List<CostItem>(), // Empty costs list
+                new List<CostItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                null
+            );
+
+            // Act & Assert - Should not throw
+            await _formatter.WriteAccumulatedCost(settings, accumulatedCostDetails);
+            var textOutput = output.ToString();
+
+            // Assert - Validate it shows a "No data found" message
+            textOutput.ShouldContain("Azure Cost Overview");
+            textOutput.ShouldContain("No data found");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
 }
 
 [Collection("ConsoleOutputTests")]
@@ -400,6 +438,86 @@ public class MarkdownOutputFormatterTests
             markdownOutput.ShouldContain("|test-vm | Microsoft.Compute/virtualMachines | East US | test-rg |");
             markdownOutput.ShouldContain("100");  // Check for the number without specific formatting
             markdownOutput.ShouldContain("USD");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public async Task WriteAccumulatedCost_WithEmptyCosts_ShouldNotThrow()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new AzureCostCli.Commands.AccumulatedCost.AccumulatedCostSettings();
+            var subscription = new Subscription("123", "Test Subscription", new object[0], "Test", "Test", "Test Subscription", "Active", new SubscriptionPolicies("", "", ""));
+            var accumulatedCostDetails = new AccumulatedCostDetails(
+                subscription,
+                null,
+                new List<CostItem>(), // Empty costs list
+                new List<CostItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                null
+            );
+
+            // Act & Assert - Should not throw
+            await _formatter.WriteAccumulatedCost(settings, accumulatedCostDetails);
+            var markdownOutput = output.ToString();
+
+            // Assert - Validate it shows a "No data found" message
+            markdownOutput.ShouldContain("# Azure Cost Overview");
+            markdownOutput.ShouldContain("No data found");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
+
+    [Fact]
+    public async Task WriteAccumulatedCost_WithOnlyForecastedCosts_ShouldShowForecasts()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new AzureCostCli.Commands.AccumulatedCost.AccumulatedCostSettings();
+            var subscription = new Subscription("123", "Test Subscription", new object[0], "Test", "Test", "Test Subscription", "Active", new SubscriptionPolicies("", "", ""));
+            var forecastedCosts = new List<CostItem>
+            {
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), 50.0, 50.0, "USD"),
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)), 60.0, 60.0, "USD")
+            };
+            var accumulatedCostDetails = new AccumulatedCostDetails(
+                subscription,
+                null,
+                new List<CostItem>(), // Empty costs list
+                forecastedCosts, // But has forecasted costs
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                null
+            );
+
+            // Act & Assert - Should not throw
+            await _formatter.WriteAccumulatedCost(settings, accumulatedCostDetails);
+            var markdownOutput = output.ToString();
+
+            // Assert - Validate it shows forecasted costs
+            markdownOutput.ShouldContain("# Azure Cost Overview");
+            markdownOutput.ShouldContain("Forecasted cost");
+            markdownOutput.ShouldContain("No historical cost data available");
         }
         finally
         {
