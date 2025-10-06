@@ -18,6 +18,14 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 {
     public override Task WriteAccumulatedCost(AccumulatedCostSettings settings,AccumulatedCostDetails accumulatedCostDetails)
     {
+        if (accumulatedCostDetails.Costs.Any() == false)
+        {
+            Console.WriteLine("# Azure Cost Overview");
+            Console.WriteLine();
+            Console.WriteLine("**No data found**");
+            return Task.CompletedTask;
+        }
+
         var output = new
         {
             costs = new
@@ -71,8 +79,9 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
             Console.WriteLine($"   {currency} {Math.Round(accumulatedCostValue, 2):F2} :0, {Math.Round(accumulatedCostValue* 100, 0) }");
         }
 
-        var forecastedData = accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
-            .ToList();
+        var forecastedData = accumulatedCost.Any() 
+            ? accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date).ToList()
+            : new List<CostItem>();
       
         foreach (var day in forecastedData)
         {
