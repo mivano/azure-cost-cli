@@ -481,4 +481,47 @@ public class MarkdownOutputFormatterTests
             Console.SetOut(originalOut);
         }
     }
+
+    [Fact]
+    public async Task WriteAccumulatedCost_WithOnlyForecastedCosts_ShouldShowForecasts()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new AzureCostCli.Commands.AccumulatedCost.AccumulatedCostSettings();
+            var subscription = new Subscription("123", "Test Subscription", new object[0], "Test", "Test", "Test Subscription", "Active", new SubscriptionPolicies("", "", ""));
+            var forecastedCosts = new List<CostItem>
+            {
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)), 50.0, 50.0, "USD"),
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)), 60.0, 60.0, "USD")
+            };
+            var accumulatedCostDetails = new AccumulatedCostDetails(
+                subscription,
+                null,
+                new List<CostItem>(), // Empty costs list
+                forecastedCosts, // But has forecasted costs
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                new List<CostNamedItem>(),
+                null
+            );
+
+            // Act & Assert - Should not throw
+            await _formatter.WriteAccumulatedCost(settings, accumulatedCostDetails);
+            var markdownOutput = output.ToString();
+
+            // Assert - Validate it shows forecasted costs
+            markdownOutput.ShouldContain("# Azure Cost Overview");
+            markdownOutput.ShouldContain("Forecasted cost");
+            markdownOutput.ShouldContain("No historical cost data available");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
 }

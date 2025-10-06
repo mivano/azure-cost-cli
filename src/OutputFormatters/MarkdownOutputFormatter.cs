@@ -18,7 +18,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
 {
     public override Task WriteAccumulatedCost(AccumulatedCostSettings settings,AccumulatedCostDetails accumulatedCostDetails)
     {
-        if (accumulatedCostDetails.Costs.Any() == false)
+        if (accumulatedCostDetails.Costs.Any() == false && accumulatedCostDetails.ForecastedCosts.Any() == false)
         {
             Console.WriteLine("# Azure Cost Overview");
             Console.WriteLine();
@@ -26,6 +26,8 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
             return Task.CompletedTask;
         }
 
+        var hasCosts = accumulatedCostDetails.Costs.Any();
+        
         var output = new
         {
             costs = new
@@ -41,23 +43,36 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
             },
         };
 
-        var currency = settings.UseUSD ? "USD":accumulatedCostDetails.Costs.FirstOrDefault()?.Currency;
+        var currency = settings.UseUSD ? "USD" : (hasCosts ? accumulatedCostDetails.Costs.FirstOrDefault()?.Currency : accumulatedCostDetails.ForecastedCosts.FirstOrDefault()?.Currency);
         var culture = CultureInfo.GetCultureInfo("en-US");
 
         Console.WriteLine("# Azure Cost Overview");
         Console.WriteLine();
-        Console.WriteLine(
-            $"> Accumulated cost for subscription id `{accumulatedCostDetails.Subscription.displayName}` from **{accumulatedCostDetails.Costs.Min(a => a.Date)}** to **{accumulatedCostDetails.Costs.Max(a => a.Date)}**");
-        Console.WriteLine();
-        Console.WriteLine("## Totals");
-        Console.WriteLine();
-        Console.WriteLine("|Period|Amount|");
-        Console.WriteLine("|---|---:|");
-        Console.WriteLine($"|Today|{output.costs.todaysCost:N2} {currency}|");
-        Console.WriteLine($"|Yesterday|{output.costs.yesterdayCost:N2} {currency}|");
-        Console.WriteLine($"|Last 7 days|{output.costs.lastSevenDaysCost:N2} {currency}|");
-        Console.WriteLine($"|Last 30 days|{output.costs.lastThirtyDaysCost:N2} {currency}|");
-        Console.WriteLine($"|Total cost in timeframe|{output.costs.totalCostInTimeframe:N2} {currency}|");
+        
+        if (hasCosts)
+        {
+            Console.WriteLine(
+                $"> Accumulated cost for subscription id `{accumulatedCostDetails.Subscription.displayName}` from **{accumulatedCostDetails.Costs.Min(a => a.Date)}** to **{accumulatedCostDetails.Costs.Max(a => a.Date)}**");
+            Console.WriteLine();
+            Console.WriteLine("## Totals");
+            Console.WriteLine();
+            Console.WriteLine("|Period|Amount|");
+            Console.WriteLine("|---|---:|");
+            Console.WriteLine($"|Today|{output.costs.todaysCost:N2} {currency}|");
+            Console.WriteLine($"|Yesterday|{output.costs.yesterdayCost:N2} {currency}|");
+            Console.WriteLine($"|Last 7 days|{output.costs.lastSevenDaysCost:N2} {currency}|");
+            Console.WriteLine($"|Last 30 days|{output.costs.lastThirtyDaysCost:N2} {currency}|");
+            Console.WriteLine($"|Total cost in timeframe|{output.costs.totalCostInTimeframe:N2} {currency}|");
+        }
+        else
+        {
+            Console.WriteLine(
+                $"> Forecasted cost for subscription id `{accumulatedCostDetails.Subscription.displayName}` from **{accumulatedCostDetails.ForecastedCosts.Min(a => a.Date)}** to **{accumulatedCostDetails.ForecastedCosts.Max(a => a.Date)}**");
+            Console.WriteLine();
+            Console.WriteLine("## Forecasted Costs");
+            Console.WriteLine();
+            Console.WriteLine("No historical cost data available. Showing forecasted costs only.");
+        }
 
         // Generate a gantt chart using mermaidjs
         Console.WriteLine();
@@ -79,8 +94,9 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
             Console.WriteLine($"   {currency} {Math.Round(accumulatedCostValue, 2):F2} :0, {Math.Round(accumulatedCostValue* 100, 0) }");
         }
 
-        var forecastedData = accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
-            .ToList();
+        var forecastedData = hasCosts 
+            ? accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date).ToList()
+            : accumulatedCostDetails.ForecastedCosts.OrderBy(x => x.Date).ToList();
       
         foreach (var day in forecastedData)
         {
