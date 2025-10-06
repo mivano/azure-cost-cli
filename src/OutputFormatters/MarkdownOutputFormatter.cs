@@ -79,9 +79,8 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
             Console.WriteLine($"   {currency} {Math.Round(accumulatedCostValue, 2):F2} :0, {Math.Round(accumulatedCostValue* 100, 0) }");
         }
 
-        var forecastedData = accumulatedCost.Any() 
-            ? accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date).ToList()
-            : new List<CostItem>();
+        var forecastedData = accumulatedCostDetails.ForecastedCosts.Where(x => x.Date > accumulatedCost.Last().Date).OrderBy(x => x.Date)
+            .ToList();
       
         foreach (var day in forecastedData)
         {
