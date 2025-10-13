@@ -36,8 +36,8 @@
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
       <PackageReference Include="Polly" Version="8.6.4" />
       <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
-      <PackageReference Include="Spectre.Console" Version="0.51.1" />
-      <PackageReference Include="Spectre.Console.Cli" Version="0.51.1" />
+      <PackageReference Include="Spectre.Console" Version="0.52.0" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.52.0" />
       <PackageReference Include="Spectre.Console.Json" Version="0.51.1" />
     </ItemGroup>
     
