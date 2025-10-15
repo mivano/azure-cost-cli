@@ -524,4 +524,105 @@ public class MarkdownOutputFormatterTests
             Console.SetOut(originalOut);
         }
     }
+
+    [Fact]
+    public async Task WriteAccumulatedDiffCost_WithValidData_ProducesValidMarkdownOutput()
+    {
+        // Arrange
+        var originalOut = Console.Out;
+        var output = new StringWriter();
+        Console.SetOut(output);
+        
+        try
+        {
+            var settings = new AzureCostCli.Commands.Diff.DiffSettings
+            {
+                UseUSD = false
+            };
+
+            var sourceCosts = new List<CostItem>
+            {
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)), 50.0, 52.5, "EUR"),
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)), 60.0, 63.0, "EUR")
+            };
+
+            var targetCosts = new List<CostItem>
+            {
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-2)), 55.0, 57.75, "EUR"),
+                new CostItem(DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-1)), 65.0, 68.25, "EUR")
+            };
+
+            var sourceServiceCosts = new List<CostNamedItem>
+            {
+                new CostNamedItem("Storage", 30.0, 31.5, "EUR"),
+                new CostNamedItem("Compute", 80.0, 84.0, "EUR")
+            };
+
+            var targetServiceCosts = new List<CostNamedItem>
+            {
+                new CostNamedItem("Storage", 35.0, 36.75, "EUR"),
+                new CostNamedItem("Compute", 85.0, 89.25, "EUR")
+            };
+
+            var accumulatedCostSource = new AccumulatedCostDetails(
+                null,
+                null,
+                sourceCosts,
+                new List<CostItem>(),
+                sourceServiceCosts,
+                new List<CostNamedItem> { new CostNamedItem("westeurope", 110.0, 115.5, "EUR") },
+                new List<CostNamedItem> { new CostNamedItem("rg-test", 110.0, 115.5, "EUR") },
+                null
+            );
+
+            var accumulatedCostTarget = new AccumulatedCostDetails(
+                null,
+                null,
+                targetCosts,
+                new List<CostItem>(),
+                targetServiceCosts,
+                new List<CostNamedItem> { new CostNamedItem("westeurope", 120.0, 126.0, "EUR") },
+                new List<CostNamedItem> { new CostNamedItem("rg-test", 120.0, 126.0, "EUR") },
+                null
+            );
+
+            // Act
+            await _formatter.WriteAccumulatedDiffCost(settings, accumulatedCostSource, accumulatedCostTarget);
+            var markdownOutput = output.ToString();
+
+            // Assert - Validate markdown structure
+            markdownOutput.ShouldContain("# Azure Cost Diff");
+            markdownOutput.ShouldContain("**Source**:");
+            markdownOutput.ShouldContain("**Target**:");
+            
+            // Check for section headers
+            markdownOutput.ShouldContain("## By Service Name");
+            markdownOutput.ShouldContain("## By Location");
+            markdownOutput.ShouldContain("## By Resource Group");
+            markdownOutput.ShouldContain("## Summary");
+            
+            // Check for markdown table structure
+            markdownOutput.ShouldContain("|Name|Source|Target|Change|");
+            markdownOutput.ShouldContain("|---|---:|---:|---:|");
+            
+            // Check for data presence
+            markdownOutput.ShouldContain("Storage");
+            markdownOutput.ShouldContain("Compute");
+            markdownOutput.ShouldContain("westeurope");
+            markdownOutput.ShouldContain("rg-test");
+            markdownOutput.ShouldContain("TOTAL COSTS");
+            markdownOutput.ShouldContain("SUBTOTAL");
+            
+            // Check for currency
+            markdownOutput.ShouldContain("EUR");
+            
+            // Check that changes are shown with +/- signs
+            var hasChangeIndicator = markdownOutput.Contains("+") || markdownOutput.Contains("-");
+            hasChangeIndicator.ShouldBeTrue("Should contain change indicators (+ or -)");
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+    }
 }

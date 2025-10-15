@@ -393,7 +393,115 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
     public override Task WriteAccumulatedDiffCost(DiffSettings settings, AccumulatedCostDetails accumulatedCostSource,
         AccumulatedCostDetails accumulatedCostTarget)
     {
+        var culture = CultureInfo.GetCultureInfo("en-US");
+        var currency = settings.UseUSD ? "USD" : accumulatedCostSource.Costs.FirstOrDefault()?.Currency ?? "USD";
+        
+        // Create header info
+        var sourceRange = $"{accumulatedCostSource.Costs.Min(a => a.Date)} to {accumulatedCostSource.Costs.Max(a => a.Date)}";
+        var targetRange = $"{accumulatedCostTarget.Costs.Min(a => a.Date)} to {accumulatedCostTarget.Costs.Max(a => a.Date)}";
+        
+        Console.WriteLine("# Azure Cost Diff");
+        Console.WriteLine();
+        Console.WriteLine($"**Source**: {sourceRange}");
+        Console.WriteLine();
+        Console.WriteLine($"**Target**: {targetRange}");
+        Console.WriteLine();
+        
+        // Compare costs by service names
+        Console.WriteLine("## By Service Name");
+        Console.WriteLine();
+        WriteComparisonTable(
+            accumulatedCostSource.ByServiceNameCosts.ToList(),
+            accumulatedCostTarget.ByServiceNameCosts.ToList(),
+            settings.UseUSD,
+            currency,
+            culture);
+        
+        // Compare costs by location
+        Console.WriteLine();
+        Console.WriteLine("## By Location");
+        Console.WriteLine();
+        WriteComparisonTable(
+            accumulatedCostSource.ByLocationCosts.ToList(),
+            accumulatedCostTarget.ByLocationCosts.ToList(),
+            settings.UseUSD,
+            currency,
+            culture);
+        
+        // Compare costs by resource group
+        Console.WriteLine();
+        Console.WriteLine("## By Resource Group");
+        Console.WriteLine();
+        WriteComparisonTable(
+            accumulatedCostSource.ByResourceGroupCosts.ToList(),
+            accumulatedCostTarget.ByResourceGroupCosts.ToList(),
+            settings.UseUSD,
+            currency,
+            culture);
+        
+        // Calculate totals
+        var totalSource = accumulatedCostSource.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+        var totalTarget = accumulatedCostTarget.Costs.Sum(a => settings.UseUSD ? a.CostUsd : a.Cost);
+        var totalDiff = totalTarget - totalSource;
+        
+        // Summary section
+        Console.WriteLine();
+        Console.WriteLine("## Summary");
+        Console.WriteLine();
+        Console.WriteLine("|Comparison|Source|Target|Change|");
+        Console.WriteLine("|---|---:|---:|---:|");
+        
+        var diffSign = totalDiff >= 0 ? "+" : "";
+        Console.WriteLine($"|**TOTAL COSTS**|{totalSource.ToString("N2", culture)} {currency}|{totalTarget.ToString("N2", culture)} {currency}|{diffSign}{totalDiff.ToString("N2", culture)} {currency}|");
+        
         return Task.CompletedTask;
+    }
+    
+    private void WriteComparisonTable(
+        List<CostNamedItem> sourceItems,
+        List<CostNamedItem> targetItems,
+        bool useUSD,
+        string currency,
+        CultureInfo culture)
+    {
+        var allItems = sourceItems.Select(a => a.ItemName)
+            .Union(targetItems.Select(a => a.ItemName))
+            .OrderByDescending(name =>
+                Math.Max(
+                    sourceItems.Where(a => a.ItemName == name).Sum(a => useUSD ? a.CostUsd : a.Cost),
+                    targetItems.Where(a => a.ItemName == name).Sum(a => useUSD ? a.CostUsd : a.Cost)
+                ))
+            .ToList();
+        
+        Console.WriteLine("|Name|Source|Target|Change|");
+        Console.WriteLine("|---|---:|---:|---:|");
+        
+        var totalSource = 0.0;
+        var totalTarget = 0.0;
+        
+        foreach (var item in allItems)
+        {
+            var sourceCost = sourceItems
+                .Where(a => a.ItemName == item)
+                .Sum(a => useUSD ? a.CostUsd : a.Cost);
+            
+            var targetCost = targetItems
+                .Where(a => a.ItemName == item)
+                .Sum(a => useUSD ? a.CostUsd : a.Cost);
+            
+            totalSource += sourceCost;
+            totalTarget += targetCost;
+            
+            var diff = targetCost - sourceCost;
+            var diffSign = diff >= 0 ? "+" : "";
+            
+            Console.WriteLine($"|{item}|{sourceCost.ToString("N2", culture)} {currency}|{targetCost.ToString("N2", culture)} {currency}|{diffSign}{diff.ToString("N2", culture)} {currency}|");
+        }
+        
+        // Add subtotal row
+        var totalDiff = totalTarget - totalSource;
+        var totalDiffSign = totalDiff >= 0 ? "+" : "";
+        Console.WriteLine($"|**SUBTOTAL**|**{totalSource.ToString("N2", culture)} {currency}**|**{totalTarget.ToString("N2", culture)} {currency}**|**{totalDiffSign}{totalDiff.ToString("N2", culture)} {currency}**|");
     }
     
     public override Task WriteRegions(RegionsSettings settings, IReadOnlyCollection<AzureRegion> regions)
