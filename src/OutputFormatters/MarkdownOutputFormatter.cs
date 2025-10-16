@@ -405,8 +405,12 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         }
         
         // Create header info
-        var sourceRange = $"{accumulatedCostSource.Costs.Min(a => a.Date)} to {accumulatedCostSource.Costs.Max(a => a.Date)}";
-        var targetRange = $"{accumulatedCostTarget.Costs.Min(a => a.Date)} to {accumulatedCostTarget.Costs.Max(a => a.Date)}";
+        var sourceRange = accumulatedCostSource.Costs.Any()
+            ? $"{accumulatedCostSource.Costs.Min(a => a.Date)} to {accumulatedCostSource.Costs.Max(a => a.Date)}"
+            : "N/A";
+        var targetRange = accumulatedCostTarget.Costs.Any()
+            ? $"{accumulatedCostTarget.Costs.Min(a => a.Date)} to {accumulatedCostTarget.Costs.Max(a => a.Date)}"
+            : "N/A";
         
         Console.WriteLine("# Azure Cost Diff");
         Console.WriteLine();
