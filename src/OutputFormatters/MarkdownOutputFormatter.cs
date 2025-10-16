@@ -394,7 +394,15 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         AccumulatedCostDetails accumulatedCostTarget)
     {
         var culture = CultureInfo.GetCultureInfo("en-US");
-        var currency = settings.UseUSD ? "USD" : accumulatedCostSource.Costs.FirstOrDefault()?.Currency ?? "USD";
+        var currency = "USD";
+        if (!settings.UseUSD)
+        {
+            var firstCost = accumulatedCostSource.Costs.FirstOrDefault();
+            if (firstCost != null && !string.IsNullOrEmpty(firstCost.Currency))
+            {
+                currency = firstCost.Currency;
+            }
+        }
         
         // Create header info
         var sourceRange = $"{accumulatedCostSource.Costs.Min(a => a.Date)} to {accumulatedCostSource.Costs.Max(a => a.Date)}";
