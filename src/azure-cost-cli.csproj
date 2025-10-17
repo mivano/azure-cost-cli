@@ -28,17 +28,17 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="Azure.Identity" Version="1.16.0" />
+      <PackageReference Include="Azure.Identity" Version="1.17.0" />
       <PackageReference Include="CsvHelper" Version="33.1.0" />
       <PackageReference Include="JmesPath.Net" Version="1.0.330" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
-      <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.9" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.10" />
+      <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="9.0.10" />
       <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
       <PackageReference Include="Polly" Version="8.6.4" />
       <PackageReference Include="Polly.Extensions.Http" Version="3.0.0" />
-      <PackageReference Include="Spectre.Console" Version="0.51.1" />
-      <PackageReference Include="Spectre.Console.Cli" Version="0.51.1" />
-      <PackageReference Include="Spectre.Console.Json" Version="0.51.1" />
+      <PackageReference Include="Spectre.Console" Version="0.52.0" />
+      <PackageReference Include="Spectre.Console.Cli" Version="0.52.0" />
+      <PackageReference Include="Spectre.Console.Json" Version="0.52.0" />
     </ItemGroup>
     
     <ItemGroup>
