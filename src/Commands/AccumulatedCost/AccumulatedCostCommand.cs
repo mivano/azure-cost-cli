@@ -36,7 +36,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                 var subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
                 settings.Subscription = subscriptionId;
             }
-            catch (Exception ex) when (ex is FormatException or ArgumentNullException or Exception)
+            catch (Exception)
             {
                 // If we can't get the subscription from Azure CLI, return an error
                 return ValidationResult.Error("No subscription ID provided and unable to retrieve from Azure CLI. Please specify a subscription ID using -s or --subscription, or login to Azure CLI using 'az login'. Use --help for more information.");
