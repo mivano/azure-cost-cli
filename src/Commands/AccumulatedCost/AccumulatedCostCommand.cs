@@ -27,6 +27,22 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
 
     public override ValidationResult Validate(CommandContext context, AccumulatedCostSettings settings)
     {
+        // Check if we have any scope parameters when the scope requires subscription
+        if (settings.GetScope.IsSubscriptionBased && !settings.Subscription.HasValue)
+        {
+            // Try to get subscription from Azure CLI
+            try
+            {
+                var subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
+                settings.Subscription = subscriptionId;
+            }
+            catch
+            {
+                // If we can't get the subscription from Azure CLI, return an error
+                return ValidationResult.Error("No subscription ID provided and unable to retrieve from Azure CLI. Please specify a subscription ID using -s or --subscription, or login to Azure CLI using 'az login'. Use --help for more information.");
+            }
+        }
+        
         // Validate if the timeframe is set to Custom, then the from and to dates must be specified and the from date must be before the to date
         if (settings.Timeframe == TimeframeType.Custom)
         {
@@ -58,31 +74,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         _costRetriever.CostApiAddress = settings.CostApiAddress;
         _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
 
-        // Get the subscription ID from the settings
+        // Get the subscription ID from the settings (already validated and set in Validate method)
         var subscriptionId = settings.Subscription;
-
-        if (subscriptionId.HasValue == false && (settings.GetScope.IsSubscriptionBased))
-        {
-            // Get the subscription ID from the Azure CLI
-            try
-            {
-                if (settings.Debug)
-                    AnsiConsole.WriteLine("No subscription ID specified. Trying to retrieve the default subscription ID from Azure CLI.");
-
-                subscriptionId = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
-
-                if (settings.Debug)
-                    AnsiConsole.WriteLine($"Default subscription ID retrieved from az cli: {subscriptionId}");
-
-                settings.Subscription = subscriptionId;
-            }
-            catch (Exception e)
-            {
-                AnsiConsole.WriteException(new ArgumentException(
-                    "Missing subscription ID. Please specify a subscription ID or login to Azure CLI.", e));
-                return -1;
-            }
-        }
 
         AccumulatedCostDetails accumulatedCost = null;
 
