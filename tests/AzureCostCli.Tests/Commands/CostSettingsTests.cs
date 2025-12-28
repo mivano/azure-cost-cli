@@ -140,6 +140,141 @@ public class CostSettingsTests
         settings.CostApiAddress.ShouldBe("https://management.azure.com/");
         settings.PriceApiAddress.ShouldBe("https://prices.azure.com/");
         settings.HttpTimeout.ShouldBe(100);
+        settings.From.ShouldBeNull();
+        settings.To.ShouldBeNull();
+    }
+
+    [Fact]
+    public void ApplyAutoTimeframe_WithBothFromAndTo_SetsTimeframeToCustom()
+    {
+        // Arrange
+        var settings = new CostSettings
+        {
+            Timeframe = TimeframeType.BillingMonthToDate,
+            From = new DateOnly(2023, 1, 1),
+            To = new DateOnly(2023, 1, 31)
+        };
+
+        // Act
+        settings.ApplyAutoTimeframe();
+
+        // Assert
+        settings.Timeframe.ShouldBe(TimeframeType.Custom);
+    }
+
+    [Fact]
+    public void ApplyAutoTimeframe_WithOnlyFrom_DoesNotChangeTimeframe()
+    {
+        // Arrange
+        var settings = new CostSettings
+        {
+            Timeframe = TimeframeType.BillingMonthToDate,
+            From = new DateOnly(2023, 1, 1)
+        };
+
+        // Act
+        settings.ApplyAutoTimeframe();
+
+        // Assert
+        settings.Timeframe.ShouldBe(TimeframeType.BillingMonthToDate);
+    }
+
+    [Fact]
+    public void ApplyAutoTimeframe_WithOnlyTo_DoesNotChangeTimeframe()
+    {
+        // Arrange
+        var settings = new CostSettings
+        {
+            Timeframe = TimeframeType.BillingMonthToDate,
+            To = new DateOnly(2023, 1, 31)
+        };
+
+        // Act
+        settings.ApplyAutoTimeframe();
+
+        // Assert
+        settings.Timeframe.ShouldBe(TimeframeType.BillingMonthToDate);
+    }
+
+    [Fact]
+    public void ApplyAutoTimeframe_WhenAlreadyCustom_DoesNothing()
+    {
+        // Arrange
+        var settings = new CostSettings
+        {
+            Timeframe = TimeframeType.Custom,
+            From = new DateOnly(2023, 1, 1),
+            To = new DateOnly(2023, 1, 31)
+        };
+
+        // Act
+        settings.ApplyAutoTimeframe();
+
+        // Assert
+        settings.Timeframe.ShouldBe(TimeframeType.Custom);
+    }
+
+    [Fact]
+    public void GetFromDate_WithExplicitValue_ReturnsExplicitValue()
+    {
+        // Arrange
+        var expectedDate = new DateOnly(2023, 6, 15);
+        var settings = new CostSettings
+        {
+            From = expectedDate
+        };
+
+        // Act
+        var result = settings.GetFromDate();
+
+        // Assert
+        result.ShouldBe(expectedDate);
+    }
+
+    [Fact]
+    public void GetFromDate_WithoutExplicitValue_ReturnsDefault()
+    {
+        // Arrange
+        var settings = new CostSettings();
+        var expectedDate = DateOnly.FromDateTime(
+            new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-1));
+
+        // Act
+        var result = settings.GetFromDate();
+
+        // Assert
+        result.ShouldBe(expectedDate);
+    }
+
+    [Fact]
+    public void GetToDate_WithExplicitValue_ReturnsExplicitValue()
+    {
+        // Arrange
+        var expectedDate = new DateOnly(2023, 6, 30);
+        var settings = new CostSettings
+        {
+            To = expectedDate
+        };
+
+        // Act
+        var result = settings.GetToDate();
+
+        // Assert
+        result.ShouldBe(expectedDate);
+    }
+
+    [Fact]
+    public void GetToDate_WithoutExplicitValue_ReturnsDefault()
+    {
+        // Arrange
+        var settings = new CostSettings();
+        var expectedDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Act
+        var result = settings.GetToDate();
+
+        // Assert
+        result.ShouldBe(expectedDate);
     }
 }
 
