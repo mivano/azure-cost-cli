@@ -24,20 +24,13 @@ public class DiffCommand : AsyncCommand<DiffSettings>
 
     public override ValidationResult Validate(CommandContext context, DiffSettings settings)
     {
-        // Validate if the timeframe is set to Custom, then the from and to dates must be specified and the from date must be before the to date
+        // Automatically set timeframe to Custom if both from and to dates are provided
+        settings.ApplyAutoTimeframe();
+        
+        // Validate if the timeframe is set to Custom, then the from date must be before the to date
         if (settings.Timeframe == TimeframeType.Custom)
         {
-            if (settings.From == null)
-            {
-                return ValidationResult.Error("The from date must be specified when the timeframe is set to Custom.");
-            }
-
-            if (settings.To == null)
-            {
-                return ValidationResult.Error("The to date must be specified when the timeframe is set to Custom.");
-            }
-
-            if (settings.From > settings.To)
+            if (settings.GetFromDate() > settings.GetToDate())
             {
                 return ValidationResult.Error("The from date must be before the to date.");
             }

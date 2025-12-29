@@ -73,8 +73,8 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
                     settings.Debug,
                     settings.GetScope,
                     "",
-                    settings.From,
-                    settings.To);
+                    settings.GetFromDate(),
+                    settings.GetToDate());
 
                 // We need to group the resources by resource id AND product as we get for the same resource multiple items for each day
                 // However, we do need to make sure we sum the quantity and cost
