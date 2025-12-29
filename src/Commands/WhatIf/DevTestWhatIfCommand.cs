@@ -78,8 +78,8 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
                     settings.Metric,
                     false,
                     settings.Timeframe,
-                    settings.From,
-                    settings.To);
+                    settings.GetFromDate(),
+                    settings.GetToDate());
 
                 ctx.Status = "Running What-If analysis...";
 
