@@ -80,6 +80,69 @@ public class AccumulatedCostCommandTests
     }
 
     [Fact]
+    public void Validate_WithBothFromAndToDates_AutomaticallySetsTimeframeToCustom()
+    {
+        // Arrange
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Timeframe = TimeframeType.BillingMonthToDate, // Not Custom initially
+            From = new DateOnly(2023, 1, 1),
+            To = new DateOnly(2023, 1, 31)
+        };
+        var context = CreateCommandContext();
+
+        // Act
+        var result = _command.Validate(context, settings);
+
+        // Assert
+        result.Successful.ShouldBeTrue();
+        settings.Timeframe.ShouldBe(TimeframeType.Custom); // Should be auto-set to Custom
+    }
+
+    [Fact]
+    public void Validate_WithOnlyFromDate_DoesNotSetTimeframeToCustom()
+    {
+        // Arrange
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Timeframe = TimeframeType.BillingMonthToDate,
+            From = new DateOnly(2023, 1, 1)
+            // To is not set
+        };
+        var context = CreateCommandContext();
+
+        // Act
+        var result = _command.Validate(context, settings);
+
+        // Assert
+        result.Successful.ShouldBeTrue();
+        settings.Timeframe.ShouldBe(TimeframeType.BillingMonthToDate); // Should remain unchanged
+    }
+
+    [Fact]
+    public void Validate_WithAutoCustomAndInvalidDates_ReturnsError()
+    {
+        // Arrange
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Timeframe = TimeframeType.BillingMonthToDate, // Will be auto-set to Custom
+            From = new DateOnly(2023, 1, 31), // From after To
+            To = new DateOnly(2023, 1, 1)
+        };
+        var context = CreateCommandContext();
+
+        // Act
+        var result = _command.Validate(context, settings);
+
+        // Assert
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldBe("The from date must be before the to date.");
+    }
+
+    [Fact]
     public void Constructor_SetsUpOutputFormatters()
     {
         // Act & Assert - Constructor should not throw
