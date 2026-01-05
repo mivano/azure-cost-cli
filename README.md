@@ -6,6 +6,8 @@
 
 This is a simple command line tool to get the cost of your Azure subscription. It uses the Azure Cost Management API to get the cost and output the results to the console, text, csv, markdown or JSON. E.g. so it can be used in a workflow to get the cost of your subscription and use it in subsequent steps.
 
+> **⚠️ Important:** This tool uses the Azure Cost Management API. **Not all Azure subscription types are supported** by this API (e.g., sponsored subscriptions). Please [check if your subscription is compatible](#usage) before using this tool.
+
 ![](screenshot.png)
 
 Besides showing the accumulated cost, it can also show daily cost, extract resource (costs) and list budgets. 
