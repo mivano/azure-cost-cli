@@ -26,6 +26,7 @@ public class AccumulatedCostCommandTests
         // Arrange
         var settings = new AccumulatedCostSettings
         {
+            Subscription = Guid.NewGuid(),
             Timeframe = TimeframeType.Custom,
             From = new DateOnly(2023, 1, 1),
             To = new DateOnly(2023, 1, 31)
@@ -45,6 +46,7 @@ public class AccumulatedCostCommandTests
         // Arrange
         var settings = new AccumulatedCostSettings
         {
+            Subscription = Guid.NewGuid(),
             Timeframe = TimeframeType.Custom,
             From = new DateOnly(2023, 1, 31),
             To = new DateOnly(2023, 1, 1)
@@ -65,6 +67,7 @@ public class AccumulatedCostCommandTests
         // Arrange
         var settings = new AccumulatedCostSettings
         {
+            Subscription = Guid.NewGuid(),
             Timeframe = TimeframeType.MonthToDate
         };
         var context = CreateCommandContext();
@@ -82,6 +85,7 @@ public class AccumulatedCostCommandTests
         // Arrange
         var settings = new AccumulatedCostSettings
         {
+            Subscription = Guid.NewGuid(),
             Timeframe = TimeframeType.BillingMonthToDate, // Not Custom initially
             From = new DateOnly(2023, 1, 1),
             To = new DateOnly(2023, 1, 31)
@@ -102,6 +106,7 @@ public class AccumulatedCostCommandTests
         // Arrange
         var settings = new AccumulatedCostSettings
         {
+            Subscription = Guid.NewGuid(),
             Timeframe = TimeframeType.BillingMonthToDate,
             From = new DateOnly(2023, 1, 1)
             // To is not set
@@ -122,6 +127,7 @@ public class AccumulatedCostCommandTests
         // Arrange
         var settings = new AccumulatedCostSettings
         {
+            Subscription = Guid.NewGuid(),
             Timeframe = TimeframeType.BillingMonthToDate, // Will be auto-set to Custom
             From = new DateOnly(2023, 1, 31), // From after To
             To = new DateOnly(2023, 1, 1)
@@ -142,6 +148,62 @@ public class AccumulatedCostCommandTests
         // Act & Assert - Constructor should not throw
         var command = new AccumulatedCostCommand(_mockCostRetriever.Object);
         command.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void Validate_WithNoSubscriptionAndNoAzureCLI_ReturnsError()
+    {
+        // Arrange
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = null // No subscription provided
+        };
+        var context = CreateCommandContext();
+
+        // Act
+        var result = _command.Validate(context, settings);
+
+        // Assert
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldContain("No subscription ID provided");
+        result.Message.ShouldContain("--help");
+    }
+
+    [Fact]
+    public void Validate_WithSubscription_ReturnsSuccess()
+    {
+        // Arrange
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Timeframe = TimeframeType.BillingMonthToDate
+        };
+        var context = CreateCommandContext();
+
+        // Act
+        var result = _command.Validate(context, settings);
+
+        // Assert
+        result.Successful.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Validate_WithBillingAccountAndNoSubscription_ReturnsSuccess()
+    {
+        // Arrange
+        var settings = new AccumulatedCostSettings
+        {
+            Subscription = null,
+            BillingAccountId = "12345",
+            Timeframe = TimeframeType.BillingMonthToDate
+        };
+        var context = CreateCommandContext();
+
+        // Act
+        var result = _command.Validate(context, settings);
+
+        // Assert
+        result.Successful.ShouldBeTrue();
     }
 
     private static CommandContext CreateCommandContext()
