@@ -38,11 +38,11 @@ public class CostSettings : LogCommandSettings, ICostSettings
     
     [CommandOption("--from")]
     [Description("The start date to use for the costs. Defaults to the first day of the previous month.")]
-    public DateOnly From { get; set; } = DateOnly.FromDateTime( new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-1));
+    public DateOnly? From { get; set; }
     
     [CommandOption("--to")]
     [Description("The end date to use for the costs. Defaults to the current date.")]
-    public DateOnly To { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public DateOnly? To { get; set; }
     
     [CommandOption("--others-cutoff")]
     [Description("The number of items to show before collapsing the rest into an 'Others' item.")]
@@ -88,6 +88,35 @@ public class CostSettings : LogCommandSettings, ICostSettings
     [CommandOption("--httpTimeout <TIMEOUT>")]
     [Description("Allows overriding the default HTTP timeout in seconds. Defaults to 100 seconds.")]
     public int HttpTimeout { get; set; } = 100;
+    
+    /// <summary>
+    /// Automatically sets the timeframe to Custom if both From and To dates are explicitly provided.
+    /// This should be called during validation before using the Timeframe property.
+    /// </summary>
+    public void ApplyAutoTimeframe()
+    {
+        // If both from and to are explicitly set, automatically use Custom timeframe
+        if (From.HasValue && To.HasValue && Timeframe != TimeframeType.Custom)
+        {
+            Timeframe = TimeframeType.Custom;
+        }
+    }
+    
+    /// <summary>
+    /// Gets the effective From date, applying defaults if not explicitly set.
+    /// </summary>
+    public DateOnly GetFromDate()
+    {
+        return From ?? DateOnly.FromDateTime(new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1).AddMonths(-1));
+    }
+    
+    /// <summary>
+    /// Gets the effective To date, applying defaults if not explicitly set.
+    /// </summary>
+    public DateOnly GetToDate()
+    {
+        return To ?? DateOnly.FromDateTime(DateTime.UtcNow);
+    }
     
     public Scope GetScope
     {

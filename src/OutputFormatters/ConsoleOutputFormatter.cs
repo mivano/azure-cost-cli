@@ -592,7 +592,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         }
 
         var tree = new Tree("[green bold]Cost by Tag[/] for [bold]" + settings.Subscription + "[/] between [bold]" +
-                            settings.From + "[/] and [bold]" + settings.To + "[/]");
+                            settings.GetFromDate() + "[/] and [bold]" + settings.GetToDate() + "[/]");
         AnsiConsole.WriteLine();
 
 
@@ -652,7 +652,7 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
         // Highlight the current region in the table
 
         var tree = new Tree("[green bold]Prices per region[/] for [bold]" + settings.Subscription +
-                            "[/] between [bold]" + settings.From + "[/] and [bold]" + settings.To + "[/]");
+                            "[/] between [bold]" + settings.GetFromDate() + "[/] and [bold]" + settings.GetToDate() + "[/]");
 
 
         foreach (var (resource, prices) in pricesByRegion)
