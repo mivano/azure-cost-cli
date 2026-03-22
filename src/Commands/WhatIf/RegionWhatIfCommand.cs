@@ -30,7 +30,7 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings, CancellationToken cancellationToken = default)
     {
         _costRetriever.CostApiAddress = settings.CostApiAddress;
         _priceRetriever.PriceApiAddress = settings.PriceApiAddress;

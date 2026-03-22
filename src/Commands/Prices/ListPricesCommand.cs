@@ -24,7 +24,7 @@ public class ListPricesCommand: AsyncCommand<PricesSettings>
         _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
     
-    public override async Task<int> ExecuteAsync(CommandContext context, PricesSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, PricesSettings settings, CancellationToken cancellationToken = default)
     {
         _priceRetriever.PriceApiAddress = settings.PriceApiAddress;
         

@@ -43,7 +43,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, DetectAnomalySettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, DetectAnomalySettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

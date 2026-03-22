@@ -44,7 +44,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, DailyCostSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, DailyCostSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

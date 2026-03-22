@@ -44,7 +44,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, CostByResourceSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, CostByResourceSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

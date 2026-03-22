@@ -26,7 +26,7 @@ public class BudgetsCommand : AsyncCommand<BudgetsSettings>
         _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, BudgetsSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, BudgetsSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

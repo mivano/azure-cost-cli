@@ -75,7 +75,7 @@ public class DiffCommand : AsyncCommand<DiffSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, DiffSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, DiffSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

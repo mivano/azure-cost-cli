@@ -26,7 +26,7 @@ public class RegionsCommand: AsyncCommand<RegionsSettings>
         _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, RegionsSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, RegionsSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

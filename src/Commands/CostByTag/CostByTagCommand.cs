@@ -43,7 +43,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, CostByTagSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, CostByTagSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)

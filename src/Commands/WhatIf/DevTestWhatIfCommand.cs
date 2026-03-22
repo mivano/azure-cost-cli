@@ -33,7 +33,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings, CancellationToken cancellationToken = default)
     {
         // Get the subscription ID from the settings
         var subscriptionId = settings.Subscription;

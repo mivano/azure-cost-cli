@@ -42,7 +42,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         return ValidationResult.Success();
     }
 
-    public override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings)
+    public override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings, CancellationToken cancellationToken = default)
     {
         // Show version
         if (settings.Debug)
