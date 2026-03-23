@@ -55,7 +55,7 @@ jobs:
          reportgenerator -reports:"coverage/**/coverage.cobertura.xml" -targetdir:"coverage-report" -reporttypes:"Cobertura;MarkdownSummaryGithub"
        
     - name: Create Test Report
-      uses: dorny/test-reporter@v2
+      uses: dorny/test-reporter@v3
       if: always()
       with:
         name: Tests
