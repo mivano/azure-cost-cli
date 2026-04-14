@@ -44,6 +44,26 @@ public class AzureCostApiRetriever : ICostRetriever
         _client = httpClientFactory.CreateClient("CostApi");
     }
 
+    /// <summary>
+    /// Translates deprecated timeframe values (TheLastMonth, TheLastBillingMonth) into Custom
+    /// timeframes with explicit date ranges, since the Azure Cost Management API no longer supports them.
+    /// The <paramref name="today"/> parameter ensures consistent date resolution across multiple API calls.
+    /// </summary>
+    internal static (TimeframeType TimeFrame, DateOnly From, DateOnly To) ResolveTimeframe(
+        TimeframeType timeFrame, DateOnly from, DateOnly to, DateOnly today)
+    {
+        switch (timeFrame)
+        {
+            case TimeframeType.TheLastMonth:
+            case TimeframeType.TheLastBillingMonth:
+                var lastMonthStart = new DateOnly(today.Year, today.Month, 1).AddMonths(-1);
+                var lastMonthEnd = lastMonthStart.AddMonths(1).AddDays(-1);
+                return (TimeframeType.Custom, lastMonthStart, lastMonthEnd);
+            default:
+                return (timeFrame, from, to);
+        }
+    }
+
     private async Task RetrieveToken(bool includeDebugOutput)
     {
         if (_tokenRetrieved)
@@ -242,15 +262,16 @@ public class AzureCostApiRetriever : ICostRetriever
         var filters = GenerateFilters(filter);
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -306,15 +327,16 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -376,15 +398,16 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -446,15 +469,16 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -521,15 +545,16 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -596,15 +621,16 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/query?api-version=2023-03-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -718,15 +744,16 @@ public class AzureCostApiRetriever : ICostRetriever
     {
         var uri = DeterminePath(scope, "/providers/Microsoft.CostManagement/forecast?api-version=2021-10-01&$top=5000");
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new
@@ -878,15 +905,16 @@ public class AzureCostApiRetriever : ICostRetriever
             };
         }
 
+        var resolved = ResolveTimeframe(timeFrame, from, to, DateOnly.FromDateTime(DateTime.UtcNow));
         var payload = new
         {
             type = metric.ToString(),
-            timeframe = timeFrame.ToString(),
-            timePeriod = timeFrame == TimeframeType.Custom
+            timeframe = resolved.TimeFrame.ToString(),
+            timePeriod = resolved.TimeFrame == TimeframeType.Custom
                 ? new
                 {
-                    from = from.ToString("yyyy-MM-dd"),
-                    to = to.ToString("yyyy-MM-dd")
+                    from = resolved.From.ToString("yyyy-MM-dd"),
+                    to = resolved.To.ToString("yyyy-MM-dd")
                 }
                 : null,
             dataSet = new

@@ -42,6 +42,10 @@
     </ItemGroup>
     
     <ItemGroup>
+      <InternalsVisibleTo Include="AzureCostCli.Tests" />
+    </ItemGroup>
+    
+    <ItemGroup>
       <Compile Remove="nupkg\**" />
     </ItemGroup>
     
