@@ -43,4 +43,5 @@ tests/test_cli_helpers.py
 tests/test_cost_analyzer.py
 tests/test_cost_api.py
 tests/test_formatters.py
+tests/test_function_app.py
 tests/test_models.py
