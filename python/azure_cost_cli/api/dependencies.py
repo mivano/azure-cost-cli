@@ -1,6 +1,7 @@
 """Shared FastAPI dependencies (common query parameters injection)."""
 from __future__ import annotations
 
+import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Optional
 
@@ -14,6 +15,9 @@ def _resolve_subscription_dep(subscription: Optional[str], scope: Scope) -> str:
         return subscription
     if not scope.is_subscription_based:
         return ""
+    env_subscription = os.getenv("AZURE_SUBSCRIPTION_ID")
+    if env_subscription:
+        return env_subscription.strip()
     try:
         import subprocess
         result = subprocess.run(
@@ -26,7 +30,7 @@ def _resolve_subscription_dep(subscription: Optional[str], scope: Scope) -> str:
         raise HTTPException(
             status_code=400,
             detail="No subscription provided and unable to retrieve from Azure CLI. "
-                   "Pass ?subscription=<id> or run 'az login'.",
+                   "Pass ?subscription=<id>, set AZURE_SUBSCRIPTION_ID, or run 'az login'.",
         ) from exc
 
 

@@ -8,10 +8,9 @@ import azure.functions as func
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python"))
 from azure_cost_cli.api.app import app as flask_app  # noqa: E402
+from azure_cost_cli.function_routes import create_flask_proxy, register_routes  # noqa: E402
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
+flask_proxy = create_flask_proxy(flask_app)
 
-
-@app.route(route="{*route}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
-def flask_proxy(req: func.HttpRequest, context: func.Context) -> func.HttpResponse:
-    return func.WsgiMiddleware(flask_app.wsgi_app).handle(req, context)
+register_routes(app, flask_proxy)

@@ -420,3 +420,8 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+python/.venv311/
+python/.venv/
+python/local.settings.json
+python/.funcignore
