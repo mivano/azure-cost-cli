@@ -1,7 +1,7 @@
 """GET /regions – mirrors the regions CLI command."""
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from azure_cost_cli.api._compat import APIRouter, HTTPException
 
 from azure_cost_cli.api.schemas import RegionResponse
 from azure_cost_cli.regions_api import AzureRegionsRetriever

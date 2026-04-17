@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from typing import Annotated, Optional
 
-from fastapi import Query
+from azure_cost_cli.api._compat import Query
 
 from azure_cost_cli.models import MetricType, Scope, TimeframeType
 
@@ -22,7 +22,7 @@ def _resolve_subscription_dep(subscription: Optional[str], scope: Scope) -> str:
         )
         return result.stdout.strip()
     except Exception as exc:
-        from fastapi import HTTPException
+        from azure_cost_cli.api._compat import HTTPException
         raise HTTPException(
             status_code=400,
             detail="No subscription provided and unable to retrieve from Azure CLI. "

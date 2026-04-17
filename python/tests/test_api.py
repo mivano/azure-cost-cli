@@ -9,7 +9,7 @@ from datetime import date, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
+
 
 from azure_cost_cli.api.app import app
 from azure_cost_cli.models import (
@@ -28,7 +28,7 @@ from azure_cost_cli.models import (
     TimeframeType,
 )
 
-client = TestClient(app, raise_server_exceptions=True)
+client = app.test_client()
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -84,7 +84,7 @@ def _mock_retriever(
 def test_health():
     resp = client.get("/health")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert body["status"] == "ok"
     assert "version" in body
 
@@ -92,7 +92,7 @@ def test_health():
 def test_root_redirect():
     resp = client.get("/")
     assert resp.status_code == 200
-    assert "docs" in resp.json()
+    assert "docs" in resp.get_json()
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ def test_accumulated_cost_basic(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/accumulated-cost?subscription={SUB_ID}")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert "totals" in body
     assert "costs" in body
     assert body["totals"]["totalCostInTimeframe"] == pytest.approx(180.0)
@@ -128,7 +128,7 @@ def test_accumulated_cost_use_usd(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/accumulated-cost?subscription={SUB_ID}&useUsd=true")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     # costUsd sum = 110 + 88 = 198
     assert body["totals"]["totalCostInTimeframe"] == pytest.approx(198.0)
 
@@ -152,7 +152,7 @@ def test_daily_costs(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/daily-costs?subscription={SUB_ID}&dimension=ResourceGroupName")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     # Two unique dates
     assert len(body) == 2
     dates = {g["date"] for g in body}
@@ -172,7 +172,7 @@ def test_daily_costs_empty(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/daily-costs?subscription={SUB_ID}")
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.get_json() == []
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ def test_cost_by_resource(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/cost-by-resource?subscription={SUB_ID}")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert body["totalCount"] == 2
     assert body["totalCost"] == pytest.approx(250.0)
     assert len(body["resources"]) == 2
@@ -223,7 +223,7 @@ def test_cost_by_resource_top(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/cost-by-resource?subscription={SUB_ID}&top=2")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert len(body["resources"]) == 2
 
 
@@ -242,7 +242,7 @@ def test_cost_by_tag(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/cost-by-tag?subscription={SUB_ID}&tags=environment")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert len(body) == 1
     group = body[0]
     assert group["tag"] == "environment"
@@ -261,7 +261,7 @@ def test_cost_by_tag_untagged(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/cost-by-tag?subscription={SUB_ID}&tags=env&includeUntagged=true")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert body[0]["values"][0]["value"] == "(untagged)"
 
 
@@ -294,7 +294,7 @@ def test_budgets(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/budgets?subscription={SUB_ID}")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert len(body) == 1
     b = body[0]
     assert b["name"] == "monthly-budget"
@@ -314,7 +314,7 @@ def test_budgets_empty(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/budgets?subscription={SUB_ID}")
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.get_json() == []
 
 
 # ---------------------------------------------------------------------------
@@ -335,7 +335,7 @@ def test_detect_anomalies(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/detect-anomalies?subscription={SUB_ID}")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     # Result is a list (may be empty if thresholds not met, but should be a list)
     assert isinstance(body, list)
 
@@ -349,7 +349,7 @@ def test_detect_anomalies_empty(mock_scope, mock_sub, mock_make):
 
     resp = client.get(f"/detect-anomalies?subscription={SUB_ID}")
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.get_json() == []
 
 
 # ---------------------------------------------------------------------------
@@ -369,7 +369,7 @@ def test_diff(mock_scope, mock_sub, mock_make):
         f"&targetFrom=2024-02-01&targetTo=2024-02-29"
     )
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert "source" in body
     assert "target" in body
     # Both periods use the same mock data
@@ -393,7 +393,7 @@ def test_regions(mock_cls):
 
     resp = client.get("/regions")
     assert resp.status_code == 200
-    body = resp.json()
+    body = resp.get_json()
     assert len(body) == 1
     assert body[0]["id"] == "westeurope"
     assert body[0]["displayName"] == "West Europe"
@@ -408,7 +408,7 @@ def test_regions_empty(mock_cls):
 
     resp = client.get("/regions")
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.get_json() == []
 
 
 # ---------------------------------------------------------------------------
@@ -429,7 +429,7 @@ def test_whatif_region_no_vms(mock_scope, mock_sub, mock_make, mock_price_cls):
 
     resp = client.get(f"/what-if/region?subscription={SUB_ID}")
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.get_json() == []
 
 
 @patch("azure_cost_cli.api.routes.whatif.AzurePriceRetriever")
@@ -446,7 +446,7 @@ def test_whatif_devtest_no_vms(mock_scope, mock_sub, mock_make, mock_price_cls):
 
     resp = client.get(f"/what-if/devtest?subscription={SUB_ID}")
     assert resp.status_code == 200
-    assert resp.json() == []
+    assert resp.get_json() == []
 
 
 # ---------------------------------------------------------------------------
@@ -456,7 +456,7 @@ def test_whatif_devtest_no_vms(mock_scope, mock_sub, mock_make, mock_price_cls):
 def test_openapi_schema():
     resp = client.get("/openapi.json")
     assert resp.status_code == 200
-    schema = resp.json()
+    schema = resp.get_json()
     paths = set(schema["paths"].keys())
     expected = {
         "/accumulated-cost", "/daily-costs", "/cost-by-resource",

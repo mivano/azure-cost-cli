@@ -14,6 +14,7 @@ azure_cost_cli.egg-info/entry_points.txt
 azure_cost_cli.egg-info/requires.txt
 azure_cost_cli.egg-info/top_level.txt
 azure_cost_cli/api/__init__.py
+azure_cost_cli/api/_compat.py
 azure_cost_cli/api/app.py
 azure_cost_cli/api/dependencies.py
 azure_cost_cli/api/schemas.py
@@ -37,6 +38,7 @@ azure_cost_cli/formatters/json_formatter.py
 azure_cost_cli/formatters/markdown_formatter.py
 azure_cost_cli/formatters/text_formatter.py
 tests/__init__.py
+tests/test_api.py
 tests/test_cli_helpers.py
 tests/test_cost_analyzer.py
 tests/test_cost_api.py

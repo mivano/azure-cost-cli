@@ -85,6 +85,19 @@ azure-cost accumulatedCost --use-usd
 azure-cost accumulatedCost --fail-if-over 500
 ```
 
+
+## Flask API
+
+```bash
+# Install API dependencies
+pip install -e "./python[api]"
+
+# Start Flask API server
+azure-cost-api --host 0.0.0.0 --port 8000
+```
+
+Endpoints mirror CLI commands and return JSON.
+
 ## Options (shared across all commands)
 
 | Option | Default | Description |
