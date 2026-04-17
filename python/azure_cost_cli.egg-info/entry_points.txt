@@ -1,0 +1,3 @@
+[console_scripts]
+azure-cost = azure_cost_cli.cli:main
+azure-cost-api = azure_cost_cli.api.app:run_server
