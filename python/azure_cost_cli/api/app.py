@@ -125,7 +125,7 @@ def _bind_arguments(func):
 
 def _to_jsonable(value: Any) -> Any:
     if isinstance(value, BaseModel):
-        return value.model_dump(by_alias=True)
+        return value.model_dump(by_alias=True, mode="json")
     if isinstance(value, list):
         return [_to_jsonable(v) for v in value]
     if isinstance(value, tuple):
