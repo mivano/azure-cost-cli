@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from azure_cost_cli.api._compat import APIRouter, HTTPException, Query
 
 from azure_cost_cli.api.dependencies import (
     get_from_date,

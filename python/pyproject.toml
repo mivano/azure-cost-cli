@@ -19,8 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 api = [
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
+    "flask>=3.0",
     "pydantic>=2.6",
 ]
 dev = [
@@ -29,8 +28,7 @@ dev = [
     "pytest-httpx>=0.30",
     "respx>=0.20",
     "httpx>=0.27",
-    "fastapi>=0.111",
-    "uvicorn[standard]>=0.29",
+    "flask>=3.0",
     "pydantic>=2.6",
 ]
 
