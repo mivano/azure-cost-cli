@@ -668,6 +668,11 @@ async def _fetch_accumulated_details(retriever, scope, filters, mt, from_d, to_d
 
 def _read_accumulated_cost(file_path: str):
     from azure_cost_cli.models import AccumulatedCostDetails, CostItem, CostNamedItem
+
+    def _get_cost_usd(a: dict) -> float:
+        """Accept both PascalCase and camelCase spellings for the USD cost field."""
+        return float(a.get("CostUsd", a.get("costUsd", 0)))
+
     try:
         content = Path(file_path).read_text()
         data = json.loads(content)
@@ -676,7 +681,7 @@ def _read_accumulated_cost(file_path: str):
             CostItem(
                 date=date.fromisoformat(a["Date"]),
                 cost=float(a["Cost"]),
-                cost_usd=float(a.get("CostUsd", a.get("costUsd", 0))),
+                cost_usd=_get_cost_usd(a),
                 currency=a.get("Currency", "USD"),
             )
             for a in data.get("cost", [])
@@ -685,24 +690,24 @@ def _read_accumulated_cost(file_path: str):
             CostItem(
                 date=date.fromisoformat(a["Date"]),
                 cost=float(a["Cost"]),
-                cost_usd=float(a.get("CostUsd", a.get("costUsd", 0))),
+                cost_usd=_get_cost_usd(a),
                 currency=a.get("Currency", "USD"),
             )
             for a in data.get("forecastedCosts", [])
         ]
         by_svc = [
             CostNamedItem(item_name=a["ServiceName"], cost=float(a["Cost"]),
-                          cost_usd=float(a.get("CostUsd", 0)), currency=a.get("Currency", "USD"))
+                          cost_usd=_get_cost_usd(a), currency=a.get("Currency", "USD"))
             for a in data.get("byServiceNames", [])
         ]
         by_loc = [
             CostNamedItem(item_name=a["Location"], cost=float(a["Cost"]),
-                          cost_usd=float(a.get("CostUsd", 0)), currency=a.get("Currency", "USD"))
+                          cost_usd=_get_cost_usd(a), currency=a.get("Currency", "USD"))
             for a in data.get("ByLocation", [])
         ]
         by_rg = [
             CostNamedItem(item_name=a["ResourceGroup"], cost=float(a["Cost"]),
-                          cost_usd=float(a.get("CostUsd", 0)), currency=a.get("Currency", "USD"))
+                          cost_usd=_get_cost_usd(a), currency=a.get("Currency", "USD"))
             for a in data.get("ByResourceGroup", [])
         ]
         return AccumulatedCostDetails(
@@ -713,6 +718,7 @@ def _read_accumulated_cost(file_path: str):
         )
     except Exception as exc:
         raise click.ClickException(f"Error reading cost file {file_path}: {exc}") from exc
+
 
 
 # ---------------------------------------------------------------------------

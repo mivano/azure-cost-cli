@@ -236,56 +236,7 @@ class JsonOutputFormatter(BaseOutputFormatter):
     def write_accumulated_diff_cost(
         self, settings: Any, source: AccumulatedCostDetails, target: AccumulatedCostDetails
     ) -> None:
-        from azure_cost_cli.models import CostItem, CostNamedItem
-
-        source_by_date = {a.date: a for a in source.costs}
-        target_by_date = {a.date: a for a in target.costs}
-        cost_diff = [
-            CostItem(
-                date=d,
-                cost=target_by_date[d].cost - source_by_date[d].cost,
-                cost_usd=target_by_date[d].cost_usd - source_by_date[d].cost_usd,
-                currency=source_by_date[d].currency,
-            )
-            for d in source_by_date if d in target_by_date
-        ]
-
-        source_fc = {a.date: a for a in source.forecasted_costs}
-        target_fc = {a.date: a for a in target.forecasted_costs}
-        fc_diff = [
-            CostItem(
-                date=d,
-                cost=target_fc[d].cost - source_fc[d].cost,
-                cost_usd=target_fc[d].cost_usd - source_fc[d].cost_usd,
-                currency=source_fc[d].currency,
-            )
-            for d in source_fc if d in target_fc
-        ]
-
-        def named_diff(src_list, tgt_list):
-            tgt = {a.item_name: a for a in tgt_list}
-            return [
-                CostNamedItem(
-                    item_name=a.item_name,
-                    cost=tgt[a.item_name].cost - a.cost,
-                    cost_usd=tgt[a.item_name].cost_usd - a.cost_usd,
-                    currency=a.currency,
-                )
-                for a in src_list if a.item_name in tgt
-            ]
-
-        from azure_cost_cli.models import AccumulatedCostDetails as ACD
-        diff_details = ACD(
-            subscription=None,
-            enrollment_account=None,
-            costs=[x for x in cost_diff if x.cost != 0],
-            forecasted_costs=[x for x in fc_diff if x.cost != 0],
-            by_service_name_costs=[x for x in named_diff(source.by_service_name_costs, target.by_service_name_costs) if x.cost != 0],
-            by_location_costs=[x for x in named_diff(source.by_location_costs, target.by_location_costs) if x.cost != 0],
-            by_resource_group_costs=[x for x in named_diff(source.by_resource_group_costs, target.by_resource_group_costs) if x.cost != 0],
-            by_subscription_costs=None,
-        )
-
+        diff_details = self._build_diff_details(source, target)
         from types import SimpleNamespace
         diff_settings = SimpleNamespace(
             use_usd=getattr(settings, "use_usd", False),
