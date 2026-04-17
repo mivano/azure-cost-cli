@@ -1,0 +1,2 @@
+[console_scripts]
+azure-cost = azure_cost_cli.cli:main
