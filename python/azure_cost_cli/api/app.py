@@ -154,8 +154,8 @@ def _register_router(router):
                     return jsonify(_to_jsonable(payload))
                 except HTTPException as exc:
                     return jsonify({"detail": exc.detail}), exc.status_code
-                except Exception as exc:  # noqa: BLE001
-                    return jsonify({"detail": str(exc)}), 502
+                except Exception:  # noqa: BLE001
+                    return jsonify({"detail": "Upstream request failed"}), 502
 
             return view_fn
 
