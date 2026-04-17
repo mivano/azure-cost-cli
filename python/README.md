@@ -126,6 +126,8 @@ This uses `python/function_app.py` with a catch-all route, so all Flask API path
 - `/what-if/region`
 - `/what-if/devtest`
 
+For cloud deployments from repository root, a root-level `host.json` and `function_app.py` are also provided.
+
 ## Options (shared across all commands)
 
 | Option | Default | Description |
