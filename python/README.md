@@ -98,6 +98,34 @@ azure-cost-api --host 0.0.0.0 --port 8000
 
 Endpoints mirror CLI commands and return JSON.
 
+## Azure Functions (host Flask API)
+
+```bash
+# Install API dependencies
+pip install -e "./python[api]"
+
+# Install Azure Functions Core Tools if needed:
+# https://learn.microsoft.com/azure/azure-functions/functions-run-local
+
+# Run Azure Function locally from the python/ folder
+cd python
+func start
+```
+
+This uses `python/function_app.py` with a catch-all route, so all Flask API paths are reachable.
+`python/host.json` sets `routePrefix` to empty, so routes are available as:
+- `/health`
+- `/accumulated-cost`
+- `/daily-costs`
+- `/cost-by-resource`
+- `/cost-by-tag`
+- `/budgets`
+- `/detect-anomalies`
+- `/diff`
+- `/regions`
+- `/what-if/region`
+- `/what-if/devtest`
+
 ## Options (shared across all commands)
 
 | Option | Default | Description |

@@ -13,6 +13,7 @@ Requires-Dist: jmespath>=1.0
 Provides-Extra: api
 Requires-Dist: flask>=3.0; extra == "api"
 Requires-Dist: pydantic>=2.6; extra == "api"
+Requires-Dist: azure-functions>=1.21; extra == "api"
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
@@ -21,6 +22,7 @@ Requires-Dist: respx>=0.20; extra == "dev"
 Requires-Dist: httpx>=0.27; extra == "dev"
 Requires-Dist: flask>=3.0; extra == "dev"
 Requires-Dist: pydantic>=2.6; extra == "dev"
+Requires-Dist: azure-functions>=1.21; extra == "dev"
 
 # azure-cost-cli (Python)
 
@@ -121,6 +123,34 @@ azure-cost-api --host 0.0.0.0 --port 8000
 ```
 
 Endpoints mirror CLI commands and return JSON.
+
+## Azure Functions (host Flask API)
+
+```bash
+# Install API dependencies
+pip install -e "./python[api]"
+
+# Install Azure Functions Core Tools if needed:
+# https://learn.microsoft.com/azure/azure-functions/functions-run-local
+
+# Run Azure Function locally from the python/ folder
+cd python
+func start
+```
+
+This uses `python/function_app.py` with a catch-all route, so all Flask API paths are reachable.
+`python/host.json` sets `routePrefix` to empty, so routes are available as:
+- `/health`
+- `/accumulated-cost`
+- `/daily-costs`
+- `/cost-by-resource`
+- `/cost-by-tag`
+- `/budgets`
+- `/detect-anomalies`
+- `/diff`
+- `/regions`
+- `/what-if/region`
+- `/what-if/devtest`
 
 ## Options (shared across all commands)
 
