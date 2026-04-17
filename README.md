@@ -29,3 +29,8 @@ Available endpoints include:
 - `/health`
 
 For full usage and development details, see `/python/README.md`.
+
+## Azure Functions deployment
+
+Azure Functions requires `host.json` at the app package root during deployment.
+This repository includes root-level `host.json` and `function_app.py` so deployments from repository root work without path remapping.
