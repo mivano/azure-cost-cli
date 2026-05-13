@@ -84,9 +84,8 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
                         break;
                     case TimeframeType.TheLastBillingMonth:
                     case TimeframeType.TheLastMonth:
-                        forecastStartDate =
-                            DateOnly.FromDateTime(
-                                new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1));
+                        // These timeframes are entirely in the past; no forecast needed
+                        forecastStartDate = default;
                         break;
                     case TimeframeType.WeekToDate:
                         forecastStartDate =
