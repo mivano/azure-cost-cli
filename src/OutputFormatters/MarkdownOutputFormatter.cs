@@ -666,7 +666,7 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
         Console.WriteLine($"| Field | Value |");
         Console.WriteLine($"|-------|-------|");
         Console.WriteLine($"| Sub-command | `{result.SubCommand}` |");
-        Console.WriteLine($"| Message | {result.Message} |");
+        Console.WriteLine($"| Message | {result.Message.Replace("|", "\\|").Replace("\r\n", " ").Replace("\n", " ")} |");
         if (result.ActualValue.HasValue)
             Console.WriteLine($"| Actual value | {result.ActualValue.Value:N2} |");
         if (result.ThresholdValue.HasValue)

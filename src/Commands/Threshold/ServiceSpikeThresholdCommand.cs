@@ -35,14 +35,16 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand<ThresholdSettin
             settings.Debug, settings.GetScope, settings.Filter, settings.Metric,
             TimeframeType.Custom, prevFrom, prevTo)).ToList();
 
-        var currency = currentServices.FirstOrDefault()?.Currency
+        var currency = settings.UseUSD ? "USD" : (currentServices.FirstOrDefault()?.Currency
                        ?? previousServices.FirstOrDefault()?.Currency
-                       ?? "USD";
+                       ?? "USD");
 
-        // Find the biggest spike across all services
+        // Check every service; exceeded if any service breaches the threshold.
+        // Among all breaching services (or all services if none breach) track the worst by abs change.
         var spikedService = string.Empty;
         double maxChangePct = 0;
         double maxChangeAbs = 0;
+        bool exceeded = false;
 
         foreach (var svc in currentServices)
         {
@@ -55,7 +57,13 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand<ThresholdSettin
                 : (curr - prevCost) / prevCost * 100.0;
             double abs = curr - prevCost;
 
-            if (Math.Abs(pct) > Math.Abs(maxChangePct))
+            bool svcExceeded = IsExceeded(pct, abs, settings);
+            if (svcExceeded) exceeded = true;
+
+            // Report the service with the largest absolute change among all that exceeded;
+            // if none exceeded yet, track the worst overall so we can report it in the OK message.
+            if (svcExceeded && Math.Abs(abs) > Math.Abs(maxChangeAbs) ||
+                !exceeded && Math.Abs(pct) > Math.Abs(maxChangePct))
             {
                 maxChangePct = pct;
                 maxChangeAbs = abs;
@@ -63,7 +71,7 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand<ThresholdSettin
             }
         }
 
-        bool exceeded = !string.IsNullOrEmpty(spikedService) && IsExceeded(maxChangePct, maxChangeAbs, settings);
+        double actualValue = settings.Percentage.HasValue ? maxChangePct : maxChangeAbs;
 
         var message = exceeded
             ? $"Service spike detected for '{spikedService}': change={maxChangeAbs:+0.00;-0.00} {currency} ({maxChangePct:+0.0;-0.0}%)"
@@ -71,7 +79,7 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand<ThresholdSettin
                 ? "No service cost data found for comparison."
                 : $"No service spike detected (max change: '{spikedService}' {maxChangeAbs:+0.00;-0.00} {currency} ({maxChangePct:+0.0;-0.0}%))";
 
-        var result = new ThresholdResult("service-spike", exceeded, maxChangePct, settings.Percentage ?? settings.FixedAmount, message);
+        var result = new ThresholdResult("service-spike", exceeded, actualValue, settings.Percentage ?? settings.FixedAmount, message);
 
         await OutputFormatters[settings.Output].WriteThreshold(settings, result);
 

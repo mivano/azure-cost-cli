@@ -1,5 +1,6 @@
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
+using Spectre.Console;
 using Spectre.Console.Cli;
 
 namespace AzureCostCli.Commands.Threshold;
@@ -10,6 +11,15 @@ namespace AzureCostCli.Commands.Threshold;
 public class WeeklyAverageThresholdCommand : BaseThresholdCommand<ThresholdSettings>
 {
     public WeeklyAverageThresholdCommand(ICostRetriever costRetriever) : base(costRetriever) { }
+
+    protected override ValidationResult Validate(CommandContext context, ThresholdSettings settings)
+    {
+        if (settings.Percentage.HasValue)
+            return ValidationResult.Error(
+                "The weekly-average command does not support --percentage. " +
+                "Use --fixed-amount to specify a monetary threshold.");
+        return base.Validate(context, settings);
+    }
 
     protected override async Task<int> ExecuteAsync(CommandContext context, ThresholdSettings settings,
         CancellationToken cancellationToken)
@@ -25,20 +35,13 @@ public class WeeklyAverageThresholdCommand : BaseThresholdCommand<ThresholdSetti
             settings.Debug, settings.GetScope, settings.Filter, settings.Metric,
             TimeframeType.Custom, sevenDaysAgo, today)).ToList();
 
-        var currency = costs.FirstOrDefault()?.Currency ?? "USD";
+        var currency = settings.UseUSD ? "USD" : (costs.FirstOrDefault()?.Currency ?? "USD");
 
         var total = costs.Sum(c => settings.UseUSD ? c.CostUsd : c.Cost);
         var average = costs.Count > 0 ? total / 7.0 : 0.0;
 
-        // For weekly-average we compare the average against the fixed-amount threshold directly,
-        // or use percentage as a ratio above zero (i.e. any non-zero average triggers if % is 0).
-        // Semantics: exceeded if average > fixed-amount, or if percentage threshold is set,
-        // we use it as the absolute percentage of average growth vs the threshold value directly.
-        bool exceeded = false;
-        if (settings.FixedAmount.HasValue && average > settings.FixedAmount.Value)
-            exceeded = true;
-        if (settings.Percentage.HasValue && average > settings.Percentage.Value)
-            exceeded = true;
+        // Only --fixed-amount is supported; --percentage is rejected in Validate.
+        bool exceeded = settings.FixedAmount.HasValue && average > settings.FixedAmount.Value;
 
         var thresholdValue = settings.FixedAmount ?? settings.Percentage;
 

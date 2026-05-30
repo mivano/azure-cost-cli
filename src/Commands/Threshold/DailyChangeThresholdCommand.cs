@@ -32,7 +32,7 @@ public class DailyChangeThresholdCommand : BaseThresholdCommand<ThresholdSetting
             yesterday,
             today)).ToList();
 
-        var currency = costs.FirstOrDefault()?.Currency ?? "USD";
+        var currency = settings.UseUSD ? "USD" : (costs.FirstOrDefault()?.Currency ?? "USD");
 
         var todayCost = costs.Where(c => c.Date == today).Sum(c => settings.UseUSD ? c.CostUsd : c.Cost);
         var yesterdayCost = costs.Where(c => c.Date == yesterday).Sum(c => settings.UseUSD ? c.CostUsd : c.Cost);
@@ -48,7 +48,9 @@ public class DailyChangeThresholdCommand : BaseThresholdCommand<ThresholdSetting
             ? $"Daily cost change exceeds threshold: today={todayCost:N2} {currency}, yesterday={yesterdayCost:N2} {currency}, change={changeAbs:+0.00;-0.00} ({changePct:+0.0;-0.0}%)"
             : $"Daily cost change within threshold: today={todayCost:N2} {currency}, yesterday={yesterdayCost:N2} {currency}, change={changeAbs:+0.00;-0.00} ({changePct:+0.0;-0.0}%)";
 
-        var result = new ThresholdResult("daily-change", exceeded, changePct, settings.Percentage ?? settings.FixedAmount, message);
+        double actualValue = settings.Percentage.HasValue ? changePct : changeAbs;
+
+        var result = new ThresholdResult("daily-change", exceeded, actualValue, settings.Percentage ?? settings.FixedAmount, message);
 
         await OutputFormatters[settings.Output].WriteThreshold(settings, result);
 

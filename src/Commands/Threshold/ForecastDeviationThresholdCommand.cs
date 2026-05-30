@@ -30,9 +30,9 @@ public class ForecastDeviationThresholdCommand : BaseThresholdCommand<ThresholdS
             settings.Debug, settings.GetScope, settings.Filter, settings.Metric,
             settings.Timeframe, from, to)).ToList();
 
-        var currency = actualCosts.FirstOrDefault()?.Currency
+        var currency = settings.UseUSD ? "USD" : (actualCosts.FirstOrDefault()?.Currency
                        ?? forecastedCosts.FirstOrDefault()?.Currency
-                       ?? "USD";
+                       ?? "USD");
 
         var actual = actualCosts.Sum(c => settings.UseUSD ? c.CostUsd : c.Cost);
         var forecast = forecastedCosts.Sum(c => settings.UseUSD ? c.CostUsd : c.Cost);
@@ -48,7 +48,9 @@ public class ForecastDeviationThresholdCommand : BaseThresholdCommand<ThresholdS
             ? $"Forecast deviation exceeds threshold: actual={actual:N2} {currency}, forecast={forecast:N2} {currency}, deviation={deviationAbs:+0.00;-0.00} ({deviationPct:+0.0;-0.0}%)"
             : $"Forecast deviation within threshold: actual={actual:N2} {currency}, forecast={forecast:N2} {currency}, deviation={deviationAbs:+0.00;-0.00} ({deviationPct:+0.0;-0.0}%)";
 
-        var result = new ThresholdResult("forecast-deviation", exceeded, deviationPct, settings.Percentage ?? settings.FixedAmount, message);
+        double actualValue = settings.Percentage.HasValue ? deviationPct : deviationAbs;
+
+        var result = new ThresholdResult("forecast-deviation", exceeded, actualValue, settings.Percentage ?? settings.FixedAmount, message);
 
         await OutputFormatters[settings.Output].WriteThreshold(settings, result);
 
