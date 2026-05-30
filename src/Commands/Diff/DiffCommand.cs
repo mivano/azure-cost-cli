@@ -115,8 +115,7 @@ public class DiffCommand : AsyncCommand<DiffSettings>
             _costRetriever.CostApiAddress = settings.CostApiAddress;
             _costRetriever.HttpTimeout = TimeSpan.FromSeconds(settings.HttpTimeout);
 
-            await AnsiConsoleExt.Status()
-                .StartAsync("Fetching cost data...", async ctx =>
+            await AnsiConsoleExt.StatusAsync(settings.Quiet, "Fetching cost data...", async ctx =>
                 {
                     Subscription subscription = null;
 
@@ -144,8 +143,7 @@ public class DiffCommand : AsyncCommand<DiffSettings>
         else
         {
             // File-based comparison mode
-            await AnsiConsoleExt.Status()
-                .StartAsync("Reading data", async ctx =>
+            await AnsiConsoleExt.StatusAsync(settings.Quiet, "Reading data", async ctx =>
                 {
                     accumulatedCostSource = await ReadAccumulatedCost(settings.CompareFrom);
                     accumulatedCostTarget = await ReadAccumulatedCost(settings.CompareTo);

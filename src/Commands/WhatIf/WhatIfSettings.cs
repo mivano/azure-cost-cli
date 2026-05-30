@@ -10,6 +10,16 @@ public class WhatIfSettings : CommandSettings, ICostSettings //:CostSettings
     [DefaultValue(false)]
     public bool Debug { get; set; }
     
+    [CommandOption("--no-color")]
+    [Description("Disable ANSI color output.")]
+    [DefaultValue(false)]
+    public bool NoColor { get; set; }
+
+    [CommandOption("--quiet")]
+    [Description("Suppress all status/progress messages.")]
+    [DefaultValue(false)]
+    public bool Quiet { get; set; }
+    
     [CommandOption("-s|--subscription")]
     [Description("The subscription id to use. Will try to fetch the active id if not specified.")]
     public Guid? Subscription { get; set; }

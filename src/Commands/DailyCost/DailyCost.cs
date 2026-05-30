@@ -42,8 +42,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
             settings.IncludeTags = false;
         }
 
-        await AnsiConsoleExt.Status()
-            .StartAsync("Fetching daily cost data...", async ctx =>
+        await AnsiConsoleExt.StatusAsync(settings.Quiet, "Fetching daily cost data...", async ctx =>
             {
                 // Fetch the costs from the Azure Cost Management API
 

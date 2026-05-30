@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel;
+using AzureCostCli.Infrastructure;
+using Spectre.Console;
 using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.CostByResource;
@@ -13,6 +15,13 @@ using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
+
+// Apply --no-color early if flag is present anywhere in the args
+if (args.Contains("--no-color"))
+{
+    AnsiConsole.Profile.Capabilities.ColorSystem = ColorSystem.NoColors;
+    AnsiConsole.Profile.Capabilities.Ansi = false;
+}
 
 // Setup the DI
 var registrations = new ServiceCollection();
@@ -58,6 +67,7 @@ app.SetDefaultCommand<AccumulatedCostCommand>();
 app.Configure(config =>
 {
   config.SetApplicationName("azure-cost");
+  config.SetInterceptor(new ConfigFileInterceptor());
 
   config.AddExample(new[] { "accumulatedCost", "-s", "00000000-0000-0000-0000-000000000000" });
   config.AddExample(new[] { "accumulatedCost", "-o", "json" });

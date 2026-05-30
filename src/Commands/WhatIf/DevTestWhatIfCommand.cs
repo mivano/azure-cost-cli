@@ -34,8 +34,7 @@ public class DevTestWhatIfCommand : AsyncCommand<WhatIfSettings>
         IEnumerable<UsageDetails> resources = Enumerable.Empty<UsageDetails>();
         List<DevTestComparisonItem> comparisonItems = new();
 
-        await AnsiConsoleExt.Status()
-            .StartAsync("Fetching usage details...", async ctx =>
+        await AnsiConsoleExt.StatusAsync(settings.Quiet, "Fetching usage details...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveUsageDetails(
                     settings.Debug,

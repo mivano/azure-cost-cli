@@ -37,8 +37,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
 
         IEnumerable<CostResourceItem> resources = Enumerable.Empty<CostResourceItem>();
 
-        await AnsiConsoleExt.Status()
-            .StartAsync("Fetching cost data for resources...", async ctx =>
+        await AnsiConsoleExt.StatusAsync(settings.Quiet, "Fetching cost data for resources...", async ctx =>
             {
                 resources = await _costRetriever.RetrieveCostForResources(
                     settings.Debug,

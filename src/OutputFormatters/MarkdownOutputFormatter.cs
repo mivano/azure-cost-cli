@@ -405,6 +405,12 @@ public class MarkdownOutputFormatter : BaseOutputFormatter
             Console.WriteLine();
         }
 
+        if (anomalies.Count == 0)
+        {
+            Console.WriteLine("No anomalies detected.");
+            return Task.CompletedTask;
+        }
+
         foreach (var dimension in anomalies.GroupBy(a=>a.Name))
         {
             Console.WriteLine($"## {settings.Dimension}: {dimension.Key}");
