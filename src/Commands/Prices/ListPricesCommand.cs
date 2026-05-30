@@ -8,20 +8,11 @@ public class ListPricesCommand: AsyncCommand<PricesSettings>
 {
     private readonly IPriceRetriever _priceRetriever;
 
-    private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = new();
+    private readonly Dictionary<OutputFormat, BaseOutputFormatter> _outputFormatters = OutputFormatterFactory.Create();
 
-    
     public ListPricesCommand(IPriceRetriever priceRetriever)
     {
         _priceRetriever = priceRetriever;
-        
-        // Add the output formatters
-        _outputFormatters.Add(OutputFormat.Console, new ConsoleOutputFormatter());
-        _outputFormatters.Add(OutputFormat.Json, new JsonOutputFormatter());
-        _outputFormatters.Add(OutputFormat.Jsonc, new JsonOutputFormatter());
-        _outputFormatters.Add(OutputFormat.Text, new TextOutputFormatter());
-        _outputFormatters.Add(OutputFormat.Markdown, new MarkdownOutputFormatter());
-        _outputFormatters.Add(OutputFormat.Csv, new CsvOutputFormatter());
     }
     
     protected override async Task<int> ExecuteAsync(CommandContext context, PricesSettings settings, CancellationToken cancellationToken)
