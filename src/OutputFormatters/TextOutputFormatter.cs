@@ -264,7 +264,8 @@ public class TextOutputFormatter : BaseOutputFormatter
         }
 
         foreach (var dimension in anomalies.GroupBy(a=>a.Name))
-        {            Console.WriteLine($"+ {settings.Dimension}: {dimension.Key}");
+        {
+            Console.WriteLine($"+ {settings.Dimension}: {dimension.Key}");
             Console.WriteLine();
             foreach (var anomaly in dimension)
             {

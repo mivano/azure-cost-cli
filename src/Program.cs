@@ -11,12 +11,13 @@ using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
-using AzureCostCli.Infrastructure;
 using AzureCostCli.Infrastructure.TypeConvertors;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 
-// Apply --no-color early if flag is present anywhere in the args
+// Apply --no-color early from CLI args, before any Spectre output is rendered.
+// The ConfigFileInterceptor also applies NoColor after command settings are parsed,
+// covering the case where --no-color comes from the config file or settings.NoColor is set.
 if (args.Contains("--no-color"))
 {
     AnsiConsole.Profile.Capabilities.ColorSystem = ColorSystem.NoColors;

@@ -120,7 +120,67 @@ Starting from version `0.35`, you can select a different scope besides only subs
 
 To make the call to the Azure cost API, you do need to run this from a user account with permissions to access the cost overview of the subscription. Further more, it needs to find the active credentials and it does so by using the `ChainedTokenCredential` provider which will look for the `az cli` token first. Make sure to run `az login` (with optionally the `--tenant` parameter) to make sure you have an active session.
 
-## Use in a GitHub workflow
+## Configuration file
+
+You can persist default settings in a JSON config file so you don't have to repeat common flags on every command.
+
+**File locations** (evaluated in order, later values override earlier ones):
+
+| Path | Purpose |
+|------|---------|
+| `~/.azure-cost-cli.json` | Global user defaults |
+| `.azure-cost-cli.json` (current directory) | Project-level defaults, override global |
+| Path in `AZURE_COST_CLI_CONFIG` env var | Overrides both of the above entirely |
+
+**Supported keys:**
+
+```json
+{
+  "subscription": "00000000-0000-0000-0000-000000000000",
+  "output": "Json",
+  "timeframe": "BillingMonthToDate",
+  "useUSD": false,
+  "metric": "ActualCost",
+  "othersCutoff": 10
+}
+```
+
+All keys are optional. CLI flags always take precedence over config file values — the config only supplies defaults.
+
+**Example:** Set a default subscription and output format globally so you never have to pass `-s` or `-o`:
+
+```bash
+cat > ~/.azure-cost-cli.json << 'EOF'
+{
+  "subscription": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "output": "Text"
+}
+EOF
+
+azure-cost accumulatedCost   # uses your default subscription and Text output
+```
+
+## Global flags
+
+These flags are available on every command:
+
+| Flag | Description |
+|------|-------------|
+| `--no-color` | Disable ANSI color and escape codes. Useful when piping output to files or running in CI environments where color codes appear as garbage. Can also be set via the `noColor` key in the config file. |
+| `--quiet` | Suppress all status spinners and progress messages. Only the actual data output is written. Useful for scripting or when redirecting output. |
+| `--debug` | Show verbose debug information including resolved subscription IDs and API calls. |
+
+**Examples:**
+
+```bash
+# Pipe clean output to a file without escape codes
+azure-cost accumulatedCost -o text --no-color > report.txt
+
+# Use in a script without spinner noise cluttering stderr
+azure-cost dailyCosts -o json --quiet | jq '.[] | .cost'
+```
+
+
 
 You can use this tool in a GitHub workflow to get the cost of your subscription and store the results in markdown as a Job Summary. This can be used to get a quick overview of the cost of your subscription. Have a look at the [workflow](https://github.com/mivano/azure-cost-cli/actions/workflows/create-markdown.yml) in this repository for an example output.
 

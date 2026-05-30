@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AzureCostCli.Commands;
+using AzureCostCli.Commands.WhatIf;
 
 namespace AzureCostCli.Infrastructure;
 
@@ -101,6 +102,30 @@ public static class ConfigFileLoader
             settings.Metric = config.Metric.Value;
 
         // OthersCutoff: only apply if still at the built-in default (10)
+        if (settings.OthersCutoff == 10 && config.OthersCutoff.HasValue)
+            settings.OthersCutoff = config.OthersCutoff.Value;
+    }
+
+    /// <summary>
+    /// Applies config-file defaults into WhatIfSettings. Same precedence rules as ApplyToSettings.
+    /// </summary>
+    public static void ApplyToWhatIfSettings(WhatIfSettings settings, ConfigFileValues config)
+    {
+        if ((settings.Subscription == null || settings.Subscription == Guid.Empty) && config.Subscription != null)
+            settings.Subscription = config.Subscription;
+
+        if (settings.Output == OutputFormat.Console && config.Output.HasValue)
+            settings.Output = config.Output.Value;
+
+        if (settings.Timeframe == TimeframeType.BillingMonthToDate && config.Timeframe.HasValue)
+            settings.Timeframe = config.Timeframe.Value;
+
+        if (!settings.UseUSD && config.UseUSD.HasValue)
+            settings.UseUSD = config.UseUSD.Value;
+
+        if (settings.Metric == MetricType.ActualCost && config.Metric.HasValue)
+            settings.Metric = config.Metric.Value;
+
         if (settings.OthersCutoff == 10 && config.OthersCutoff.HasValue)
             settings.OthersCutoff = config.OthersCutoff.Value;
     }
