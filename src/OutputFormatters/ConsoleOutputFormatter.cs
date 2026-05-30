@@ -549,6 +549,12 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
     public override Task WriteAnomalyDetectionResults(DetectAnomalySettings settings,
         List<AnomalyDetectionResult> anomalies)
     {
+        if (anomalies.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[green]No Anomalies Detected[/]");
+            return Task.CompletedTask;
+        }
+
         var groupedByName = anomalies.GroupBy(a => a.Name);
 
         var tree = new Tree("[red]Detected Anomalies[/]");

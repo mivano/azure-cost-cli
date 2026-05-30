@@ -1,6 +1,7 @@
 using AzureCostCli.Commands.AccumulatedCost;
 using AzureCostCli.Commands.Budgets;
 using AzureCostCli.Commands.DailyCost;
+using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.CostApi;
 using AzureCostCli.OutputFormatters;
 using Shouldly;
@@ -8,6 +9,7 @@ using System.Text.Json;
 using CsvHelper;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Spectre.Console;
 using Xunit;
 
 namespace AzureCostCli.Tests.OutputFormatters;
@@ -624,5 +626,37 @@ public class MarkdownOutputFormatterTests
         {
             Console.SetOut(originalOut);
         }
+    }
+}
+
+[Collection("ConsoleOutputTests")]
+public class ConsoleOutputFormatterTests
+{
+    private readonly ConsoleOutputFormatter _formatter;
+
+    public ConsoleOutputFormatterTests()
+    {
+        _formatter = new ConsoleOutputFormatter();
+    }
+
+    [Fact]
+    public async Task WriteAnomalyDetectionResults_WithNoAnomalies_WritesNoAnomaliesMessage()
+    {
+        // Arrange
+        var settings = new DetectAnomalySettings();
+        var anomalies = new List<AnomalyDetectionResult>();
+
+        // Act - capture AnsiConsole output
+        var result = await Task.Run(async () =>
+        {
+            string captured = string.Empty;
+            AnsiConsole.Record();
+            await _formatter.WriteAnomalyDetectionResults(settings, anomalies);
+            captured = AnsiConsole.ExportText();
+            return captured;
+        });
+
+        // Assert
+        result.ShouldContain("No Anomalies Detected");
     }
 }
