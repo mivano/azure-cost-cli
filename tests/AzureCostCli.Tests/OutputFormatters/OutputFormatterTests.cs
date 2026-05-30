@@ -647,16 +647,13 @@ public class ConsoleOutputFormatterTests
         var anomalies = new List<AnomalyDetectionResult>();
 
         // Act - capture AnsiConsole output
-        var result = await Task.Run(async () =>
-        {
-            string captured = string.Empty;
-            AnsiConsole.Record();
-            await _formatter.WriteAnomalyDetectionResults(settings, anomalies);
-            captured = AnsiConsole.ExportText();
-            return captured;
-        });
+        AnsiConsole.Record();
+        await _formatter.WriteAnomalyDetectionResults(settings, anomalies);
+        var result = AnsiConsole.ExportText();
 
-        // Assert
+        // Assert - friendly message shown, confusing red header is absent
         result.ShouldContain("No Anomalies Detected");
+        result.ShouldNotContain("Detected Anomalies");
     }
 }
+
