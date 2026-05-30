@@ -7,6 +7,7 @@ using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
@@ -468,6 +469,18 @@ public class TextOutputFormatter : BaseOutputFormatter
         Console.WriteLine($"Total DevTest Cost: {totalDevTest:N2} {currency}");
         Console.WriteLine($"Total Savings: {totalSavings:N2} {currency} ({(totalCurrent > 0 ? totalSavings / totalCurrent * 100 : 0):N1}%)");
 
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        var status = result.IsThresholdExceeded ? "EXCEEDED" : "OK";
+        Console.WriteLine($"Threshold Check [{result.SubCommand}]: {status}");
+        Console.WriteLine($"  {result.Message}");
+        if (result.ActualValue.HasValue)
+            Console.WriteLine($"  Actual value: {result.ActualValue.Value:N2}");
+        if (result.ThresholdValue.HasValue)
+            Console.WriteLine($"  Threshold: {result.ThresholdValue.Value:N2}");
         return Task.CompletedTask;
     }
     

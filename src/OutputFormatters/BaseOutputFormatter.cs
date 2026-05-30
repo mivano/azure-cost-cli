@@ -6,6 +6,7 @@ using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 
@@ -28,6 +29,8 @@ public abstract class BaseOutputFormatter
     public abstract Task WriteDevTestComparison(WhatIfSettings settings, IEnumerable<DevTestComparisonItem> items);
     public abstract Task WriteAccumulatedDiffCost(DiffSettings settings, AccumulatedCostDetails accumulatedCostSource,
         AccumulatedCostDetails accumulatedCostTarget);
+
+    public abstract Task WriteThreshold(ThresholdSettings settings, ThresholdResult result);
 
 }
 

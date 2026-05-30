@@ -8,6 +8,7 @@ using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using CsvHelper;
@@ -256,6 +257,26 @@ public class CsvOutputFormatter : BaseOutputFormatter
             Console.Write(writer.ToString());
         }
 
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        using var writer = new StringWriter();
+        using var csv = new CsvWriter(writer, new CsvHelper.Configuration.CsvConfiguration(CultureInfo.InvariantCulture));
+        csv.WriteField("SubCommand");
+        csv.WriteField("IsThresholdExceeded");
+        csv.WriteField("ActualValue");
+        csv.WriteField("ThresholdValue");
+        csv.WriteField("Message");
+        csv.NextRecord();
+        csv.WriteField(result.SubCommand);
+        csv.WriteField(result.IsThresholdExceeded);
+        csv.WriteField(result.ActualValue?.ToString("F4", CultureInfo.InvariantCulture) ?? "");
+        csv.WriteField(result.ThresholdValue?.ToString("F4", CultureInfo.InvariantCulture) ?? "");
+        csv.WriteField(result.Message);
+        csv.NextRecord();
+        Console.Write(writer.ToString());
         return Task.CompletedTask;
     }
 }

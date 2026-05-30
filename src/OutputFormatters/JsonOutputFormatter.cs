@@ -9,6 +9,7 @@ using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using DevLab.JmesPath;
@@ -131,6 +132,12 @@ public class JsonOutputFormatter : BaseOutputFormatter
     public override Task WriteDevTestComparison(WhatIfSettings settings, IEnumerable<DevTestComparisonItem> items)
     {
         WriteJson(settings, items);
+        return Task.CompletedTask;
+    }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        WriteJson(settings, result);
         return Task.CompletedTask;
     }
     

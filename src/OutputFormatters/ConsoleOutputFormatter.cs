@@ -8,6 +8,7 @@ using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure;
@@ -1027,5 +1028,31 @@ public class ConsoleOutputFormatter : BaseOutputFormatter
             $"[bold]{Money.FormatMoney(totalTarget, currency)}[/]",
             totalDiffFormatted
         );
+    }
+
+    public override Task WriteThreshold(ThresholdSettings settings, ThresholdResult result)
+    {
+        var statusColor = result.IsThresholdExceeded ? "red" : "green";
+        var statusLabel = result.IsThresholdExceeded ? "EXCEEDED" : "OK";
+        var icon = result.IsThresholdExceeded ? ":red_circle:" : ":green_circle:";
+
+        var table = new Table()
+            .RoundedBorder()
+            .Expand()
+            .Title($"Threshold Check: [bold]{result.SubCommand}[/]")
+            .AddColumn("Field")
+            .AddColumn("Value");
+
+        table.AddRow("Status", $"[{statusColor} bold]{icon} {statusLabel}[/]");
+        table.AddRow("Sub-command", result.SubCommand);
+        table.AddRow("Message", result.Message.EscapeMarkup());
+        if (result.ActualValue.HasValue)
+            table.AddRow("Actual value", $"{result.ActualValue.Value:N2}");
+        if (result.ThresholdValue.HasValue)
+            table.AddRow("Threshold", $"{result.ThresholdValue.Value:N2}");
+
+        AnsiConsole.Write(table);
+
+        return Task.CompletedTask;
     }
 }

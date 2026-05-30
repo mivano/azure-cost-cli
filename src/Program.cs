@@ -9,6 +9,7 @@ using AzureCostCli.Commands.DailyCost;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Diff;
 using AzureCostCli.Commands.Regions;
+using AzureCostCli.Commands.Threshold;
 using AzureCostCli.Commands.WhatIf;
 using AzureCostCli.CostApi;
 using AzureCostCli.Infrastructure.TypeConvertors;
@@ -116,7 +117,19 @@ app.Configure(config =>
   config.AddCommand<RegionsCommand>("regions")
     .WithDescription("Get the available Azure regions.");
 
-  
+  config.AddBranch<ThresholdSettings>("threshold", add =>
+  {
+    add.AddCommand<DailyChangeThresholdCommand>("daily-change")
+      .WithDescription("Trigger if today's cost change vs yesterday exceeds the threshold.");
+    add.AddCommand<ForecastDeviationThresholdCommand>("forecast-deviation")
+      .WithDescription("Trigger if actual spend deviates from forecast by more than the threshold.");
+    add.AddCommand<ServiceSpikeThresholdCommand>("service-spike")
+      .WithDescription("Trigger if any single service cost spikes beyond the threshold vs the previous period.");
+    add.AddCommand<WeeklyAverageThresholdCommand>("weekly-average")
+      .WithDescription("Trigger if the 7-day average daily cost exceeds the threshold.");
+    add.SetDescription("Cost threshold checks for CI/CD gating.");
+  });
+
   config.ValidateExamples();
 });
 
