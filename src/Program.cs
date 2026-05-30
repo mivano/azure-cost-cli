@@ -95,14 +95,6 @@ app.Configure(config =>
   config.AddCommand<BudgetsCommand>("budgets")
     .WithDescription("Get the available budgets.");
   
-  // Disable for now
-  // config.AddBranch<PricesSettings>("prices", add =>
-  // {
-  //   add.AddCommand<ListPricesCommand>("list").WithDescription("List prices");
-  //   add.SetDescription("Use the Azure Price catalog");
-  //   add.HideBranch();
-  // });
-  
   config.AddBranch<WhatIfSettings>("what-if", add =>
   {
     add.AddCommand<DevTestWhatIfCommand>("devtest").WithDescription("Run what-if scenarios to check price differences if the resources were on a DevTest subscription. Only applies to VMs.");

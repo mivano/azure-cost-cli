@@ -2,7 +2,6 @@ using AzureCostCli.Commands;
 using AzureCostCli.Commands.CostByTag;
 using AzureCostCli.Commands.DetectAnomaly;
 using AzureCostCli.Commands.Regions;
-using AzureCostCli.Commands.Prices;
 using AzureCostCli.CostApi;
 using Shouldly;
 using Moq;
@@ -199,38 +198,3 @@ public class RegionsCommandTests
     }
 }
 
-public class ListPricesCommandTests
-{
-    private readonly Mock<IPriceRetriever> _mockPriceRetriever;
-    private readonly ListPricesCommand _command;
-
-    public ListPricesCommandTests()
-    {
-        _mockPriceRetriever = new Mock<IPriceRetriever>();
-        _command = new ListPricesCommand(_mockPriceRetriever.Object);
-    }
-
-    [Fact]
-    public void Constructor_SetsUpOutputFormatters()
-    {
-        // Act & Assert - Constructor should not throw
-        var command = new ListPricesCommand(_mockPriceRetriever.Object);
-        command.ShouldNotBeNull();
-    }
-
-    [Fact]
-    public void PricesSettings_DefaultValues_AreSetCorrectly()
-    {
-        // Arrange & Act
-        var settings = new PricesSettings();
-
-        // Assert
-        settings.Output.ShouldBe(OutputFormat.Console);
-    }
-
-    private static CommandContext CreateCommandContext()
-    {
-        var remainingArguments = Mock.Of<IRemainingArguments>();
-        return new CommandContext([], remainingArguments, "prices", null);
-    }
-}
