@@ -146,11 +146,33 @@ public static class AzCommand
             : $" via the command interpreter ('{fileName}')";
 
     /// <summary>
+    /// Ensures a fault on any of the given tasks is observed, whenever it happens.
+    /// </summary>
+    /// <remarks>
+    /// Waiting on the tasks is not sufficient on its own: a bounded wait can time out without
+    /// throwing, leaving a task to fault afterwards with nobody watching. Accessing Exception
+    /// from a faulted continuation observes it even after the caller has moved on.
+    /// </remarks>
+    internal static void ObserveFaults(params Task[] tasks)
+    {
+        foreach (var task in tasks)
+        {
+            _ = task.ContinueWith(
+                static faulted => _ = faulted.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+    }
+
+    /// <summary>
     /// Terminates a process that overran its timeout and observes the in-flight pipe reads,
     /// so neither the process nor the read tasks outlive this call unnoticed.
     /// </summary>
     private static void KillAndObserve(Process process, params Task[] readTasks)
     {
+        ObserveFaults(readTasks);
+
         try
         {
             process.Kill(entireProcessTree: true);
@@ -164,8 +186,8 @@ public static class AzCommand
 
         try
         {
-            // Give the reads a moment to complete against the now-closed pipes and observe
-            // any faults, so they are not left as unobserved task exceptions.
+            // Give the reads a grace period to drain against the now-closed pipes. A timeout
+            // here is fine: the continuations above still observe anything that faults later.
             Task.WaitAll(readTasks, KillTimeout);
         }
         catch

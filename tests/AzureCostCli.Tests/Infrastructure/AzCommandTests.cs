@@ -71,6 +71,32 @@ public class AzCommandTests
     }
 
     [Fact]
+    public async Task ObserveFaults_ObservesATaskThatFaultsAfterTheCallReturns()
+    {
+        // The grace-period wait can time out without throwing, so observation cannot depend
+        // on it: a read that faults later must still be observed.
+        var source = new TaskCompletionSource();
+        var task = source.Task;
+
+        AzCommand.ObserveFaults(task);
+        source.SetException(new InvalidOperationException("pipe closed"));
+
+        // The continuation runs synchronously on completion, so the fault is observed by now.
+        await Should.ThrowAsync<InvalidOperationException>(async () => await task);
+        task.Exception.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ObserveFaults_IsSafeForAlreadyCompletedAndCancelledTasks()
+    {
+        var completed = Task.CompletedTask;
+        var faulted = Task.FromException(new InvalidOperationException("already gone"));
+        var cancelled = Task.FromCanceled(new CancellationToken(canceled: true));
+
+        Should.NotThrow(() => AzCommand.ObserveFaults(completed, faulted, cancelled));
+    }
+
+    [Fact]
     public void DescribeLauncher_WhenAzIsInvokedDirectly_AddsNothing()
     {
         AzCommand.DescribeLauncher("az").ShouldBeEmpty();
