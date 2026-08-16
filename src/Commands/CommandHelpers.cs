@@ -18,19 +18,30 @@ public static class CommandHelpers
         if (!isSubscriptionBased || subscription.HasValue)
             return ValidationResult.Success();
 
+        string reason;
+
         try
         {
-            var resolved = Guid.Parse(AzCommand.GetDefaultAzureSubscriptionId());
-            setSubscription(resolved);
-            return ValidationResult.Success();
+            var subscriptionId = AzCommand.GetDefaultAzureSubscriptionId();
+
+            if (Guid.TryParse(subscriptionId, out var resolved))
+            {
+                setSubscription(resolved);
+                return ValidationResult.Success();
+            }
+
+            reason = $"the Azure CLI returned an unexpected subscription ID: '{subscriptionId}'";
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            return ValidationResult.Error(
-                "No subscription ID provided and unable to retrieve from Azure CLI. " +
-                "Please specify a subscription ID using -s or --subscription, " +
-                "or login to Azure CLI using 'az login'. Use --help for more information.");
+            reason = ex.Message;
         }
+
+        return ValidationResult.Error(
+            "No subscription ID provided and unable to retrieve from Azure CLI. " +
+            "Please specify a subscription ID using -s or --subscription, " +
+            "or login to Azure CLI using 'az login'. Use --help for more information. " +
+            $"({reason})");
     }
 
     /// <summary>

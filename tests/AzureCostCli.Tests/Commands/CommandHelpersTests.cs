@@ -56,6 +56,23 @@ public class CommandHelpersTests
     }
 
     [Fact]
+    public void ValidateAndResolveSubscription_WhenAzCliResolutionFails_ErrorExplainsWhy()
+    {
+        // Act - environment dependent: az CLI may or may not be present.
+        var result = CommandHelpers.ValidateAndResolveSubscription(
+            subscription: null, isSubscriptionBased: true, _ => { });
+
+        // Assert - a failure must say more than "unable to retrieve"; the underlying
+        // reason is appended in parentheses so the user can actually diagnose it.
+        if (!result.Successful)
+        {
+            result.Message.ShouldNotBeNull();
+            result.Message.ShouldContain("az login");
+            result.Message.ShouldMatch(@"\(.+\)");
+        }
+    }
+
+    [Fact]
     public void ValidateTimeframe_CustomWithValidDates_ReturnsSuccess()
     {
         // Arrange
