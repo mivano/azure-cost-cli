@@ -56,4 +56,80 @@ public class AzCommandTests
         actual.FileName.ShouldBe(expected.FileName);
         actual.Arguments.ShouldBe(expected.Arguments);
     }
+
+    [Fact]
+    public void ResolveCommandInterpreter_NeverReturnsAQuotedPath()
+    {
+        // ProcessStartInfo.FileName is not parsed as a command line, so a quoted ComSpec
+        // would be taken as part of the file name and fail to start.
+        var interpreter = AzCommand.ResolveCommandInterpreter();
+
+        interpreter.ShouldNotBeNullOrWhiteSpace();
+        interpreter.ShouldNotStartWith("\"");
+        interpreter.ShouldNotEndWith("\"");
+        interpreter.ShouldContain("cmd", Case.Insensitive);
+    }
+
+    [Fact]
+    public void DescribeLauncher_WhenAzIsInvokedDirectly_AddsNothing()
+    {
+        AzCommand.DescribeLauncher("az").ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void DescribeLauncher_WhenLaunchedViaInterpreter_NamesItAsTheLauncherNotTheCli()
+    {
+        // The startup failure message must not read as though cmd.exe were the Azure CLI.
+        var description = AzCommand.DescribeLauncher(@"C:\WINDOWS\system32\cmd.exe");
+
+        description.ShouldContain("command interpreter");
+        description.ShouldContain("cmd.exe");
+        description.ShouldNotContain("Azure CLI");
+    }
+
+    [Fact]
+    public void ParseSubscriptionId_WithValidJson_ReturnsId()
+    {
+        var id = AzCommand.ParseSubscriptionId(0, """{"id":"abc-123","name":"Sub"}""", "");
+
+        id.ShouldBe("abc-123");
+    }
+
+    [Fact]
+    public void ParseSubscriptionId_WithNonZeroExitCode_ReportsExitCodeAndStderr()
+    {
+        var ex = Should.Throw<Exception>(() =>
+            AzCommand.ParseSubscriptionId(9009, "", "'az' is not recognized"));
+
+        ex.Message.ShouldContain("9009");
+        ex.Message.ShouldContain("'az' is not recognized");
+    }
+
+    [Fact]
+    public void ParseSubscriptionId_WithNonJsonOutput_ExplainsTheOutputWasNotJson()
+    {
+        // What a user with 'az configure --defaults output=table' would have seen.
+        var ex = Should.Throw<Exception>(() =>
+            AzCommand.ParseSubscriptionId(0, "Name    CloudName    SubscriptionId", ""));
+
+        ex.Message.ShouldContain("not valid JSON");
+    }
+
+    [Fact]
+    public void ParseSubscriptionId_WithoutIdProperty_Throws()
+    {
+        var ex = Should.Throw<Exception>(() =>
+            AzCommand.ParseSubscriptionId(0, """{"name":"Sub"}""", ""));
+
+        ex.Message.ShouldContain("'id'");
+    }
+
+    [Theory]
+    [InlineData("""{"id":""}""")]
+    [InlineData("""{"id":null}""")]
+    [InlineData("[]")]
+    public void ParseSubscriptionId_WithUnusableId_Throws(string output)
+    {
+        Should.Throw<Exception>(() => AzCommand.ParseSubscriptionId(0, output, ""));
+    }
 }

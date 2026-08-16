@@ -56,20 +56,56 @@ public class CommandHelpersTests
     }
 
     [Fact]
-    public void ValidateAndResolveSubscription_WhenAzCliResolutionFails_ErrorExplainsWhy()
+    public void ValidateAndResolveSubscription_WhenResolverSucceeds_SetsResolvedSubscription()
     {
-        // Act - environment dependent: az CLI may or may not be present.
-        var result = CommandHelpers.ValidateAndResolveSubscription(
-            subscription: null, isSubscriptionBased: true, _ => { });
+        // Arrange
+        var expected = Guid.NewGuid();
+        Guid captured = Guid.Empty;
 
-        // Assert - a failure must say more than "unable to retrieve"; the underlying
-        // reason is appended in parentheses so the user can actually diagnose it.
-        if (!result.Successful)
-        {
-            result.Message.ShouldNotBeNull();
-            result.Message.ShouldContain("az login");
-            result.Message.ShouldMatch(@"\(.+\)");
-        }
+        // Act
+        var result = CommandHelpers.ValidateAndResolveSubscription(
+            subscription: null, isSubscriptionBased: true, id => captured = id,
+            resolveSubscriptionId: () => expected.ToString());
+
+        // Assert
+        result.Successful.ShouldBeTrue();
+        captured.ShouldBe(expected);
+    }
+
+    [Fact]
+    public void ValidateAndResolveSubscription_WhenResolverThrows_ErrorExplainsWhy()
+    {
+        // Arrange
+        Guid captured = Guid.Empty;
+
+        // Act
+        var result = CommandHelpers.ValidateAndResolveSubscription(
+            subscription: null, isSubscriptionBased: true, id => captured = id,
+            resolveSubscriptionId: () => throw new Exception("az is sulking"));
+
+        // Assert - the underlying reason must survive, otherwise the failure is undiagnosable.
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldNotBeNull();
+        result.Message.ShouldContain("az login");
+        result.Message.ShouldContain("az is sulking");
+        captured.ShouldBe(Guid.Empty);
+    }
+
+    [Fact]
+    public void ValidateAndResolveSubscription_WhenResolverReturnsNonGuid_ErrorReportsTheValue()
+    {
+        // Arrange
+        Guid captured = Guid.Empty;
+
+        // Act - a non-GUID is a different failure from "az is unusable" and must say so.
+        var result = CommandHelpers.ValidateAndResolveSubscription(
+            subscription: null, isSubscriptionBased: true, id => captured = id,
+            resolveSubscriptionId: () => "not-a-guid");
+
+        // Assert
+        result.Successful.ShouldBeFalse();
+        result.Message.ShouldContain("not-a-guid");
+        captured.ShouldBe(Guid.Empty);
     }
 
     [Fact]

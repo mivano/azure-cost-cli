@@ -13,16 +13,23 @@ public static class CommandHelpers
     /// Returns a ValidationResult error if subscription is required but cannot be resolved.
     /// Sets the subscription on the settings if resolved from Azure CLI.
     /// </summary>
-    public static ValidationResult ValidateAndResolveSubscription(Guid? subscription, bool isSubscriptionBased, Action<Guid> setSubscription)
+    /// <param name="resolveSubscriptionId">
+    /// Supplies the default subscription ID. Defaults to querying the Azure CLI; overridden by
+    /// tests so both the success and failure paths can be exercised without an Azure CLI install.
+    /// </param>
+    public static ValidationResult ValidateAndResolveSubscription(Guid? subscription, bool isSubscriptionBased,
+        Action<Guid> setSubscription, Func<string>? resolveSubscriptionId = null)
     {
         if (!isSubscriptionBased || subscription.HasValue)
             return ValidationResult.Success();
+
+        resolveSubscriptionId ??= AzCommand.GetDefaultAzureSubscriptionId;
 
         string reason;
 
         try
         {
-            var subscriptionId = AzCommand.GetDefaultAzureSubscriptionId();
+            var subscriptionId = resolveSubscriptionId();
 
             if (Guid.TryParse(subscriptionId, out var resolved))
             {
