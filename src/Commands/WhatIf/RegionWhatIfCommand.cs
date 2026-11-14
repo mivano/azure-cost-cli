@@ -20,14 +20,14 @@ public class RegionWhatIfCommand : AsyncCommand<WhatIfSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, WhatIfSettings settings)
+    public override ValidationResult Validate(CommandContext context, WhatIfSettings settings)
     {
         return CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
             id => settings.Subscription = id);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, WhatIfSettings settings, CancellationToken cancellationToken)
     {
         _costRetriever.CostApiAddress = settings.CostApiAddress;
         _priceRetriever.PriceApiAddress = settings.PriceApiAddress;

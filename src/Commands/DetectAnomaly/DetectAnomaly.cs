@@ -15,7 +15,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, DetectAnomalySettings settings)
+    public override ValidationResult Validate(CommandContext context, DetectAnomalySettings settings)
     {
         var subResult = CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
@@ -25,7 +25,7 @@ public class DetectAnomalyCommand : AsyncCommand<DetectAnomalySettings>
         return CommandHelpers.ValidateTimeframe(settings);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, DetectAnomalySettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, DetectAnomalySettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
         _costRetriever.CostApiAddress = settings.CostApiAddress;

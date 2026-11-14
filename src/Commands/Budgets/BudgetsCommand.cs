@@ -15,14 +15,14 @@ public class BudgetsCommand : AsyncCommand<BudgetsSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, BudgetsSettings settings)
+    public override ValidationResult Validate(CommandContext context, BudgetsSettings settings)
     {
         return CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
             id => settings.Subscription = id);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, BudgetsSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, BudgetsSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 

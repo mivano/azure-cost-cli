@@ -15,7 +15,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, DailyCostSettings settings)
+    public override ValidationResult Validate(CommandContext context, DailyCostSettings settings)
     {
         var subResult = CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
@@ -25,7 +25,7 @@ public class DailyCostCommand : AsyncCommand<DailyCostSettings>
         return CommandHelpers.ValidateTimeframe(settings);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, DailyCostSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, DailyCostSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 

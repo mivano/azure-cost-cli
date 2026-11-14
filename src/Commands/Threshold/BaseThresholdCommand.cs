@@ -20,7 +20,7 @@ public abstract class BaseThresholdCommand<TSettings> : AsyncCommand<TSettings>
         CostRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, TSettings settings)
+    public override ValidationResult Validate(CommandContext context, TSettings settings)
     {
         var subResult = CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,

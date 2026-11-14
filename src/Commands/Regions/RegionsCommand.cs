@@ -15,7 +15,7 @@ public class RegionsCommand: AsyncCommand<RegionsSettings>
         _regionsRetriever = regionsRetriever;
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, RegionsSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, RegionsSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 

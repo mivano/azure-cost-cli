@@ -7,6 +7,8 @@ This is a simple command line tool to get the cost of your Azure subscription. I
 
 ## Installation
 
+Requires the .NET 10.0 runtime or newer (the tool targets .NET 10 LTS and rolls forward to newer runtimes such as .NET 11). .NET 8 is no longer supported.
+
 You can install this tool globally, using the dotnet tool command:
 
 ```bash

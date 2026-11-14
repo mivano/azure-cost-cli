@@ -15,7 +15,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, AccumulatedCostSettings settings)
+    public override ValidationResult Validate(CommandContext context, AccumulatedCostSettings settings)
     {
         var subResult = CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
@@ -25,7 +25,7 @@ public class AccumulatedCostCommand : AsyncCommand<AccumulatedCostSettings>
         return CommandHelpers.ValidateTimeframe(settings);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, AccumulatedCostSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 

@@ -26,7 +26,7 @@ It can also detect anomalies and trends in the cost, which can be used to furthe
 
 ### Prerequisites
 
-- .NET 8.0 or .NET 10.0 runtime
+- .NET 10.0 runtime or newer (the tool targets .NET 10 LTS and rolls forward to newer runtimes such as .NET 11). .NET 8 is no longer supported, as it reached end of support on November 10, 2026.
 - Azure CLI authenticated (`az login`) or an Azure identity with Cost Management Reader role
 
 You can install this tool globally, using the dotnet tool command:
@@ -203,6 +203,11 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
 
       - name: Install Azure Cost CLI
         run: dotnet tool install -g azure-cost-cli

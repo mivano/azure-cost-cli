@@ -41,7 +41,6 @@ jobs:
       uses: actions/setup-dotnet@v6
       with:
         dotnet-version: |
-          8.0.x
           10.0.x
     - name: Restore dependencies
       run: dotnet restore
