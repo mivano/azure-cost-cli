@@ -12,7 +12,7 @@ public class DailyChangeThresholdCommand : BaseThresholdCommand<ThresholdSetting
 {
     public DailyChangeThresholdCommand(ICostRetriever costRetriever) : base(costRetriever) { }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, ThresholdSettings settings,
+    public override async Task<int> ExecuteAsync(CommandContext context, ThresholdSettings settings,
         CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);

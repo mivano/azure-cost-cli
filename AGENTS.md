@@ -42,7 +42,7 @@ Each command inherits from `AsyncCommand<TSettings>` (Spectre.Console.Cli) and f
 
 ## Prerequisites
 
-- .NET 8.0 SDK or .NET 10.0 SDK
+- .NET 10.0 SDK (or newer)
 - Azure CLI authenticated (`az login`) for cost data access
 - An Azure subscription with Cost Management API access
 
@@ -51,21 +51,15 @@ Each command inherits from `AsyncCommand<TSettings>` (Spectre.Console.Cli) and f
 ```bash
 # Build the solution (from repo root)
 dotnet build src/azure-cost-cli.sln
-
-# Build a specific target framework
-dotnet build src/azure-cost-cli.csproj --framework net10.0
 ```
 
-The project targets both `net8.0` and `net10.0`. Warnings are treated as errors for NuGet dependency resolution (`NU1605`).
+The project targets `net10.0` (LTS) only. The tool sets `RollForward=Major`, so it also runs on machines that only have a newer runtime (e.g. .NET 11). Warnings are treated as errors for NuGet dependency resolution (`NU1605`).
 
 ## Test
 
 ```bash
-# Run all tests (both frameworks)
+# Run all tests
 dotnet test src/azure-cost-cli.sln
-
-# Run tests for a specific framework
-dotnet test tests/AzureCostCli.Tests/AzureCostCli.Tests.csproj --framework net10.0
 ```
 
 Tests use **xUnit**, **Moq** for mocking, and **Shouldly** for assertions. Tests cover:
@@ -78,22 +72,22 @@ Tests use **xUnit**, **Moq** for mocking, and **Shouldly** for assertions. Tests
 ## Run
 
 ```bash
-# Run from source (specify framework since the project multi-targets)
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- [command] [options]
+# Run from source
+dotnet run --project src/azure-cost-cli.csproj -- [command] [options]
 
 # Show all available commands and options
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- --help
+dotnet run --project src/azure-cost-cli.csproj -- --help
 
 # Examples
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- accumulatedCost -o json
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- accumulatedCost -o text
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- dailyCosts --dimension MeterCategory
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- costByResource -o csv
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- budgets -o json
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- detectAnomalies -o text
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- threshold daily-change --percentage 20 --fail-on-threshold
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- threshold service-spike --fixed-amount 200 -o json
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- threshold weekly-average --fixed-amount 50 --fail-on-threshold
+dotnet run --project src/azure-cost-cli.csproj -- accumulatedCost -o json
+dotnet run --project src/azure-cost-cli.csproj -- accumulatedCost -o text
+dotnet run --project src/azure-cost-cli.csproj -- dailyCosts --dimension MeterCategory
+dotnet run --project src/azure-cost-cli.csproj -- costByResource -o csv
+dotnet run --project src/azure-cost-cli.csproj -- budgets -o json
+dotnet run --project src/azure-cost-cli.csproj -- detectAnomalies -o text
+dotnet run --project src/azure-cost-cli.csproj -- threshold daily-change --percentage 20 --fail-on-threshold
+dotnet run --project src/azure-cost-cli.csproj -- threshold service-spike --fixed-amount 200 -o json
+dotnet run --project src/azure-cost-cli.csproj -- threshold weekly-average --fixed-amount 50 --fail-on-threshold
 ```
 
 ### Install as global tool (from source)
@@ -150,7 +144,7 @@ GitHub Actions workflows in `.github/workflows/`:
 
 ## Coding Conventions
 
-- All commands use `protected override` for `ExecuteAsync` and `Validate` methods (Spectre.Console.Cli 0.55.0+)
+- All commands use `public override` for `ExecuteAsync` and `Validate` methods (Spectre.Console.Cli 0.57.x; 0.55.0 had made them `protected`)
 - `ExecuteAsync` signature includes `CancellationToken cancellationToken` parameter
 - Subscription resolution and timeframe validation are centralized in `CommandHelpers`
 - Formatter dictionaries are created via `OutputFormatterFactory.Create()`

@@ -15,7 +15,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, CostByTagSettings settings)
+    public override ValidationResult Validate(CommandContext context, CostByTagSettings settings)
     {
         var subResult = CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
@@ -25,7 +25,7 @@ public class CostByTagCommand : AsyncCommand<CostByTagSettings>
         return CommandHelpers.ValidateTimeframe(settings);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, CostByTagSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, CostByTagSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 

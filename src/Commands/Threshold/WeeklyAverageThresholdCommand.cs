@@ -12,7 +12,7 @@ public class WeeklyAverageThresholdCommand : BaseThresholdCommand<ThresholdSetti
 {
     public WeeklyAverageThresholdCommand(ICostRetriever costRetriever) : base(costRetriever) { }
 
-    protected override ValidationResult Validate(CommandContext context, ThresholdSettings settings)
+    public override ValidationResult Validate(CommandContext context, ThresholdSettings settings)
     {
         if (settings.Percentage.HasValue)
             return ValidationResult.Error(
@@ -21,7 +21,7 @@ public class WeeklyAverageThresholdCommand : BaseThresholdCommand<ThresholdSetti
         return base.Validate(context, settings);
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, ThresholdSettings settings,
+    public override async Task<int> ExecuteAsync(CommandContext context, ThresholdSettings settings,
         CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);

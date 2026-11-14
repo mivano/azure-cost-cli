@@ -18,7 +18,7 @@ public class DiffCommand : AsyncCommand<DiffSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, DiffSettings settings)
+    public override ValidationResult Validate(CommandContext context, DiffSettings settings)
     {
         // Automatically set timeframe to Custom if both from and to dates are provided
         settings.ApplyAutoTimeframe();
@@ -102,7 +102,7 @@ public class DiffCommand : AsyncCommand<DiffSettings>
         return ValidationResult.Success();
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, DiffSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, DiffSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 

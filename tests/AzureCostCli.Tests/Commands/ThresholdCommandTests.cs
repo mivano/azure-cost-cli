@@ -594,29 +594,7 @@ public class ThresholdCommandTests
         return new CommandContext([], remaining, "threshold", null);
     }
 
-    /// <summary>
-    /// Invokes ExecuteAsync via reflection (same pattern as existing tests in this project).
-    /// </summary>
-    private static async Task<int> InvokeExecuteAsync<TSettings>(AsyncCommand<TSettings> command, TSettings settings)
+    private static Task<int> InvokeExecuteAsync<TSettings>(AsyncCommand<TSettings> command, TSettings settings)
         where TSettings : CommandSettings
-    {
-        var ctx = CreateCommandContext();
-        var method = typeof(AsyncCommand<TSettings>)
-            .GetMethod("ExecuteAsync",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance,
-                null,
-                new[] { typeof(CommandContext), typeof(TSettings), typeof(CancellationToken) },
-                null);
-
-        if (method == null)
-        {
-            // fallback: two-parameter overload (without CancellationToken)
-            method = typeof(AsyncCommand<TSettings>)
-                .GetMethod("ExecuteAsync",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        }
-
-        var task = (Task<int>)method!.Invoke(command, new object[] { ctx, settings, CancellationToken.None })!;
-        return await task;
-    }
+        => command.ExecuteAsync(CreateCommandContext(), settings, CancellationToken.None);
 }

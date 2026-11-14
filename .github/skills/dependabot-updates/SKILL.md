@@ -53,14 +53,14 @@ The build must succeed with **0 errors**. Pre-existing warnings are acceptable.
 dotnet test src/azure-cost-cli.sln
 ```
 
-All tests must pass on all target frameworks.
+All tests must pass.
 
 ### 6. Smoke test the application
 
 Run a quick smoke test to verify the application starts correctly:
 
 ```bash
-dotnet run --project src/azure-cost-cli.csproj --framework net10.0 -- --help
+dotnet run --project src/azure-cost-cli.csproj -- --help
 ```
 
 This should print the help text without errors.

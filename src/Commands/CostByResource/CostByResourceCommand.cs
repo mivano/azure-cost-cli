@@ -15,7 +15,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         _costRetriever = costRetriever;
     }
 
-    protected override ValidationResult Validate(CommandContext context, CostByResourceSettings settings)
+    public override ValidationResult Validate(CommandContext context, CostByResourceSettings settings)
     {
         var subResult = CommandHelpers.ValidateAndResolveSubscription(
             settings.Subscription, settings.GetScope.IsSubscriptionBased,
@@ -28,7 +28,7 @@ public class CostByResourceCommand : AsyncCommand<CostByResourceSettings>
         return settings.ValidateCostByResourceSettings();
     }
 
-    protected override async Task<int> ExecuteAsync(CommandContext context, CostByResourceSettings settings, CancellationToken cancellationToken)
+    public override async Task<int> ExecuteAsync(CommandContext context, CostByResourceSettings settings, CancellationToken cancellationToken)
     {
         CommandHelpers.PrintVersionIfDebug(settings.Debug);
 
