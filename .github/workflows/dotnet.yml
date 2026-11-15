@@ -19,13 +19,13 @@ on:
     paths:
       - "src/**"
       - "tests/**"
-      - ".github/workflows/dotnet.yml" 
+      - ".github/workflows/**"
   pull_request:
     branches: [ "main" ]
     paths:
       - "src/**"
       - "tests/**"
-      - ".github/workflows/dotnet.yml" 
+      - ".github/workflows/**"
       
 jobs:
   build:
