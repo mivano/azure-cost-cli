@@ -114,9 +114,9 @@ azure-cost accumulatedCost -o json
 | `regions` | List available Azure regions |
 | `what-if region` | Run what-if cost scenarios across regions |
 | `what-if devtest` | Run what-if cost scenarios for dev/test pricing |
-| `threshold daily-change` | Trigger if today's cost change vs yesterday exceeds the threshold |
-| `threshold forecast-deviation` | Trigger if actual spend deviates from forecast by more than the threshold |
-| `threshold service-spike` | Trigger if any service cost spikes beyond the threshold vs previous period |
+| `threshold daily-change` | Trigger if today's cost increase vs yesterday exceeds the threshold |
+| `threshold forecast-deviation` | Trigger if actual spend exceeds the forecast by more than the threshold |
+| `threshold service-spike` | Trigger if any service cost increases beyond the threshold vs previous period |
 | `threshold weekly-average` | Trigger if the 7-day average daily cost exceeds the threshold (fixed-amount only) |
 
 ## Output Formats

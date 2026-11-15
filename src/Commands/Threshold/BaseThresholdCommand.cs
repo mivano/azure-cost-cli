@@ -34,12 +34,16 @@ public abstract class BaseThresholdCommand<TSettings> : AsyncCommand<TSettings>
         return CommandHelpers.ValidateTimeframe(settings);
     }
 
-    protected bool IsExceeded(double change, double? absoluteChange, ThresholdSettings settings)
+    /// <summary>
+    /// Returns true when a cost <em>increase</em> exceeds the configured threshold. Decreases (negative
+    /// changes) never trigger: these checks guard against rising cost, and a drop in spend is not an alert.
+    /// </summary>
+    protected static bool IsExceeded(double change, double? absoluteChange, ThresholdSettings settings)
     {
-        if (settings.Percentage.HasValue && Math.Abs(change) > settings.Percentage.Value)
+        if (settings.Percentage.HasValue && change > settings.Percentage.Value)
             return true;
         if (settings.FixedAmount.HasValue && absoluteChange.HasValue &&
-            Math.Abs(absoluteChange.Value) > settings.FixedAmount.Value)
+            absoluteChange.Value > settings.FixedAmount.Value)
             return true;
         return false;
     }

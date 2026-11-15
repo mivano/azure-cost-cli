@@ -585,6 +585,170 @@ public class ThresholdCommandTests
     }
 
     // -----------------------------------------------------------------------
+    // Cost decreases must never trigger a threshold
+    // -----------------------------------------------------------------------
+
+    [Theory]
+    [InlineData(20.0, null)]   // -33.8% vs 20% threshold
+    [InlineData(null, 50.0)]   // -73.50 vs 50 fixed-amount
+    public async Task DailyChange_WhenCostDrops_DoesNotExceed(double? percentage, double? fixedAmount)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var yesterday = today.AddDays(-1);
+
+        _mockRetriever
+            .Setup(r => r.RetrieveCosts(
+                It.IsAny<bool>(), It.IsAny<Scope>(), It.IsAny<string[]>(),
+                It.IsAny<MetricType>(), It.IsAny<TimeframeType>(),
+                It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(new List<CostItem>
+            {
+                new(today,     143.74, 143.74, "EUR"),
+                new(yesterday, 217.24, 217.24, "EUR"),
+            });
+
+        var command = new DailyChangeThresholdCommand(_mockRetriever.Object);
+        var settings = new ThresholdSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Percentage = percentage,
+            FixedAmount = fixedAmount,
+            FailOnThreshold = true,
+            Output = OutputFormat.Text,
+        };
+
+        var exitCode = await InvokeExecuteAsync(command, settings);
+        exitCode.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task ForecastDeviation_ActualFarBelowForecast_Returns0()
+    {
+        var from = new DateOnly(2024, 1, 1);
+        var to = new DateOnly(2024, 1, 31);
+
+        _mockRetriever
+            .Setup(r => r.RetrieveCosts(It.IsAny<bool>(), It.IsAny<Scope>(), It.IsAny<string[]>(),
+                It.IsAny<MetricType>(), It.IsAny<TimeframeType>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(new List<CostItem> { new(from, 250.0, 250.0, "EUR") });
+
+        _mockRetriever
+            .Setup(r => r.RetrieveForecastedCosts(It.IsAny<bool>(), It.IsAny<Scope>(), It.IsAny<string[]>(),
+                It.IsAny<MetricType>(), It.IsAny<TimeframeType>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(new List<CostItem> { new(from, 500.0, 500.0, "EUR") });
+
+        var command = new ForecastDeviationThresholdCommand(_mockRetriever.Object);
+        var settings = new ThresholdSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Percentage = 10.0,   // -50% (under forecast) must not trigger
+            FixedAmount = 100.0, // -250 must not trigger
+            FailOnThreshold = true,
+            Output = OutputFormat.Text,
+            From = from,
+            To = to,
+        };
+
+        var exitCode = await InvokeExecuteAsync(command, settings);
+        exitCode.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task ServiceSpike_WhenServiceCostDrops_DoesNotExceed()
+    {
+        var to = new DateOnly(2024, 6, 30);
+        var from = new DateOnly(2024, 6, 1);
+
+        _mockRetriever
+            .SetupSequence(r => r.RetrieveCostByServiceName(It.IsAny<bool>(), It.IsAny<Scope>(), It.IsAny<string[]>(),
+                It.IsAny<MetricType>(), It.IsAny<TimeframeType>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(new List<CostNamedItem> { new("Bandwidth", 218.0, 218.0, "EUR") })   // current
+            .ReturnsAsync(new List<CostNamedItem> { new("Bandwidth", 2223.0, 2223.0, "EUR") }); // previous: -90%
+
+        var command = new ServiceSpikeThresholdCommand(_mockRetriever.Object);
+        var settings = new ThresholdSettings
+        {
+            Subscription = Guid.NewGuid(),
+            FixedAmount = 200.0,
+            FailOnThreshold = true,
+            Output = OutputFormat.Text,
+            From = from,
+            To = to,
+        };
+
+        var exitCode = await InvokeExecuteAsync(command, settings);
+        exitCode.ShouldBe(0);
+    }
+
+    [Fact]
+    public async Task ServiceSpike_ReportsIncreasingService_NotEarlierLargerDrop()
+    {
+        // ServiceDown is checked first and has a much larger (negative) change than ServiceUp.
+        // The breaching service (ServiceUp) must be the one reported.
+        var to = new DateOnly(2024, 6, 30);
+        var from = new DateOnly(2024, 6, 1);
+
+        _mockRetriever
+            .SetupSequence(r => r.RetrieveCostByServiceName(It.IsAny<bool>(), It.IsAny<Scope>(), It.IsAny<string[]>(),
+                It.IsAny<MetricType>(), It.IsAny<TimeframeType>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(new List<CostNamedItem>
+            {
+                new("ServiceDown", 100.0, 100.0, "USD"),
+                new("ServiceUp", 400.0, 400.0, "USD"),
+            })
+            .ReturnsAsync(new List<CostNamedItem>
+            {
+                new("ServiceDown", 2000.0, 2000.0, "USD"), // -1900
+                new("ServiceUp", 100.0, 100.0, "USD"),     // +300
+            });
+
+        var command = new ServiceSpikeThresholdCommand(_mockRetriever.Object);
+        var settings = new ThresholdSettings
+        {
+            Subscription = Guid.NewGuid(),
+            FixedAmount = 200.0,
+            FailOnThreshold = true,
+            Output = OutputFormat.Text,
+            From = from,
+            To = to,
+        };
+
+        var output = new System.Text.StringBuilder();
+        var origOut = Console.Out;
+        Console.SetOut(new System.IO.StringWriter(output));
+        int exitCode;
+        try { exitCode = await InvokeExecuteAsync(command, settings); }
+        finally { Console.SetOut(origOut); }
+
+        exitCode.ShouldBe(1);
+        output.ToString().ShouldContain("ServiceUp");
+        output.ToString().ShouldNotContain("ServiceDown");
+    }
+
+    [Fact]
+    public async Task ServiceSpike_NoServiceData_DoesNotThrow_Returns0()
+    {
+        _mockRetriever
+            .Setup(r => r.RetrieveCostByServiceName(It.IsAny<bool>(), It.IsAny<Scope>(), It.IsAny<string[]>(),
+                It.IsAny<MetricType>(), It.IsAny<TimeframeType>(), It.IsAny<DateOnly>(), It.IsAny<DateOnly>()))
+            .ReturnsAsync(new List<CostNamedItem>());
+
+        var command = new ServiceSpikeThresholdCommand(_mockRetriever.Object);
+        var settings = new ThresholdSettings
+        {
+            Subscription = Guid.NewGuid(),
+            Percentage = 20.0,
+            FailOnThreshold = true,
+            Output = OutputFormat.Text,
+            From = new DateOnly(2024, 6, 1),
+            To = new DateOnly(2024, 6, 30),
+        };
+
+        var exitCode = await InvokeExecuteAsync(command, settings);
+        exitCode.ShouldBe(0);
+    }
+
+    // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
 
