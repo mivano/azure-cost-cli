@@ -593,11 +593,13 @@ All threshold commands inherit the standard `CostSettings` options (`-s`, `-o`, 
 
 | Option | Description |
 |--------|-------------|
-| `--percentage <value>` | Trigger if the change or deviation exceeds this percentage. E.g. `20` means 20 %. |
-| `--fixed-amount <value>` | Trigger if the absolute change or deviation exceeds this monetary amount. |
+| `--percentage <value>` | Trigger if the cost increase exceeds this percentage. E.g. `20` means 20 %. |
+| `--fixed-amount <value>` | Trigger if the cost increase exceeds this monetary amount. |
 | `--fail-on-threshold` | Exit with code 1 when the threshold is exceeded. Defaults to `false`. |
 
 At least one of `--percentage` or `--fixed-amount` must be supplied (both can be combined — either condition triggers).
+
+Only cost *increases* trigger a threshold: a drop in cost (for example today being cheaper than yesterday, or spend coming in under the forecast) is reported but never counts as exceeded.
 
 #### Sub-commands
 
@@ -608,7 +610,7 @@ azure-cost threshold daily-change --percentage 20 --fail-on-threshold
 azure-cost threshold daily-change --fixed-amount 100 -o json
 ```
 
-**`forecast-deviation`** — compares actual spend to the Azure forecast for the selected period.
+**`forecast-deviation`** — compares actual spend to the Azure forecast for the selected period. Triggers when actual spend is above the forecast by more than the threshold.
 
 ```bash
 azure-cost threshold forecast-deviation --percentage 15 --fail-on-threshold

@@ -39,14 +39,8 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand<ThresholdSettin
                        ?? previousServices.FirstOrDefault()?.Currency
                        ?? "USD");
 
-        // Check every service; exceeded if any service breaches the threshold.
-        // Among all breaching services (or all services if none breach) track the worst by abs change.
-        var spikedService = string.Empty;
-        double maxChangePct = 0;
-        double maxChangeAbs = 0;
-        bool exceeded = false;
-
-        foreach (var svc in currentServices)
+        // Check every service; exceeded if any service's cost increase breaches the threshold.
+        var changes = currentServices.Select(svc =>
         {
             var curr = settings.UseUSD ? svc.CostUsd : svc.Cost;
             var prev = previousServices.FirstOrDefault(p => p.ItemName == svc.ItemName);
@@ -57,19 +51,22 @@ public class ServiceSpikeThresholdCommand : BaseThresholdCommand<ThresholdSettin
                 : (curr - prevCost) / prevCost * 100.0;
             double abs = curr - prevCost;
 
-            bool svcExceeded = IsExceeded(pct, abs, settings);
-            if (svcExceeded) exceeded = true;
+            return (Service: svc.ItemName, Pct: pct, Abs: abs, Exceeded: IsExceeded(pct, abs, settings));
+        }).ToList();
 
-            // Report the service with the largest absolute change among all that exceeded;
-            // if none exceeded yet, track the worst overall so we can report it in the OK message.
-            if (svcExceeded && Math.Abs(abs) > Math.Abs(maxChangeAbs) ||
-                !exceeded && Math.Abs(pct) > Math.Abs(maxChangePct))
-            {
-                maxChangePct = pct;
-                maxChangeAbs = abs;
-                spikedService = svc.ItemName;
-            }
-        }
+        bool exceeded = changes.Any(c => c.Exceeded);
+
+        // Report the breaching service with the largest cost increase; if none breach, report the
+        // service with the largest percentage increase for the OK message.
+        var reported = changes.Count == 0
+            ? default
+            : exceeded
+                ? changes.Where(c => c.Exceeded).MaxBy(c => c.Abs)
+                : changes.MaxBy(c => c.Pct);
+
+        var spikedService = reported.Service ?? string.Empty;
+        double maxChangePct = reported.Pct;
+        double maxChangeAbs = reported.Abs;
 
         double actualValue = settings.Percentage.HasValue ? maxChangePct : maxChangeAbs;
 
