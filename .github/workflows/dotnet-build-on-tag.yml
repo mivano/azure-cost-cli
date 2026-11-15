@@ -14,6 +14,7 @@ env:
 permissions:
   contents: write
   discussions: write
+  id-token: write # GitHub OIDC token for NuGet trusted publishing
 
 jobs:
   build-pack-release:
@@ -51,9 +52,17 @@ jobs:
         name: packages
         path: src/nupkgs/*.nupkg
 
+    # Trusted publishing: exchange the GitHub OIDC token for a short-lived (1 hour) nuget.org API key.
+    # Requires a trusted publishing policy on nuget.org for mivano/azure-cost-cli + dotnet-build-on-tag.yml.
+    - name: NuGet login (OIDC -> temporary API key)
+      id: nuget_login
+      uses: NuGet/login@v1
+      with:
+        user: mivano # nuget.org profile name of the package owner (not an email address)
+
     - name: Push NuGet Package
       run: |
-        dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+        dotnet nuget push nupkgs/*.nupkg --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
     - name: Create GitHub Release
       id: create_release
